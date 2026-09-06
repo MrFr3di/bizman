@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.1",
+  "generated_at": "2026-09-06",
+  "source_capture_count": 3,
+  "network_entry_count": 17108,
+  "first_party_entry_count": 16202,
+  "application_event_count": 555,
+  "policy": {
+    "raw_har_committed": false,
+    "network_noise_strategy": "Every raw capture is fingerprinted and summarized; first-party non-static application events are indexed individually; static resources are represented by asset census; third-party traffic is represented in capture host/mime summaries.",
+    "ci": "manual-only"
+  },
+  "datasets": [
+    {"id":"captures","path":"knowledge/sources/captures.json","format":"json","purpose":"Source provenance, exact SHA-256 and capture-level counts","records":3},
+    {"id":"application-events","path":"snapshot/","format":"snapshot","purpose":"All first-party non-static BizMania network events; full corpus in reconstructed ZIP","records":555},
+    {"id":"post-observations","path":"knowledge/http/post-observations.jsonl","format":"jsonl","purpose":"All observed first-party POST bodies and query parameters","records":17},
+    {"id":"endpoint-census","path":"snapshot/","format":"snapshot","purpose":"Aggregated non-static first-party paths","records":68},
+    {"id":"asset-census","path":"snapshot/","format":"snapshot","purpose":"Aggregated first-party static resources","records":914},
+    {"id":"forms","path":"snapshot/","format":"snapshot","purpose":"Deduplicated HTML form signatures","records":87},
+    {"id":"route-patterns","path":"snapshot/","format":"snapshot","purpose":"Normalized internal route patterns from HTML/JavaScript","records":732},
+    {"id":"json-responses","path":"snapshot/","format":"snapshot","purpose":"Unique first-party JSON response payloads","records":36},
+    {"id":"game-html-text","path":"snapshot/","format":"snapshot","purpose":"Normalized text of captured non-Wiki game HTML responses","records":180},
+    {"id":"javascript-index","path":"snapshot/","format":"snapshot","purpose":"SHA-index of unique captured BizMania JavaScript resources","records":29},
+    {"id":"javascript-snippets","path":"snapshot/","format":"snapshot","purpose":"Relevant JS route/function snippets","records":14},
+    {"id":"wiki-topics","path":"snapshot/","format":"snapshot","purpose":"Full normalized text of captured Wiki topics","records":87},
+    {"id":"wiki-topic-index","path":"knowledge/wiki/topic-index.json","format":"json","purpose":"Searchable topic/evidence index; full text in snapshot","records":87},
+    {"id":"wiki-navigation","path":"knowledge/wiki/navigation.json","format":"json","purpose":"Wiki taxonomy and capture coverage","records":89}
+  ]
+}
