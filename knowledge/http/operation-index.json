@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "post_count": 17,
+  "operations": [
+    {
+      "path": "/units/customise/headquarterretailsettings/",
+      "query_keys": ["id"],
+      "body_keys": ["$post","autoRetailModifier","autoSupplyReserve","cityId"],
+      "observations": [
+        {"capture":"bizmania.ru.har","entry":224,"status":200,"query":{"id":"17147"}},
+        {"capture":"bizmania.ru.har","entry":377,"status":200,"query":{"id":"17147"}}
+      ],
+      "id":"op-001","count":2
+    },
+    {
+      "path":"/units/shop/","query_keys":["id","tab"],
+      "body_keys":["$post","autoRetailModifier","autoRetailprice","autoRetailpriceUseQuality","autoStaff","autoSupply","autoSupplyReserve","p","price[n]","price_currency","product[n]","purchaseQuantity[n]","sort","vendorPrice[n]"],
+      "observations":[
+        {"capture":"bizmania.ru.har","entry":5190,"status":302,"query":{"tab":"goods","id":"17245"}},
+        {"capture":"bizmania1.ru.har","entry":168,"status":302,"query":{"tab":"goods","id":"13548"}}
+      ],
+      "id":"op-005","count":2
+    },
+    {
+      "path":"/units/vendor/buyvendorproducts/","query_keys":["id","vendor"],"body_keys":["$post","product"],
+      "observations":[{"capture":"bizmania.ru.har","entry":5287,"status":200,"query":{"id":"17245","vendor":"8561"}}],
+      "id":"op-006","count":1
+    },
+    {
+      "path":"/units/service/","query_keys":["id","tab"],
+      "body_keys":["$post","autoRetailModifier","autoRetailprice","autoRetailpriceUseQuality","p","price[n]","price_currency","product[n]","sort"],
+      "observations":[{"capture":"bizmania.ru.har","entry":6863,"status":302,"query":{"tab":"goods","id":"13597"}}],
+      "id":"op-003","count":1
+    },
+    {
+      "path":"/units/vendor/select/","query_keys":["id","replace"],
+      "body_keys":["$post","$scene","newFilter","p","product","sort","vendor","vendors"],
+      "observations":[
+        {"capture":"bizmania1.ru.har","entry":296,"status":200,"query":{"replace":"8561","id":"13548"}},
+        {"capture":"bizmania1.ru.har","entry":537,"status":200,"query":{"replace":"8561","id":"13548"}},
+        {"capture":"bizmania1.ru.har","entry":607,"status":200,"query":{"replace":"8561","id":"13548"}}
+      ],
+      "id":"op-011","count":3
+    },
+    {
+      "path":"/units/vendor/select/","query_keys":["id"],
+      "body_keys":["$post","$scene","appendVendor","p","price[n]","product[n]","purchase[n]","replace","selected[n]","sort","supplySize","vendor"],
+      "observations":[
+        {"capture":"bizmania1.ru.har","entry":326,"status":200,"query":{"id":"13548"}},
+        {"capture":"bizmania1.ru.har","entry":634,"status":200,"query":{"id":"13548"}},
+        {"capture":"bizmania1.ru.har","entry":761,"status":200,"query":{"id":"13548"}}
+      ],
+      "id":"op-009","count":3
+    },
+    {
+      "path":"/units/vendor/delvendorproduct/","query_keys":["id","product","vendor"],"body_keys":["$post"],
+      "observations":[{"capture":"bizmania1.ru.har","entry":691,"status":200,"query":{"product":"435","id":"13548","vendor":"8561"}}],
+      "id":"op-007","count":1
+    },
+    {
+      "path":"/units/vendor/select/","query_keys":["id"],"body_keys":["$post","$scene","newFilter","p","product","sort","vendor","vendors"],
+      "observations":[{"capture":"bizmania1.ru.har","entry":735,"status":200,"query":{"id":"13548"}}],
+      "id":"op-010","count":1
+    },
+    {
+      "path":"/units/shop/","query_keys":["id","tab"],
+      "body_keys":["$post","autoRetailModifier","autoRetailprice","autoRetailpriceUseQuality","autoStaff","autoSupply","autoSupplyReserve","cost[n]","p","product[n]","purchaseQuantity[n]","sort"],
+      "observations":[{"capture":"bizmania1.ru.har","entry":768,"status":302,"query":{"tab":"supply","id":"13548"}}],
+      "id":"op-004","count":1
+    },
+    {
+      "path":"/units/customise/quickhire/","query_keys":["id"],"body_keys":["$post","oper"],
+      "observations":[{"capture":"bizmania1.ru.har","entry":884,"status":200,"query":{"id":"13548"}}],
+      "id":"op-002","count":1
+    },
+    {
+      "path":"/units/vendor/fastretailprices/","query_keys":["id"],"body_keys":["$post","oper"],
+      "observations":[{"capture":"bizmania1.ru.har","entry":1103,"status":200,"query":{"id":"13548"}}],
+      "id":"op-008","count":1
+    }
+  ]
+}
