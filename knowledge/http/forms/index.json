@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "source_file": "knowledge/http/forms.json",
+  "total_records": 87,
+  "parts": [
+    {"file":"part-000.json","records":30,"offset":0},
+    {"file":"part-001.json","records":19,"offset":30},
+    {"file":"part-002.json","records":6,"offset":49},
+    {"file":"part-003.json","records":9,"offset":55},
+    {"file":"part-004.json","records":15,"offset":64},
+    {"file":"part-005.json","records":8,"offset":79}
+  ],
+  "original_shape": "dictlist",
+  "list_key": "forms",
+  "metadata": {"schema_version":"1.0"}
+}
