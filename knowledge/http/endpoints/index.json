@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "source_file": "knowledge/http/endpoint-census.json",
+  "record_key": "records",
+  "total_records": 68,
+  "parts": [
+    {
+      "file": "part-000.json",
+      "records": 34
+    },
+    {
+      "file": "part-001.json",
+      "records": 27
+    },
+    {
+      "file": "part-002.json",
+      "records": 7
+    }
+  ]
+}
