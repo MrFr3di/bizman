@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "status": "observed",
+  "source_scope": "three supplied HAR captures",
+  "entities": {
+    "unit_ids": ["13548","13597","17147","17245"],
+    "vendor_ids": ["8561"],
+    "product_ids": ["210","337","339","340","384","397","416","418","435","439","460","461","467"],
+    "city_ids": ["24","25"],
+    "company_ids": ["13393"]
+  }
+}
