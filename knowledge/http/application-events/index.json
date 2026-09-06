@@ -11,7 +11,8 @@
     {"file":"part-005.jsonl","records":60,"offset":299},
     {"file":"part-006.jsonl","records":58,"offset":359},
     {"file":"part-007.jsonl","records":53,"offset":417},
-    {"file":"part-008.jsonl","records":56,"offset":470},
+    {"file":"part-008a.jsonl","records":28,"offset":470},
+    {"file":"part-008b.jsonl","records":28,"offset":498},
     {"file":"part-009.jsonl","records":29,"offset":526}
   ]
 }
