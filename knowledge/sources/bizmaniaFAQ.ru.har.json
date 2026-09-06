@@ -1,0 +1,16 @@
+{
+  "id": "src.har.bizmania-faq.2026-09-06.01",
+  "kind": "har_capture",
+  "source_filename": "bizmaniaFAQ.ru.har",
+  "source_file_committed": false,
+  "size_bytes": 61041796,
+  "sha256": "3636bc476b3e9fb7912c07ef886ec713f92e871baf5bbf776af0f75908da3aa9",
+  "entries": 5679,
+  "captured_from": "2026-09-06T11:41:19.888Z",
+  "captured_to": "2026-09-06T11:45:27.475Z",
+  "hosts": {"bizmania.ru":5323,"mc.yandex.ru":267,"counter.yadro.ru":89},
+  "methods": {"GET":5679},
+  "resource_types": {"document":89,"stylesheet":445,"script":979,"image":3632,"font":356,"fetch":89,"websocket":89},
+  "sensitive_header_names_detected": [],
+  "privacy": "private-source; derived metadata committed; original HAR intentionally excluded"
+}

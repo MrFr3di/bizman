@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.csv text eol=lf
+*.md text eol=lf
+knowledge/inventory/*.csv linguist-generated=true
+*.gz binary

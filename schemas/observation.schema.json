@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/observation.schema.json",
+  "type": "object",
+  "required": ["id", "source_ref", "method", "path", "confidence"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^bm\\.observation\\."},
+    "source_ref": {"type": "string"},
+    "method": {"type": "string"},
+    "path": {"type": "string"},
+    "confidence": {"type": "string"}
+  }
+}

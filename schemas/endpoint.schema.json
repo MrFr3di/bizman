@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/endpoint.schema.json",
+  "type": "object",
+  "required": ["id", "path", "confidence"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^bm\\.endpoint\\."},
+    "methods": {"type": "array", "items": {"enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]}},
+    "path": {"type": "string", "pattern": "^/"},
+    "confidence": {"enum": ["observed", "documented", "discovered-reference", "inferred", "hypothesis", "verified"]}
+  }
+}
