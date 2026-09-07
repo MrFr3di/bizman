@@ -86,6 +86,10 @@ class RuleCatalogTests(unittest.TestCase):
         )
         self.assertEqual(findings, ())
 
+    def test_unmapped_promotable_fact_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "no registered rule"):
+            self.engine.apply((_fact("future.promotable_kind"),))
+
 
 class FindingIdentityTests(unittest.TestCase):
     def test_change_identity_excludes_evidence_ids_and_merges_duplicates(self):
