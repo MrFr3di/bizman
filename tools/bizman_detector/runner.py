@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 from tools.bizman_detector.baseline import BaselineCompiler, build_analysis_profile
 from tools.bizman_detector.diff import SemanticDiff
 from tools.bizman_detector.evidence import EvidenceIdentity, EvidenceReader
 from tools.bizman_detector.extract import ObservationExtractor
-from tools.bizman_detector.model import AnalysisProfile, DiffFact, Finding, MatchState
+from tools.bizman_detector.model import AnalysisProfile, DiffFact, MatchState
 from tools.bizman_detector.promotion import PromotionBundleBuilder, PromotionMaterializer
 from tools.bizman_detector.rules import RULE_DESCRIPTORS, RuleEngine
 from tools.bizman_detector.state import DetectorState, TransactionResult
@@ -20,7 +19,6 @@ from tools.bizman_foundation.redaction import RedactionPolicy
 
 _FINALIZED_STATUSES = frozenset({"completed", "cancelled"})
 _FAILED_STATUS = "failed"
-_CHANGE_QUERY_CHUNK = 400
 
 
 def _utc_now() -> str:
@@ -170,68 +168,12 @@ class DetectorRunner:
         self.close()
 
     def _session_statuses(self) -> tuple[Any, ...]:
-        public = getattr(self.reader, "iter_session_statuses", None)
-        if callable(public):
-            return tuple(public(self.selected))
-
-        # EvidenceReader owns manifest/schema validation. Until the status-view
-        # API is promoted separately, the coordinator reuses that validated
-        # reader boundary rather than parsing manifest JSON itself.
-        validate_session_id = getattr(self.reader, "_validate_session_id", None)
-        read_manifest = getattr(self.reader, "_read_manifest", None)
-        data_dir = getattr(self.reader, "data_dir", None)
-        if not callable(validate_session_id) or not callable(read_manifest) or data_dir is None:
-            raise TypeError("reader must expose validated session status enumeration")
-
-        if self.selected:
-            session_ids = sorted({validate_session_id(item) for item in self.selected})
-        else:
-            sessions_root = Path(data_dir) / "sessions"
-            if not sessions_root.exists():
-                return ()
-            if not sessions_root.is_dir():
-                raise ValueError("sessions root is not a directory")
-            session_ids = []
-            for path in sessions_root.iterdir():
-                if path.is_dir():
-                    session_ids.append(validate_session_id(path.name))
-            session_ids.sort()
-
-        statuses: list[Any] = []
-        for session_id in session_ids:
-            manifest = read_manifest(session_id, require_finalized=False)
-            statuses.append(
-                SimpleNamespace(
-                    session_id=session_id,
-                    status=str(manifest["status"]),
-                    started_at=str(manifest["started_at"]),
-                    ended_at=manifest.get("ended_at"),
-                )
-            )
-        return tuple(statuses)
+        return tuple(self.reader.iter_session_statuses(self.selected))
 
     def _existing_change_ids(self, change_ids: tuple[str, ...]) -> frozenset[str]:
         if not change_ids or self.state is None:
             return frozenset()
-        public = getattr(self.state, "existing_change_ids", None)
-        if callable(public):
-            return frozenset(public(self.profile.sha256, change_ids))
-
-        connection = getattr(self.state, "_connection", None)
-        if connection is None:
-            raise TypeError("state must expose read-only change lookup")
-        result: set[str] = set()
-        ordered = tuple(sorted(set(change_ids)))
-        for offset in range(0, len(ordered), _CHANGE_QUERY_CHUNK):
-            chunk = ordered[offset : offset + _CHANGE_QUERY_CHUNK]
-            placeholders = ",".join("?" for _ in chunk)
-            rows = connection.execute(
-                f"SELECT change_id FROM changes "
-                f"WHERE analysis_profile_sha256 = ? AND change_id IN ({placeholders})",
-                (self.profile.sha256, *chunk),
-            ).fetchall()
-            result.update(str(row[0]) for row in rows)
-        return frozenset(result)
+        return frozenset(self.state.existing_change_ids(self.profile.sha256, change_ids))
 
     @staticmethod
     def _count_facts(facts: Iterable[DiffFact], counts: dict[str, int]) -> None:
@@ -322,9 +264,7 @@ class DetectorRunner:
 
         pending_bundle_count = 0
         if self.state is not None:
-            pending = getattr(self.state, "pending_outbox", None)
-            if callable(pending):
-                pending_bundle_count = len(pending())
+            pending_bundle_count = len(self.state.pending_outbox())
 
         return DetectorRunSummary(
             analysis_profile_sha256=str(self.profile.sha256),
