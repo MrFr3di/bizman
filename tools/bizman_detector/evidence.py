@@ -13,6 +13,7 @@ from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import SchemaError, ValidationError
 
+from tools.bizman_detector.session_status import EvidenceSessionStatus
 from tools.bizman_foundation.fingerprint import canonical_sha256
 
 
@@ -500,6 +501,37 @@ class EvidenceReader:
             )
         return payload
 
+    def iter_session_statuses(
+        self,
+        selected: tuple[str, ...] = (),
+    ) -> Iterator[EvidenceSessionStatus]:
+        """Yield schema-validated session metadata without reading event files."""
+
+        if selected:
+            session_ids = sorted({self._validate_session_id(item) for item in selected})
+        else:
+            sessions_root = self.data_dir / "sessions"
+            if not sessions_root.exists():
+                return
+            if not sessions_root.is_dir():
+                raise EvidenceFormatError("sessions root is not a directory")
+            session_ids: list[str] = []
+            for path in sessions_root.iterdir():
+                if not path.is_dir():
+                    continue
+                session_ids.append(self._validate_session_id(path.name))
+            session_ids.sort()
+
+        for session_id in session_ids:
+            manifest = self._read_manifest(session_id, require_finalized=False)
+            ended_at = manifest.get("ended_at")
+            yield EvidenceSessionStatus(
+                session_id=session_id,
+                status=str(manifest["status"]),
+                started_at=str(manifest["started_at"]),
+                ended_at=ended_at if isinstance(ended_at, str) else None,
+            )
+
     def iter_finalized(
         self,
         selected: tuple[str, ...] = (),
@@ -532,6 +564,7 @@ __all__ = [
     "EvidenceIdentity",
     "EvidenceIntegrityError",
     "EvidenceReader",
+    "EvidenceSessionStatus",
     "EvidenceStatusError",
     "MAX_ARTIFACT_BYTES",
     "MAX_EVENT_LINE_BYTES",
