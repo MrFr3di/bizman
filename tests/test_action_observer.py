@@ -135,6 +135,23 @@ class ActionNormalizerTests(unittest.TestCase):
         ):
             self.assertNotIn(secret, serialized)
 
+    def test_non_boolean_is_trusted_never_becomes_trusted(self):
+        event = self._normalizer().normalize_binding(
+            json.dumps(
+                {
+                    "schema": 1,
+                    "kind": "click",
+                    "isTrusted": "false",
+                    "pagePath": "/company",
+                    "element": {"tag": "button"},
+                }
+            ),
+            target_id="t",
+            frame_id="f",
+        )
+        assert event is not None
+        self.assertIs(event["is_trusted"], False)
+
     def test_malformed_oversized_and_unknown_actions_are_dropped(self):
         normalizer = self._normalizer()
         self.assertIsNone(
