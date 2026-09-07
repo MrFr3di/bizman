@@ -45,13 +45,13 @@ def _page_path(value: Any) -> str | None:
 
 
 def _form_action_path(value: Any) -> str | None:
-    """Accept only the same-origin pathname shape emitted by the observer."""
+    """Normalize relative form actions while rejecting any supplied origin."""
 
     text = _bounded_string(value, limit=2048)
     if text is None:
         return None
     parsed = urlparse(text)
-    if parsed.scheme or parsed.netloc or parsed.params or parsed.query or parsed.fragment:
+    if parsed.scheme or parsed.netloc or parsed.params:
         return None
     path = parsed.path
     if not path.startswith("/"):
