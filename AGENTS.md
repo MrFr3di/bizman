@@ -23,6 +23,7 @@ Use these statuses consistently:
 Every new protocol or mechanic claim must link to at least one source capture + entry, Wiki topic, or experiment.
 
 ## Data rules
+- The repository is public; committed content must be safe for public disclosure.
 - Raw HAR/CDP streams are evidence, not repository content.
 - Never commit cookies, Authorization headers, browser profiles, storage state, passwords, `.env`, SQLite/DuckDB/Parquet operational data, or raw captures.
 - Apply `config/redaction-policy.json` before durable normalized runtime events are written.
@@ -38,11 +39,19 @@ Before proposing changes to `knowledge/`, `schemas/`, generated indexes or inges
 
 ```bash
 python3 -m pip install -r tools/requirements.txt
+python3 -m compileall -q tools tests
 python3 -m unittest discover -s tests -v
 python3 tools/validate_repo.py
 ```
 
-Do not add always-on GitHub Actions without explicit user approval. The repository owner has limited CI quota. The existing workflow is manual-only by design.
+Relevant pull requests use GitHub-hosted CI for the same deterministic checks plus real Chrome for Testing CDP E2E coverage and a non-gating storage benchmark. Do not add routine `push` or scheduled workflows without a concrete need; use path-filtered PR checks and `workflow_dispatch`. See `docs/CI.md`.
+
+## Collector rules
+- Collection is passive by default. Keep the CDP command allowlist narrow and do not add mutating browser/game operations to the collector.
+- First-party filtering and redaction happen before durable persistence.
+- Do not persist WebSocket payloads by default.
+- Treat queue overflow, malformed protocol messages and storage failures as explicit failures; never silently drop evidence.
+- Runtime operational data belongs under external `BizManData`, never in Git.
 
 ## Scope
 Observe and document first. Recommendations and write automation must be separate from collection. Do not make destructive or state-changing requests merely to test an endpoint unless explicitly approved.
