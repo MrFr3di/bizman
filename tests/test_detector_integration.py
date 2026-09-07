@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import closing
 import hashlib
 import json
 from pathlib import Path
@@ -327,7 +328,7 @@ class DetectorSyntheticIntegrationTests(unittest.TestCase):
             )
             self.assertEqual(bundle["created_at"], "2026-09-07T12:01:00Z")
 
-            with sqlite3.connect(fixture.state_path) as connection:
+            with closing(sqlite3.connect(fixture.state_path)) as connection:
                 change_rows = connection.execute(
                     "SELECT rule_id, occurrence_count, identity_json FROM changes ORDER BY rule_id"
                 ).fetchall()
@@ -363,7 +364,7 @@ class DetectorSyntheticIntegrationTests(unittest.TestCase):
             self.assertEqual(second.pending_bundle_count, 0)
             self.assertEqual(len(list((fixture.data_dir / "promotions").rglob("*.json"))), 1)
 
-            with sqlite3.connect(fixture.state_path) as connection:
+            with closing(sqlite3.connect(fixture.state_path)) as connection:
                 self.assertEqual(
                     connection.execute("SELECT COUNT(*) FROM changes").fetchone()[0], 2
                 )
@@ -420,7 +421,7 @@ class DetectorSyntheticIntegrationTests(unittest.TestCase):
             self.assertEqual(recovered.pending_bundle_count, 0)
             self.assertEqual(len(list(promotions.rglob("*.json"))), 1)
 
-            with sqlite3.connect(fixture.state_path) as connection:
+            with closing(sqlite3.connect(fixture.state_path)) as connection:
                 states = connection.execute(
                     "SELECT state FROM promotion_outbox"
                 ).fetchall()
