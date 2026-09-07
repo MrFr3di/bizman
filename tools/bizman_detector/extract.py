@@ -109,6 +109,12 @@ def _decode_utf8(payload: bytes, *, ref: str) -> str:
         ) from exc
 
 
+def _status_code(value: object, *, source: str, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 100 <= value <= 599:
+        raise ExtractionIntegrityError(f"{source}: invalid {label} status")
+    return value
+
+
 class ObservationExtractor:
     """Project verified runtime events into compact immutable value-free IR."""
 
@@ -198,6 +204,47 @@ class ObservationExtractor:
             raise ExtractionIntegrityError(f"{source}: HTTP event has invalid redirect_index")
         return request_id, redirect_index
 
+    def _attach_redirect_status(
+        self,
+        event: Mapping[str, Any],
+        *,
+        event_id: str,
+        source: str,
+        key: tuple[str, int],
+        requests_by_transport: dict[tuple[str, int], _HttpBuilder],
+    ) -> None:
+        redirect_from = event.get("redirect_from_path")
+        redirect_status = event.get("redirect_status_code")
+        if redirect_from is None:
+            return
+        if not isinstance(redirect_from, str):
+            raise ExtractionIntegrityError(f"{source}: redirect_from_path must be a string")
+        status = _status_code(redirect_status, source=source, label="redirect")
+        if key[1] <= 0:
+            raise ExtractionIntegrityError(
+                f"{source}: redirect metadata requires positive redirect_index"
+            )
+        previous_key = (key[0], key[1] - 1)
+        previous = requests_by_transport.get(previous_key)
+        if previous is None:
+            raise ExtractionIntegrityError(
+                f"{source}: first-party redirect has no preceding request {previous_key!r}"
+            )
+        previous_path, _ = self._canonical_path(redirect_from, source=source)
+        if previous_path != previous.literal_path:
+            raise ExtractionIntegrityError(
+                f"{source}: redirect_from_path disagrees with preceding request"
+            )
+        if previous.status is not None and previous.status != status:
+            raise ExtractionIntegrityError(
+                f"{source}: redirect status conflicts with preceding response status"
+            )
+        previous.status = status
+        if previous.response_event_id is None:
+            # requestWillBeSent carries redirectResponse for the previous hop, so
+            # this event is the immutable provenance for that observed status.
+            previous.response_event_id = event_id
+
     def _add_relation_source(
         self,
         action_sources: dict[str, _ActionSource],
@@ -212,14 +259,6 @@ class ObservationExtractor:
         if not isinstance(identity, EvidenceIdentity):
             raise TypeError("identity must be EvidenceIdentity")
 
-        # Bind extraction to the checkpoint identity before any observation is
-        # accepted. A second check after the stream catches mutation during the
-        # extraction window without retaining raw events in memory.
-        if self.evidence_reader.inspect(identity.session_id) != identity:
-            raise EvidenceIntegrityError(
-                f"session {identity.session_id} no longer matches inspected evidence identity"
-            )
-
         builders: list[_HttpBuilder] = []
         requests_by_transport: dict[tuple[str, int], _HttpBuilder] = {}
         forms: list[FormObservation] = []
@@ -227,7 +266,10 @@ class ObservationExtractor:
         action_sources: dict[str, _ActionSource] = {}
         request_sources: dict[str, _RequestSource] = {}
 
-        for event in self.evidence_reader.iter_events(identity.session_id):
+        for event in self.evidence_reader.iter_events(
+            identity.session_id,
+            expected_identity=identity,
+        ):
             event_id = event.get("event_id")
             assert isinstance(event_id, str)
             event_type = event.get("event_type")
@@ -251,6 +293,13 @@ class ObservationExtractor:
                     raise ExtractionIntegrityError(
                         f"{source}: duplicate HTTP request transport identity {key!r}"
                     )
+                self._attach_redirect_status(
+                    event,
+                    event_id=event_id,
+                    source=source,
+                    key=key,
+                    requests_by_transport=requests_by_transport,
+                )
                 builder = _HttpBuilder(
                     method=method,
                     literal_path=literal_path,
@@ -276,7 +325,7 @@ class ObservationExtractor:
                     )
                 if builder.response_event_id is not None:
                     raise ExtractionIntegrityError(
-                        f"{source}: duplicate HTTP response for request {key!r}"
+                        f"{source}: duplicate HTTP response/status for request {key!r}"
                     )
                 try:
                     response_method = normalize_method(event.get("method"))
@@ -288,11 +337,8 @@ class ObservationExtractor:
                         f"{source}: response method/path disagrees with preceding request"
                     )
                 status = event.get("status_code")
-                if status is not None and (
-                    isinstance(status, bool) or not isinstance(status, int) or not 100 <= status <= 599
-                ):
-                    raise ExtractionIntegrityError(f"{source}: invalid response status")
-                builder.status = status
+                if status is not None:
+                    builder.status = _status_code(status, source=source, label="response")
                 builder.response_event_id = event_id
                 continue
 
@@ -343,6 +389,11 @@ class ObservationExtractor:
                     or not isinstance(status, str)
                 ):
                     raise ExtractionIntegrityError(f"{source}: malformed correlation references")
+                action_refs = event.get("action_refs")
+                if action_refs != [action_event_id]:
+                    raise ExtractionIntegrityError(
+                        f"{source}: action_refs disagrees with action_event_id"
+                    )
                 action = action_sources.get(action_event_id)
                 request = request_sources.get(request_event_id)
                 if action is None or request is None:
@@ -362,6 +413,9 @@ class ObservationExtractor:
                     )
                 )
 
+        # The streaming pass above proves that the bytes consumed by extraction
+        # match identity. Re-inspect once to catch mutation after a file was read
+        # but before the ObservationSet is returned.
         if self.evidence_reader.inspect(identity.session_id) != identity:
             raise EvidenceIntegrityError(
                 f"session {identity.session_id} changed while observations were extracted"
