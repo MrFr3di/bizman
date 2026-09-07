@@ -7,7 +7,7 @@ Build a reproducible BizMania research, analytics, and automation system from ca
 1. `docs/INDEX.md`
 2. `knowledge/catalog.json`
 3. the local `README.md`/`AGENTS.md` nearest to the files being changed
-4. relevant records under `knowledge/`
+4. relevant manifest and records under `knowledge/`
 
 ## Evidence rules
 Use these statuses consistently:
@@ -24,13 +24,13 @@ Every new protocol or mechanic claim must link to at least one source capture + 
 ## Data rules
 - Raw HAR files are evidence, not repository content.
 - Never commit cookies, Authorization headers, browser profiles, storage state, passwords, `.env`, SQLite/Parquet operational data, or raw captures.
-- `knowledge/http/application-events.jsonl` is a sanitized first-party application-event index, not a raw capture.
+- `knowledge/http/application-events/index.json` is the manifest for the sanitized first-party application-event corpus; read only the required `part-*` files.
 - Do not silently delete old observations. Add revisions or contradictions.
 - Prefer stable IDs and normalized route patterns over copying volatile URLs into prose.
 - Keep machine-readable knowledge as the source of truth; Markdown explains it.
 
 ## Validation and CI
-Run `python tools/validate_repo.py` before proposing changes to `knowledge/`, `schemas/`, or generated indexes.
+Run `python3 tools/validate_repo.py` before proposing changes to `knowledge/`, `schemas/`, or generated indexes.
 Do not add always-on GitHub Actions without explicit user approval. The repository owner has limited CI quota.
 The existing workflow is manual-only by design.
 
