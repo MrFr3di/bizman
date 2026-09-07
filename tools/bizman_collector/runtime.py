@@ -16,7 +16,11 @@ from tools.bizman_collector.cdp import (
     open_cdp_transport,
 )
 from tools.bizman_collector.correlation import ActionHttpCorrelator
-from tools.bizman_collector.discovery import BrowserDiscovery, discover_browser
+from tools.bizman_collector.discovery import (
+    BrowserDiscovery,
+    ProtocolCapabilities,
+    discover_browser,
+)
 from tools.bizman_collector.events import CollectorClock, EventSequencer
 from tools.bizman_collector.network import FirstPartyPolicy, NetworkNormalizer
 from tools.bizman_collector.storage import ArtifactStore, SessionWriter
@@ -24,7 +28,7 @@ from tools.bizman_collector.targets import TargetOrchestrator
 from tools.bizman_foundation.redaction import RedactionPolicy
 from tools.bizman_foundation.session import new_session_manifest
 
-COLLECTOR_VERSION = "0.2.0"
+COLLECTOR_VERSION = "0.2.1"
 ACTION_BINDING_NAME = "__bizmanActionV1"
 ACTION_WORLD_NAME = "bizman-action-observer-v1"
 
@@ -48,6 +52,18 @@ _ACTION_REQUIRED_COMMANDS = frozenset(
         "Page.addScriptToEvaluateOnNewDocument",
     }
 )
+_ACTION_REQUIRED_EVENTS = frozenset(
+    {
+        "Runtime.executionContextCreated",
+        "Runtime.executionContextDestroyed",
+        "Runtime.executionContextsCleared",
+        "Runtime.bindingCalled",
+    }
+)
+_ACTION_REQUIRED_PARAMETERS = {
+    "Runtime.addBinding": frozenset({"executionContextName"}),
+    "Page.addScriptToEvaluateOnNewDocument": frozenset({"worldName"}),
+}
 
 TransportFactory = Callable[[str], AbstractAsyncContextManager[CdpTransport]]
 
@@ -59,6 +75,7 @@ class CollectorEventPipeline:
         self,
         *,
         binding_name: str,
+        observer_world_name: str,
         first_party: FirstPartyPolicy,
         contexts: ExecutionContextRegistry,
         action_normalizer: ActionNormalizer,
@@ -67,6 +84,7 @@ class CollectorEventPipeline:
         writer: Any,
     ) -> None:
         self.binding_name = binding_name
+        self.observer_world_name = observer_world_name
         self.first_party = first_party
         self.contexts = contexts
         self.action_normalizer = action_normalizer
@@ -138,6 +156,8 @@ class CollectorEventPipeline:
         if isinstance(context_id, bool) or not isinstance(context_id, int):
             return
 
+        if self.contexts.world_for(session_id, context_id) != self.observer_world_name:
+            return
         context_origin = self.contexts.origin_for(session_id, context_id)
         if context_origin is None or not self.first_party.matches_url(context_origin):
             return
@@ -178,15 +198,18 @@ async def _consume_events(
             return
 
         if event.method.startswith("Target."):
-            detached_session = (
-                event.params.get("sessionId")
-                if event.method == "Target.detachedFromTarget"
-                else None
-            )
+            terminal_session: str | None = None
+            if event.method == "Target.detachedFromTarget":
+                detached = event.params.get("sessionId")
+                if isinstance(detached, str):
+                    terminal_session = detached
+            elif event.method in {"Target.targetDestroyed", "Target.targetCrashed"}:
+                target_id = event.params.get("targetId")
+                if isinstance(target_id, str):
+                    terminal_session = orchestrator.registry.target_to_session.get(target_id)
+
             await orchestrator.handle_event(event)
-            pipeline.clear_session(
-                detached_session if isinstance(detached_session, str) else None
-            )
+            pipeline.clear_session(terminal_session)
             continue
 
         target_id = orchestrator.registry.target_for_session(event.session_id)
@@ -197,11 +220,28 @@ async def _consume_events(
             pipeline.handle_network(event, target_id=target_id)
 
 
+def _action_instrumentation_issues(
+    capabilities: ProtocolCapabilities,
+) -> tuple[str, ...]:
+    if capabilities.is_empty:
+        return ("running CDP reported no capabilities",)
+
+    issues: list[str] = []
+    for method in sorted(_ACTION_REQUIRED_COMMANDS):
+        if not capabilities.has_command(method):
+            issues.append(f"missing command {method}")
+    for event in sorted(_ACTION_REQUIRED_EVENTS):
+        if not capabilities.has_event(event):
+            issues.append(f"missing event {event}")
+    for method, parameters in _ACTION_REQUIRED_PARAMETERS.items():
+        for parameter in sorted(parameters):
+            if not capabilities.command_supports_parameter(method, parameter):
+                issues.append(f"{method} lacks parameter {parameter}")
+    return tuple(issues)
+
+
 def _action_instrumentation_supported(discovery: BrowserDiscovery) -> bool:
-    capabilities = discovery.capabilities
-    return not capabilities.is_empty and all(
-        capabilities.has_command(method) for method in _ACTION_REQUIRED_COMMANDS
-    )
+    return not _action_instrumentation_issues(discovery.capabilities)
 
 
 async def run_collection(
@@ -273,6 +313,7 @@ async def run_collection(
     )
     pipeline = CollectorEventPipeline(
         binding_name=ACTION_BINDING_NAME,
+        observer_world_name=ACTION_WORLD_NAME,
         first_party=first_party,
         contexts=contexts,
         action_normalizer=action_normalizer,
@@ -281,15 +322,11 @@ async def run_collection(
         writer=writer,
     )
 
-    action_supported = _action_instrumentation_supported(resolved_discovery)
-    if not action_supported and not resolved_discovery.capabilities.is_empty:
-        missing = sorted(
-            method
-            for method in _ACTION_REQUIRED_COMMANDS
-            if not resolved_discovery.capabilities.has_command(method)
-        )
+    action_issues = _action_instrumentation_issues(resolved_discovery.capabilities)
+    action_supported = not action_issues
+    if action_issues:
         writer.add_warning(
-            "DOM action observer disabled: running CDP lacks " + ", ".join(missing)
+            "DOM action observer disabled: " + "; ".join(action_issues)
         )
 
     factory = transport_factory or open_cdp_transport
