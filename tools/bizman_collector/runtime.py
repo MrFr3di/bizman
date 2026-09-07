@@ -6,12 +6,16 @@ from contextlib import AbstractAsyncContextManager
 from pathlib import Path
 from typing import Any
 
+from tools.bizman_collector.action_script import build_action_observer_script
+from tools.bizman_collector.actions import ActionNormalizer, ExecutionContextRegistry
 from tools.bizman_collector.cdp import (
     CdpConnection,
     CdpConnectionClosed,
+    CdpEvent,
     CdpTransport,
     open_cdp_transport,
 )
+from tools.bizman_collector.correlation import ActionHttpCorrelator
 from tools.bizman_collector.discovery import BrowserDiscovery, discover_browser
 from tools.bizman_collector.events import CollectorClock, EventSequencer
 from tools.bizman_collector.network import FirstPartyPolicy, NetworkNormalizer
@@ -20,7 +24,9 @@ from tools.bizman_collector.targets import TargetOrchestrator
 from tools.bizman_foundation.redaction import RedactionPolicy
 from tools.bizman_foundation.session import new_session_manifest
 
-COLLECTOR_VERSION = "0.1.0"
+COLLECTOR_VERSION = "0.2.0"
+ACTION_BINDING_NAME = "__bizmanActionV1"
+ACTION_WORLD_NAME = "bizman-action-observer-v1"
 
 PASSIVE_CDP_METHODS = frozenset(
     {
@@ -35,7 +41,109 @@ PASSIVE_CDP_METHODS = frozenset(
     }
 )
 
+_ACTION_REQUIRED_COMMANDS = frozenset(
+    {
+        "Runtime.enable",
+        "Runtime.addBinding",
+        "Page.addScriptToEvaluateOnNewDocument",
+    }
+)
+
 TransportFactory = Callable[[str], AbstractAsyncContextManager[CdpTransport]]
+
+
+class CollectorEventPipeline:
+    """Normalize observations, persist them, then emit immutable correlations."""
+
+    def __init__(
+        self,
+        *,
+        binding_name: str,
+        contexts: ExecutionContextRegistry,
+        action_normalizer: ActionNormalizer,
+        network_normalizer: NetworkNormalizer,
+        correlator: ActionHttpCorrelator,
+        writer: Any,
+    ) -> None:
+        self.binding_name = binding_name
+        self.contexts = contexts
+        self.action_normalizer = action_normalizer
+        self.network_normalizer = network_normalizer
+        self.correlator = correlator
+        self.writer = writer
+
+    def _append_observation(self, event: dict[str, Any] | None) -> None:
+        if event is None:
+            return
+        self.writer.append_event(event)
+        for link in self.correlator.observe(event):
+            self.writer.append_event(link)
+
+    def handle_network(self, event: CdpEvent, *, target_id: str | None) -> None:
+        normalized = self.network_normalizer.normalize(
+            method=event.method,
+            params=event.params,
+            target_id=target_id,
+        )
+        self._append_observation(normalized)
+
+    def handle_runtime(self, event: CdpEvent, *, target_id: str | None) -> None:
+        session_id = event.session_id
+        if not isinstance(session_id, str):
+            return
+        params = event.params
+
+        if event.method == "Runtime.executionContextCreated":
+            context = params.get("context")
+            if not isinstance(context, dict):
+                return
+            context_id = context.get("id")
+            if isinstance(context_id, bool) or not isinstance(context_id, int):
+                return
+            aux_data = context.get("auxData")
+            frame_id = None
+            if isinstance(aux_data, dict) and isinstance(aux_data.get("frameId"), str):
+                frame_id = aux_data["frameId"]
+            world_name = context.get("name") if isinstance(context.get("name"), str) else None
+            self.contexts.register(
+                session_id=session_id,
+                context_id=context_id,
+                frame_id=frame_id,
+                world_name=world_name,
+            )
+            return
+
+        if event.method == "Runtime.executionContextDestroyed":
+            context_id = params.get("executionContextId")
+            if isinstance(context_id, int) and not isinstance(context_id, bool):
+                self.contexts.remove_context(session_id, context_id)
+            return
+
+        if event.method == "Runtime.executionContextsCleared":
+            self.contexts.clear_session(session_id)
+            return
+
+        if event.method != "Runtime.bindingCalled":
+            return
+        if params.get("name") != self.binding_name:
+            return
+        payload = params.get("payload")
+        context_id = params.get("executionContextId")
+        if not isinstance(payload, str):
+            return
+        if isinstance(context_id, bool) or not isinstance(context_id, int):
+            return
+
+        normalized = self.action_normalizer.normalize_binding(
+            payload,
+            target_id=target_id,
+            frame_id=self.contexts.frame_for(session_id, context_id),
+        )
+        self._append_observation(normalized)
+
+    def clear_session(self, session_id: str | None) -> None:
+        if isinstance(session_id, str):
+            self.contexts.clear_session(session_id)
 
 
 async def _discover(endpoint: str) -> BrowserDiscovery:
@@ -46,8 +154,7 @@ async def _consume_events(
     *,
     cdp: CdpConnection,
     orchestrator: TargetOrchestrator,
-    normalizer: NetworkNormalizer,
-    writer: SessionWriter,
+    pipeline: CollectorEventPipeline,
 ) -> None:
     """Drain CDP events until a normally closed transport has no events left."""
 
@@ -63,17 +170,30 @@ async def _consume_events(
             return
 
         if event.method.startswith("Target."):
-            await orchestrator.handle_event(event)
-
-        if event.method.startswith("Network."):
-            target_id = orchestrator.registry.target_for_session(event.session_id)
-            normalized = normalizer.normalize(
-                method=event.method,
-                params=event.params,
-                target_id=target_id,
+            detached_session = (
+                event.params.get("sessionId")
+                if event.method == "Target.detachedFromTarget"
+                else None
             )
-            if normalized is not None:
-                writer.append_event(normalized)
+            await orchestrator.handle_event(event)
+            pipeline.clear_session(
+                detached_session if isinstance(detached_session, str) else None
+            )
+            continue
+
+        target_id = orchestrator.registry.target_for_session(event.session_id)
+        if event.method.startswith("Runtime."):
+            pipeline.handle_runtime(event, target_id=target_id)
+            continue
+        if event.method.startswith("Network."):
+            pipeline.handle_network(event, target_id=target_id)
+
+
+def _action_instrumentation_supported(discovery: BrowserDiscovery) -> bool:
+    capabilities = discovery.capabilities
+    return not capabilities.is_empty and all(
+        capabilities.has_command(method) for method in _ACTION_REQUIRED_COMMANDS
+    )
 
 
 async def run_collection(
@@ -123,7 +243,8 @@ async def run_collection(
 
     sequencer = EventSequencer()
     clock = CollectorClock()
-    normalizer = NetworkNormalizer(
+    contexts = ExecutionContextRegistry()
+    network_normalizer = NetworkNormalizer(
         session_id=writer.session_id,
         first_party=first_party,
         redaction=redaction,
@@ -131,6 +252,36 @@ async def run_collection(
         sequencer=sequencer,
         clock=clock,
     )
+    action_normalizer = ActionNormalizer(
+        session_id=writer.session_id,
+        redaction=redaction,
+        sequencer=sequencer,
+        clock=clock,
+    )
+    correlator = ActionHttpCorrelator(
+        session_id=writer.session_id,
+        sequencer=sequencer,
+        clock=clock,
+    )
+    pipeline = CollectorEventPipeline(
+        binding_name=ACTION_BINDING_NAME,
+        contexts=contexts,
+        action_normalizer=action_normalizer,
+        network_normalizer=network_normalizer,
+        correlator=correlator,
+        writer=writer,
+    )
+
+    action_supported = _action_instrumentation_supported(resolved_discovery)
+    if not action_supported and not resolved_discovery.capabilities.is_empty:
+        missing = sorted(
+            method
+            for method in _ACTION_REQUIRED_COMMANDS
+            if not resolved_discovery.capabilities.has_command(method)
+        )
+        writer.add_warning(
+            "DOM action observer disabled: running CDP lacks " + ", ".join(missing)
+        )
 
     factory = transport_factory or open_cdp_transport
     status = "failed"
@@ -146,6 +297,13 @@ async def run_collection(
                 first_party=first_party,
                 capabilities=resolved_discovery.capabilities,
                 max_post_data_size=redaction.max_request_bytes,
+                action_binding_name=ACTION_BINDING_NAME if action_supported else None,
+                action_world_name=ACTION_WORLD_NAME if action_supported else None,
+                action_script=(
+                    build_action_observer_script(ACTION_BINDING_NAME)
+                    if action_supported
+                    else None
+                ),
                 warning_sink=writer.add_warning,
             )
 
@@ -156,8 +314,7 @@ async def run_collection(
                     _consume_events(
                         cdp=cdp,
                         orchestrator=orchestrator,
-                        normalizer=normalizer,
-                        writer=writer,
+                        pipeline=pipeline,
                     ),
                     name="bizman-cdp-consumer",
                 )
