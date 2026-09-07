@@ -8,6 +8,9 @@ from pathlib import Path
 import tempfile
 from typing import Any
 
+_EVENT_BUFFER_BYTES = 1024 * 1024
+_DEFAULT_FLUSH_EVERY_EVENTS = 64
+
 
 def _utc_now_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -86,10 +89,20 @@ class ArtifactStore:
 
 
 class SessionWriter:
-    def __init__(self, data_dir: Path, manifest: dict[str, Any]):
+    def __init__(
+        self,
+        data_dir: Path,
+        manifest: dict[str, Any],
+        *,
+        flush_every_events: int = _DEFAULT_FLUSH_EVERY_EVENTS,
+    ):
+        if flush_every_events <= 0:
+            raise ValueError("flush_every_events must be positive")
         self.data_dir = Path(data_dir)
         self.manifest = manifest
         self.session_id = str(manifest["session_id"])
+        self.flush_every_events = flush_every_events
+        self._events_since_flush = 0
         started_at = str(manifest["started_at"])
         event_date = started_at[:10]
         self.manifest_path = (
@@ -152,7 +165,7 @@ class SessionWriter:
             self._event_handle = self.event_path.open(
                 "a",
                 encoding="utf-8",
-                buffering=1,
+                buffering=_EVENT_BUFFER_BYTES,
             )
             event_files = self.manifest.setdefault("event_files", [])
             if self.event_rel not in event_files:
@@ -168,7 +181,10 @@ class SessionWriter:
             )
             + "\n"
         )
-        self._event_handle.flush()
+        self._events_since_flush += 1
+        if self._events_since_flush >= self.flush_every_events:
+            self._event_handle.flush()
+            self._events_since_flush = 0
 
         for key in ("request_body_ref", "response_body_ref"):
             ref = event.get(key)
@@ -180,6 +196,7 @@ class SessionWriter:
             return
         if self._event_handle is not None:
             self._event_handle.flush()
+            self._events_since_flush = 0
             os.fsync(self._event_handle.fileno())
             self._event_handle.close()
             self._event_handle = None
