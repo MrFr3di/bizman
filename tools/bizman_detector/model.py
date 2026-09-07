@@ -23,12 +23,27 @@ class PathMatch:
 
 
 @dataclass(frozen=True, slots=True, order=True)
+class EndpointVariant:
+    """One exactly observed structural endpoint outcome."""
+
+    query_keys: tuple[str, ...]
+    status: int
+
+
+@dataclass(frozen=True, slots=True, order=True)
 class EndpointMethodContract:
-    """Observed method-specific behavior for one endpoint path family."""
+    """Observed variants for one HTTP method within an endpoint family."""
 
     method: str
-    query_key_sets: tuple[tuple[str, ...], ...]
-    statuses: tuple[int, ...]
+    variants: tuple[EndpointVariant, ...]
+
+    @property
+    def query_key_sets(self) -> tuple[tuple[str, ...], ...]:
+        return tuple(sorted({variant.query_keys for variant in self.variants}))
+
+    @property
+    def statuses(self) -> tuple[int, ...]:
+        return tuple(sorted({variant.status for variant in self.variants}))
 
 
 @dataclass(frozen=True, slots=True, order=True)
@@ -79,6 +94,7 @@ __all__ = [
     "ActionRequestFamily",
     "EndpointFamily",
     "EndpointMethodContract",
+    "EndpointVariant",
     "FormSignature",
     "MatchState",
     "OperationSignature",
