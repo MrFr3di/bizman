@@ -29,8 +29,23 @@ def _bounded_string(value: Any, *, limit: int = _MAX_STRING) -> str | None:
     return value[:limit]
 
 
-def _path_only(value: Any) -> str | None:
-    """Accept only an origin-relative path from the page observer boundary."""
+def _page_path(value: Any) -> str | None:
+    """Normalize an origin-relative page location to pathname only."""
+
+    text = _bounded_string(value, limit=2048)
+    if text is None:
+        return None
+    parsed = urlparse(text)
+    if parsed.scheme or parsed.netloc:
+        return None
+    path = parsed.path
+    if not path.startswith("/"):
+        return None
+    return path[:1024] or "/"
+
+
+def _form_action_path(value: Any) -> str | None:
+    """Accept only the same-origin pathname shape emitted by the observer."""
 
     text = _bounded_string(value, limit=2048)
     if text is None:
@@ -197,13 +212,13 @@ class ActionNormalizer:
             "action_refs": [],
             "action_kind": kind,
             "is_trusted": bool(data.get("isTrusted", False)),
-            "page_path": _path_only(data.get("pagePath")),
+            "page_path": _page_path(data.get("pagePath")),
             "element_tag": element_tag,
             "element_type": element_type,
             "element_name": element_name,
             "element_role": element_role,
             "safe_selector": safe_selector,
-            "form_action_path": _path_only(form.get("actionPath")),
+            "form_action_path": _form_action_path(form.get("actionPath")),
             "form_method": form_method,
             "form_field_names": self._field_names(form.get("fieldNames")),
         }
