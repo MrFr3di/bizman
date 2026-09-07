@@ -11,7 +11,14 @@
       "x-csrf-token",
       "x-xsrf-token",
       "sec-websocket-key",
-      "sec-websocket-accept"
+      "sec-websocket-accept",
+      "sec-websocket-protocol",
+      "referer",
+      "referrer",
+      "location",
+      "content-location",
+      "link",
+      "refresh"
     ]
   },
   "fields": {

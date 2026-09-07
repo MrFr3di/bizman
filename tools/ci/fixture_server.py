@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import json
 import threading
 
 from websockets.asyncio.server import serve
@@ -16,7 +15,25 @@ _PAGE = f"""<!doctype html>
 <html>
 <head><meta charset=\"utf-8\"><title>BizMan collector fixture</title></head>
 <body>
+<form id=\"action-form\" action=\"/api/action-post?token=TOP_SECRET_ACTION_QUERY\" method=\"post\">
+  <input name=\"product\" value=\"42\">
+  <input name=\"clientSecret\" value=\"TOP_SECRET_INPUT_VALUE\">
+  <button id=\"action-submit\" type=\"submit\">Submit</button>
+</form>
 <script>
+const actionForm = document.getElementById('action-form');
+actionForm.addEventListener('submit', (event) => {{
+  event.preventDefault();
+  const body = new URLSearchParams(new FormData(actionForm));
+  fetch(actionForm.action, {{
+    method: 'POST',
+    headers: {{'Content-Type': 'application/x-www-form-urlencoded'}},
+    body,
+  }}).then(() => {{
+    document.body.dataset.actionDone = '1';
+  }}).catch(console.error);
+}});
+
 async function exerciseNetwork() {{
   await fetch('/api/get?safe=1&accessToken=TOP_SECRET_QUERY');
   await fetch('/api/post', {{
@@ -33,6 +50,8 @@ async function exerciseNetwork() {{
     ws.send('TOP_SECRET_WS_PAYLOAD');
     setTimeout(() => ws.close(), 250);
   }};
+
+  actionForm.requestSubmit(document.getElementById('action-submit'));
   document.body.dataset.done = '1';
 }}
 setTimeout(() => exerciseNetwork().catch(console.error), 4000);
@@ -81,6 +100,8 @@ class FixtureHandler(BaseHTTPRequestHandler):
         _ = self.rfile.read(length)
         if path == "/api/post":
             self._send(200, b'{"saved":true}', "application/json")
+        elif path == "/api/action-post":
+            self._send(200, b'{"action":true}', "application/json")
         else:
             self._send(404, b"not found", "text/plain")
 

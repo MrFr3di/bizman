@@ -75,14 +75,18 @@ Do not promote assumptions into facts. Knowledge distinguishes:
 
 Evidence references use stable capture IDs and entry numbers where possible. Canonical source IDs use the `src.*` namespace; superseded source names remain explicit aliases rather than competing canonical identifiers.
 
-## Passive CDP collector
+## Passive CDP collector and action context
 
-The repository now includes the first live-ingestion implementation:
+The live-ingestion implementation now includes:
 
 - UUIDv7 runtime/session identifiers and deterministic fingerprints;
 - version-aware Chrome/CDP discovery from `/json/version` and `/json/protocol`;
 - passive flattened CDP transport with an explicit command allowlist;
 - first-party HTTP/WebSocket normalization with capture-time redaction;
+- metadata-only DOM observation for `click`, `change` and `submit` through `Runtime.addBinding` plus `Page.addScriptToEvaluateOnNewDocument`, gated both in the injected script and again by the CDP execution-context origin against configured first-party hosts;
+- strict action privacy: no form/input values, element text, HTML, cookies, Web Storage or clipboard content are collected;
+- deterministic, bounded action-to-HTTP correlation emitted as separate immutable `correlation.action_http` events;
+- no LLM or probabilistic model in the collector/correlator hot path; heuristic links remain `inferred` and never become `exact`;
 - append-only JSONL event storage plus SHA-256 content-addressed artifacts;
 - target/child-target auto-attach and explicit session lifecycle states;
 - real Chrome for Testing E2E fixtures and A/B/C storage benchmarks.
@@ -111,8 +115,8 @@ python3 -m unittest discover -s tests -v
 python3 tools/validate_repo.py
 ```
 
-Because the repository is public, relevant pull requests also run GitHub-hosted CI: compilation/unit/contract validation, a real Chrome for Testing CDP E2E test against loopback fixtures, and a non-gating A/B/C storage benchmark. There is no routine `push` or scheduled CI. See `docs/CI.md`.
+Because the repository is public, relevant pull requests also run GitHub-hosted CI: compilation/unit/contract validation, a real Chrome for Testing CDP E2E test against loopback fixtures, and a non-gating A/B/C storage benchmark. The Chrome E2E includes a real DOM submit, sanitized form request-body persistence, immutable action-to-HTTP correlation and synthetic-secret non-leakage checks. There is no routine `push` or scheduled CI. See `docs/CI.md`.
 
 ## Next development stage
 
-After the passive collector is verified, the next layers are action-context correlation, automatic change detection/promotion bundles, SQLite current-state projections, Parquet/DuckDB history, reproducible experiments, recommendations and only then guarded write automation.
+With passive capture and action-context correlation verified, the next layers are automatic change detection and promotion bundles, SQLite current-state projections, Parquet/DuckDB history, reproducible experiments, recommendations and only then guarded write automation.

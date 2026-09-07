@@ -19,6 +19,15 @@ _DEFAULT_DROP_HEADERS = frozenset({
     "x-xsrf-token",
     "sec-websocket-key",
     "sec-websocket-accept",
+    "sec-websocket-protocol",
+    # URL-bearing headers can embed query credentials or session tokens. The
+    # normalized event already records safe request/redirect paths separately.
+    "referer",
+    "referrer",
+    "location",
+    "content-location",
+    "link",
+    "refresh",
 })
 
 _DEFAULT_DROP_FIELD_PATTERNS = (
@@ -111,11 +120,14 @@ class RedactionPolicy:
 def redact_headers(
     headers: Mapping[str, Any], policy: RedactionPolicy
 ) -> dict[str, Any]:
-    return {
-        name: value
-        for name, value in headers.items()
-        if name.casefold() not in policy.drop_headers
-    }
+    redacted: dict[str, Any] = {}
+    for name, value in headers.items():
+        if not isinstance(name, str):
+            continue
+        if name.casefold() in policy.drop_headers or policy.should_drop_field(name):
+            continue
+        redacted[name] = value
+    return redacted
 
 
 def redact_mapping(

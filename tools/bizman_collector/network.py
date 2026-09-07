@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 
+from tools.bizman_collector.events import CollectorClock, EventSequencer
 from tools.bizman_collector.storage import ArtifactStore
 from tools.bizman_foundation.fingerprint import canonical_json_bytes, canonical_sha256
 from tools.bizman_foundation.redaction import RedactionPolicy, redact_headers, redact_mapping
@@ -20,6 +21,8 @@ def _utc_now_iso() -> str:
 
 
 def _wall_time_iso(value: Any) -> str:
+    if isinstance(value, bool):
+        return _utc_now_iso()
     if isinstance(value, (int, float)) and value >= 0:
         try:
             return datetime.fromtimestamp(float(value), UTC).isoformat().replace(
@@ -53,6 +56,16 @@ def _redact_json_value(value: Any, policy: RedactionPolicy) -> Any:
     if isinstance(value, list):
         return [_redact_json_value(item, policy) for item in value]
     return value
+
+
+def _structurally_redactable_json(value: Any, policy: RedactionPolicy) -> Any | None:
+    """Return sanitized JSON only when top-level field semantics are available."""
+
+    if isinstance(value, dict):
+        return redact_mapping(value, policy)
+    if isinstance(value, list) and all(isinstance(item, dict) for item in value):
+        return [redact_mapping(item, policy) for item in value]
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,19 +107,17 @@ class NetworkNormalizer:
         first_party: FirstPartyPolicy,
         redaction: RedactionPolicy,
         artifacts: ArtifactStore,
+        sequencer: EventSequencer | None = None,
+        clock: CollectorClock | None = None,
     ) -> None:
         self.session_id = session_id
         self.first_party = first_party
         self.redaction = redaction
         self.artifacts = artifacts
-        self._sequence = 0
+        self.sequencer = sequencer or EventSequencer()
+        self.clock = clock or CollectorClock()
         self._requests: dict[str, dict[str, Any]] = {}
         self._websockets: dict[str, dict[str, Any]] = {}
-
-    def _next_sequence(self) -> int:
-        value = self._sequence
-        self._sequence += 1
-        return value
 
     def _query(self, url: str) -> dict[str, list[str]]:
         parsed = urlparse(url)
@@ -149,9 +160,10 @@ class NetworkNormalizer:
                 parsed = json.loads(post_data)
             except json.JSONDecodeError:
                 return None
-            sanitized = canonical_json_bytes(
-                _redact_json_value(parsed, self.redaction)
-            )
+            structured = _structurally_redactable_json(parsed, self.redaction)
+            if structured is None:
+                return None
+            sanitized = canonical_json_bytes(structured)
         elif mime == "application/x-www-form-urlencoded":
             try:
                 parsed_form = parse_qs(
@@ -180,16 +192,29 @@ class NetworkNormalizer:
         target_id: str | None,
         request_id: str | None,
     ) -> dict[str, Any]:
-        monotonic = params.get("timestamp", 0.0)
-        if not isinstance(monotonic, (int, float)) or monotonic < 0:
-            monotonic = 0.0
+        source_monotonic = params.get("timestamp")
+        if (
+            isinstance(source_monotonic, bool)
+            or not isinstance(source_monotonic, (int, float))
+            or source_monotonic < 0
+        ):
+            source_monotonic = None
+        wall_time = params.get("wallTime")
+        observed_at = (
+            _wall_time_iso(wall_time)
+            if not isinstance(wall_time, bool) and isinstance(wall_time, (int, float))
+            else self.clock.wall_iso()
+        )
         return {
             "schema_version": "1.0",
             "event_id": new_uuid7(),
             "session_id": self.session_id,
-            "sequence": self._next_sequence(),
-            "observed_at": _wall_time_iso(params.get("wallTime")),
-            "monotonic_time": float(monotonic),
+            "sequence": self.sequencer.next(),
+            "observed_at": observed_at,
+            "monotonic_time": float(self.clock.monotonic()),
+            "source_monotonic_time": (
+                float(source_monotonic) if source_monotonic is not None else None
+            ),
             "source": "cdp.network",
             "event_type": event_type,
             "confidence": "observed",
@@ -298,7 +323,7 @@ class NetworkNormalizer:
                     and isinstance(params.get("initiator", {}).get("type"), str)
                     else None
                 ),
-                "has_user_gesture": bool(params.get("hasUserGesture", False)),
+                "has_user_gesture": params.get("hasUserGesture") is True,
             }
         )
         if redirect_from_path is not None:
@@ -361,6 +386,13 @@ class NetworkNormalizer:
             request_id=request_id,
         )
         encoded = params.get("encodedDataLength")
+        encoded_length = None
+        if (
+            not isinstance(encoded, bool)
+            and isinstance(encoded, (int, float))
+            and encoded >= 0
+        ):
+            encoded_length = float(encoded)
         event.update(
             {
                 "redirect_index": state["redirect_index"],
@@ -368,7 +400,7 @@ class NetworkNormalizer:
                 "url_path": self._path(state["url"]),
                 "route_pattern": None,
                 "status_code": None,
-                "encoded_data_length": float(encoded) if isinstance(encoded, (int, float)) and encoded >= 0 else None,
+                "encoded_data_length": encoded_length,
             }
         )
         return self._finish_event(event)
@@ -396,7 +428,7 @@ class NetworkNormalizer:
                 "route_pattern": None,
                 "status_code": None,
                 "error_text": params.get("errorText") if isinstance(params.get("errorText"), str) else None,
-                "canceled": bool(params.get("canceled", False)),
+                "canceled": params.get("canceled") is True,
             }
         )
         return self._finish_event(event)
@@ -441,6 +473,7 @@ class NetworkNormalizer:
         frame = params.get("response")
         if not isinstance(frame, dict):
             return None
+        opcode = frame.get("opcode")
         event = self._base_event(
             event_type=f"websocket.frame.{direction}",
             params=params,
@@ -452,16 +485,24 @@ class NetworkNormalizer:
                 "url_path": self._path(self._websockets[request_id]["url"]),
                 "method": None,
                 "status_code": None,
-                "websocket_opcode": frame.get("opcode") if isinstance(frame.get("opcode"), int) else None,
+                "websocket_opcode": (
+                    opcode
+                    if isinstance(opcode, int) and not isinstance(opcode, bool)
+                    else None
+                ),
                 "websocket_masked": frame.get("mask") if isinstance(frame.get("mask"), bool) else None,
             }
         )
         return self._finish_event(event)
 
-    def _on_Network_webSocketFrameReceived(self, params: dict[str, Any], target_id: str | None) -> dict[str, Any] | None:
+    def _on_Network_webSocketFrameReceived(
+        self, params: dict[str, Any], target_id: str | None
+    ) -> dict[str, Any] | None:
         return self._websocket_frame(params, target_id, direction="received")
 
-    def _on_Network_webSocketFrameSent(self, params: dict[str, Any], target_id: str | None) -> dict[str, Any] | None:
+    def _on_Network_webSocketFrameSent(
+        self, params: dict[str, Any], target_id: str | None
+    ) -> dict[str, Any] | None:
         return self._websocket_frame(params, target_id, direction="sent")
 
     def _on_Network_webSocketClosed(
@@ -479,5 +520,11 @@ class NetworkNormalizer:
             target_id=target_id,
             request_id=request_id,
         )
-        event.update({"url_path": self._path(state["url"]), "method": None, "status_code": None})
+        event.update(
+            {
+                "url_path": self._path(state["url"]),
+                "method": None,
+                "status_code": None,
+            }
+        )
         return self._finish_event(event)

@@ -20,6 +20,7 @@
     "sequence": {"type": "integer", "minimum": 0},
     "observed_at": {"type": "string", "format": "date-time"},
     "monotonic_time": {"type": "number", "minimum": 0},
+    "source_monotonic_time": {"type": ["number", "null"], "minimum": 0},
     "source": {
       "enum": [
         "cdp.network", "cdp.page", "cdp.runtime", "dom.action", "bas.action", "system"
@@ -61,6 +62,42 @@
       "type": "array",
       "items": {"type": "string"},
       "uniqueItems": true
+    },
+    "action_kind": {"type": ["string", "null"], "enum": ["click", "change", "submit", null]},
+    "is_trusted": {"type": ["boolean", "null"]},
+    "page_path": {"type": ["string", "null"], "maxLength": 1024},
+    "element_tag": {"type": ["string", "null"], "maxLength": 32},
+    "element_type": {"type": ["string", "null"], "maxLength": 32},
+    "element_name": {"type": ["string", "null"], "maxLength": 128},
+    "element_role": {"type": ["string", "null"], "maxLength": 64},
+    "safe_selector": {"type": ["string", "null"], "maxLength": 128},
+    "form_action_path": {"type": ["string", "null"], "maxLength": 1024},
+    "form_method": {"type": ["string", "null"], "maxLength": 16},
+    "form_field_names": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {"type": "string", "minLength": 1, "maxLength": 128},
+      "uniqueItems": true
+    },
+    "action_event_id": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "network_event_id": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "correlation_status": {
+      "type": ["string", "null"],
+      "enum": ["strong", "probable", "temporal-only", "exact", null]
+    },
+    "correlation_score": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "delta_ms": {"type": ["number", "null"], "minimum": 0},
+    "signals": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 64},
+      "uniqueItems": true,
+      "maxItems": 32
     }
   },
   "additionalProperties": true
