@@ -206,6 +206,10 @@ class ActionNormalizer:
             if not form_method.isalpha():
                 form_method = None
 
+        is_trusted = data.get("isTrusted")
+        if not isinstance(is_trusted, bool):
+            is_trusted = False
+
         event: dict[str, Any] = {
             "schema_version": "1.0",
             "event_id": new_uuid7(),
@@ -223,7 +227,7 @@ class ActionNormalizer:
             "frame_id": frame_id,
             "action_refs": [],
             "action_kind": kind,
-            "is_trusted": bool(data.get("isTrusted", False)),
+            "is_trusted": is_trusted,
             "page_path": _page_path(data.get("pagePath")),
             "element_tag": element_tag,
             "element_type": element_type,
