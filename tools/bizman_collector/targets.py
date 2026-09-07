@@ -77,15 +77,26 @@ class TargetOrchestrator:
         self.registry = TargetRegistry()
         self._attaching: set[str] = set()
         self._configured_sessions: set[str] = set()
+        self._action_binding_sessions: set[str] = set()
         self._action_configured_sessions: set[str] = set()
 
-        configured = [action_binding_name is not None, action_script is not None]
+        configured = [
+            action_binding_name is not None,
+            action_world_name is not None,
+            action_script is not None,
+        ]
         if any(configured) and not all(configured):
-            raise ValueError("action_binding_name and action_script must be configured together")
+            raise ValueError(
+                "action_binding_name, action_world_name and action_script must be configured together"
+            )
 
     @property
     def action_observer_enabled(self) -> bool:
-        return self.action_binding_name is not None and self.action_script is not None
+        return (
+            self.action_binding_name is not None
+            and self.action_world_name is not None
+            and self.action_script is not None
+        )
 
     def _warn(self, message: str) -> None:
         if self.warning_sink is not None:
@@ -177,9 +188,9 @@ class TargetOrchestrator:
         session_id: str,
         *,
         target_type: str | None,
-    ) -> None:
+    ) -> bool:
         if not self.action_observer_enabled or target_type not in _ACTION_TARGET_TYPES:
-            return
+            return False
 
         required = (
             "Runtime.enable",
@@ -191,46 +202,45 @@ class TargetOrchestrator:
             self._warn(
                 f"action observer disabled for session {session_id}: missing CDP commands {', '.join(missing)}"
             )
-            return
+            return False
 
-        try:
-            await self.cdp.command("Runtime.enable", session_id=session_id)
-        except CdpProtocolError as exc:
-            self._warn(f"Runtime.enable failed for session {session_id}: {exc}")
-            return
-
-        world_supported = bool(
-            self.action_world_name
-            and self._supports_parameter(
-                "Page.addScriptToEvaluateOnNewDocument", "worldName"
-            )
+        secure_world = self._supports_parameter(
+            "Page.addScriptToEvaluateOnNewDocument", "worldName"
         )
-        scoped_binding_supported = bool(
-            world_supported
-            and self._supports_parameter("Runtime.addBinding", "executionContextName")
+        secure_binding = self._supports_parameter(
+            "Runtime.addBinding", "executionContextName"
         )
-
-        binding_params: dict[str, Any] = {"name": self.action_binding_name}
-        if scoped_binding_supported:
-            binding_params["executionContextName"] = self.action_world_name
-        try:
-            await self.cdp.command(
-                "Runtime.addBinding",
-                binding_params,
-                session_id=session_id,
-            )
-        except CdpProtocolError as exc:
-            self._warn(f"Runtime.addBinding failed for session {session_id}: {exc}")
-            return
-
-        script_params: dict[str, Any] = {"source": self.action_script}
-        if world_supported:
-            script_params["worldName"] = self.action_world_name
-        elif self.action_world_name:
+        if not secure_world or not secure_binding:
             self._warn(
-                f"Page.addScriptToEvaluateOnNewDocument worldName unsupported for session {session_id}; using the default world"
+                f"action observer disabled for session {session_id}: secure isolated-world binding scope is unsupported"
             )
+            return False
 
+        if session_id not in self._action_binding_sessions:
+            try:
+                await self.cdp.command("Runtime.enable", session_id=session_id)
+            except CdpProtocolError as exc:
+                self._warn(f"Runtime.enable failed for session {session_id}: {exc}")
+                return False
+
+            try:
+                await self.cdp.command(
+                    "Runtime.addBinding",
+                    {
+                        "name": self.action_binding_name,
+                        "executionContextName": self.action_world_name,
+                    },
+                    session_id=session_id,
+                )
+            except CdpProtocolError as exc:
+                self._warn(f"Runtime.addBinding failed for session {session_id}: {exc}")
+                return False
+            self._action_binding_sessions.add(session_id)
+
+        script_params: dict[str, Any] = {
+            "source": self.action_script,
+            "worldName": self.action_world_name,
+        }
         if self._supports_parameter(
             "Page.addScriptToEvaluateOnNewDocument", "runImmediately"
         ):
@@ -250,6 +260,8 @@ class TargetOrchestrator:
             self._warn(
                 f"Page.addScriptToEvaluateOnNewDocument failed for session {session_id}: {exc}"
             )
+            return False
+        return True
 
     async def _configure_session(
         self,
@@ -276,11 +288,12 @@ class TargetOrchestrator:
             and target_type in _ACTION_TARGET_TYPES
             and session_id not in self._action_configured_sessions
         ):
-            self._action_configured_sessions.add(session_id)
-            await self._configure_action_observer(
+            configured = await self._configure_action_observer(
                 session_id,
                 target_type=target_type,
             )
+            if configured:
+                self._action_configured_sessions.add(session_id)
 
         if first_setup and self._supports("Target.setAutoAttach"):
             try:
@@ -362,6 +375,7 @@ class TargetOrchestrator:
             if isinstance(session_id, str):
                 self.registry.remove_session(session_id)
                 self._configured_sessions.discard(session_id)
+                self._action_binding_sessions.discard(session_id)
                 self._action_configured_sessions.discard(session_id)
             return
 
@@ -372,4 +386,5 @@ class TargetOrchestrator:
                 self.registry.remove_target(target_id)
                 if isinstance(session_id, str):
                     self._configured_sessions.discard(session_id)
+                    self._action_binding_sessions.discard(session_id)
                     self._action_configured_sessions.discard(session_id)
