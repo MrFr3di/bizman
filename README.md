@@ -2,7 +2,7 @@
 
 Research repository for structured BizMania browser-game observations, protocol evidence, Wiki mechanics and automation-oriented indexes.
 
-The repository intentionally stores **derived, searchable knowledge instead of raw HAR files**. Raw captures remain private and external; committed source manifests retain exact SHA-256/provenance so derived observations can be traced back to the supplied captures.
+The repository intentionally stores **derived, searchable knowledge instead of raw HAR files**. Raw captures and browser/session state remain private and external; committed source manifests retain SHA-256/provenance so derived observations can be traced back to the supplied captures.
 
 ## Current corpus
 
@@ -54,9 +54,9 @@ knowledge/
   pages/                      180 normalized game HTML pages
   wiki/topics/                87 full Wiki topic texts
 schemas/                      structured-data contracts
-tests/                        deterministic foundation tests
+tests/                        deterministic foundation/collector tests
 docs/                         architecture, provenance and research notes
-tools/                        local ingestion/validation tooling
+tools/                        validation, collection, CI fixtures and benchmarks
 ```
 
 Large corpora are partitioned behind `index.json` manifests. Each manifest records total counts, part names and offsets/counts where applicable, allowing agents to read only the required slice instead of loading the whole corpus.
@@ -75,35 +75,44 @@ Do not promote assumptions into facts. Knowledge distinguishes:
 
 Evidence references use stable capture IDs and entry numbers where possible. Canonical source IDs use the `src.*` namespace; superseded source names remain explicit aliases rather than competing canonical identifiers.
 
-## Ingestion foundation v2
+## Passive CDP collector
 
-The repository now contains the contracts required for repeatable live ingestion before the CDP collector is added:
+The repository now includes the first live-ingestion implementation:
 
-- UUIDv7 session/runtime identifier helpers;
-- deterministic SHA-256 fingerprints over normalized JSON;
-- `config/redaction-policy.json` for capture-time secret removal and bounded first-party body capture;
-- Draft 2020-12 schemas for source indexes, sessions, runtime events and redaction policy;
-- catalog-driven validation with no hardcoded corpus counts;
-- canonical source-ID consistency checks with legacy aliases.
+- UUIDv7 runtime/session identifiers and deterministic fingerprints;
+- version-aware Chrome/CDP discovery from `/json/version` and `/json/protocol`;
+- passive flattened CDP transport with an explicit command allowlist;
+- first-party HTTP/WebSocket normalization with capture-time redaction;
+- append-only JSONL event storage plus SHA-256 content-addressed artifacts;
+- target/child-target auto-attach and explicit session lifecycle states;
+- real Chrome for Testing E2E fixtures and A/B/C storage benchmarks.
+
+Run the collector against a dedicated Chrome profile exposing a local DevTools endpoint:
+
+```bash
+python3 -m pip install -r tools/requirements.txt
+python3 tools/collect_live.py --endpoint http://127.0.0.1:9222 --data-dir ~/BizManData
+```
 
 Operational session/event files, browser profiles and future SQLite/Parquet stores stay outside Git.
 
 ## Security
 
-Never commit raw HAR, cookies, authorization/session data, browser profiles, `.env`, SQLite/DuckDB databases, Parquet files or other private runtime state. See `SECURITY.md`, `.gitignore` and `config/redaction-policy.json`.
+This repository is public, so committed content must be safe for public disclosure. Never commit raw HAR/CDP captures, cookies, authorization/session data, browser profiles, `.env`, SQLite/DuckDB databases, Parquet files or other private runtime state. See `SECURITY.md`, `.gitignore` and `config/redaction-policy.json`.
 
-## Validation and CI quota
+## Validation and CI
 
-Install the pinned validation dependency and run tests locally:
+Run the local quality gate with:
 
 ```bash
 python3 -m pip install -r tools/requirements.txt
+python3 -m compileall -q tools tests
 python3 -m unittest discover -s tests -v
 python3 tools/validate_repo.py
 ```
 
-GitHub Actions remains deliberately **manual-only** (`workflow_dispatch`). There are no automatic `push`, `pull_request` or scheduled validation runs, so routine data commits do not consume private-repository CI minutes.
+Because the repository is public, relevant pull requests also run GitHub-hosted CI: compilation/unit/contract validation, a real Chrome for Testing CDP E2E test against loopback fixtures, and a non-gating A/B/C storage benchmark. There is no routine `push` or scheduled CI. See `docs/CI.md`.
 
 ## Next development stage
 
-The next stage is a version-aware live Chrome/CDP collector using a dedicated browser profile, capture-time redaction and the session/event contracts above. After passive collection: action correlation, automatic change detection/promotion bundles, SQLite current-state projections, Parquet/DuckDB history, reproducible experiments, recommendations and only then guarded write automation.
+After the passive collector is verified, the next layers are action-context correlation, automatic change detection/promotion bundles, SQLite current-state projections, Parquet/DuckDB history, reproducible experiments, recommendations and only then guarded write automation.
