@@ -66,6 +66,7 @@ class CollectorEventPipelineTests(unittest.TestCase):
         )
         pipeline = CollectorEventPipeline(
             binding_name=BINDING,
+            observer_world_name=WORLD,
             first_party=first_party,
             contexts=contexts,
             action_normalizer=action_normalizer,
@@ -74,6 +75,31 @@ class CollectorEventPipelineTests(unittest.TestCase):
             writer=writer,
         )
         return pipeline, writer, contexts
+
+    @staticmethod
+    def _submit_payload() -> str:
+        return json.dumps(
+            {
+                "schema": 1,
+                "kind": "submit",
+                "wallTimeMs": 1788750000000,
+                "performanceTimeMs": 100000,
+                "isTrusted": True,
+                "pagePath": "/fixture",
+                "element": {
+                    "tag": "button",
+                    "type": "submit",
+                    "name": "save",
+                    "role": "button",
+                    "selector": "button#save",
+                },
+                "form": {
+                    "actionPath": "/api/post",
+                    "method": "post",
+                    "fieldNames": ["product"],
+                },
+            }
+        )
 
     def test_runtime_binding_then_request_emits_action_request_and_link(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -93,34 +119,12 @@ class CollectorEventPipelineTests(unittest.TestCase):
                 ),
                 target_id="t1",
             )
-            payload = json.dumps(
-                {
-                    "schema": 1,
-                    "kind": "submit",
-                    "wallTimeMs": 1788750000000,
-                    "performanceTimeMs": 100000,
-                    "isTrusted": True,
-                    "pagePath": "/fixture",
-                    "element": {
-                        "tag": "button",
-                        "type": "submit",
-                        "name": "save",
-                        "role": "button",
-                        "selector": "button#save",
-                    },
-                    "form": {
-                        "actionPath": "/api/post",
-                        "method": "post",
-                        "fieldNames": ["product"],
-                    },
-                }
-            )
             pipeline.handle_runtime(
                 CdpEvent(
                     method="Runtime.bindingCalled",
                     params={
                         "name": BINDING,
-                        "payload": payload,
+                        "payload": self._submit_payload(),
                         "executionContextId": 7,
                     },
                     session_id="cdp-session-1",
@@ -157,6 +161,38 @@ class CollectorEventPipelineTests(unittest.TestCase):
             self.assertEqual(link["action_event_id"], action["event_id"])
             self.assertEqual(link["network_event_id"], request["event_id"])
             self.assertEqual(link["correlation_status"], "strong")
+
+    def test_first_party_main_world_cannot_forge_action(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pipeline, writer, _ = self._pipeline(Path(tmp))
+            pipeline.handle_runtime(
+                CdpEvent(
+                    method="Runtime.executionContextCreated",
+                    params={
+                        "context": {
+                            "id": 11,
+                            "name": "",
+                            "origin": "https://bizmania.ru",
+                            "auxData": {"frameId": "f1"},
+                        }
+                    },
+                    session_id="cdp-session-1",
+                ),
+                target_id="t1",
+            )
+            pipeline.handle_runtime(
+                CdpEvent(
+                    method="Runtime.bindingCalled",
+                    params={
+                        "name": BINDING,
+                        "payload": self._submit_payload(),
+                        "executionContextId": 11,
+                    },
+                    session_id="cdp-session-1",
+                ),
+                target_id="t1",
+            )
+            self.assertEqual(writer.events, [])
 
     def test_unrelated_binding_is_ignored_and_context_lifecycle_is_bounded(self):
         with tempfile.TemporaryDirectory() as tmp:
