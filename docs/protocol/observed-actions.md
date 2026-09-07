@@ -20,4 +20,5 @@ Every item below comes directly from an HTTP POST captured in the supplied HAR f
 - `src.har.bizmania.2026-09-06.02#entry-884` — `POST /units/customise/quickhire/` — status `200` — fields: `oper`, `$post`
 - `src.har.bizmania.2026-09-06.02#entry-1103` — `POST /units/vendor/fastretailprices/` — status `200` — fields: `oper`, `$post`
 
-Machine-readable full forms and response excerpts: `knowledge/observations/post-requests.jsonl`.
+Machine-readable full request bodies/query parameters: `knowledge/http/post-observations.jsonl`.
+Normalized action families: `knowledge/actions/catalog.json`.
