@@ -396,10 +396,11 @@ class EvidenceReader:
                         }
                     )
 
-    def _inspect_manifest(self, manifest: Mapping[str, Any]) -> EvidenceIdentity:
-        file_hashes: list[dict[str, Any]] = []
-        for _ in self._iter_validated_events(manifest, file_hashes=file_hashes):
-            pass
+    @staticmethod
+    def _identity_from_hashes(
+        manifest: Mapping[str, Any],
+        file_hashes: list[dict[str, Any]],
+    ) -> EvidenceIdentity:
         manifest_sha256 = canonical_sha256(manifest)
         evidence_sha256 = canonical_sha256(
             {
@@ -418,13 +419,45 @@ class EvidenceReader:
             status=str(manifest["status"]),
         )
 
+    def _inspect_manifest(self, manifest: Mapping[str, Any]) -> EvidenceIdentity:
+        file_hashes: list[dict[str, Any]] = []
+        for _ in self._iter_validated_events(manifest, file_hashes=file_hashes):
+            pass
+        return self._identity_from_hashes(manifest, file_hashes)
+
     def inspect(self, session_id: str) -> EvidenceIdentity:
         manifest = self._read_manifest(session_id, require_finalized=True)
         return self._inspect_manifest(manifest)
 
-    def iter_events(self, session_id: str) -> Iterator[Mapping[str, Any]]:
+    def iter_events(
+        self,
+        session_id: str,
+        *,
+        expected_identity: EvidenceIdentity | None = None,
+    ) -> Iterator[Mapping[str, Any]]:
         manifest = self._read_manifest(session_id, require_finalized=True)
-        yield from self._iter_validated_events(manifest)
+        if expected_identity is not None:
+            if not isinstance(expected_identity, EvidenceIdentity):
+                raise TypeError("expected_identity must be EvidenceIdentity or None")
+            if expected_identity.session_id != session_id:
+                raise EvidenceIntegrityError(
+                    f"expected evidence session {expected_identity.session_id!r} "
+                    f"does not match requested session {session_id!r}"
+                )
+            manifest_sha256 = canonical_sha256(manifest)
+            if manifest_sha256 != expected_identity.manifest_sha256:
+                raise EvidenceIntegrityError(
+                    f"session {session_id} manifest no longer matches expected identity"
+                )
+
+        file_hashes: list[dict[str, Any]] = []
+        yield from self._iter_validated_events(manifest, file_hashes=file_hashes)
+        if expected_identity is not None:
+            actual_identity = self._identity_from_hashes(manifest, file_hashes)
+            if actual_identity != expected_identity:
+                raise EvidenceIntegrityError(
+                    f"session {session_id} event bytes no longer match expected identity"
+                )
 
     def read_verified_artifact(self, ref: str) -> bytes:
         if not isinstance(ref, str):
