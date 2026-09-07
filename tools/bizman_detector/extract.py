@@ -6,7 +6,11 @@ import json
 from typing import Any
 from urllib.parse import parse_qs
 
-from tools.bizman_detector.evidence import EvidenceIdentity, EvidenceReader
+from tools.bizman_detector.evidence import (
+    EvidenceIdentity,
+    EvidenceIntegrityError,
+    EvidenceReader,
+)
 from tools.bizman_detector.model import (
     FormObservation,
     HttpObservation,
@@ -212,7 +216,7 @@ class ObservationExtractor:
         # accepted. A second check after the stream catches mutation during the
         # extraction window without retaining raw events in memory.
         if self.evidence_reader.inspect(identity.session_id) != identity:
-            raise ExtractionIntegrityError(
+            raise EvidenceIntegrityError(
                 f"session {identity.session_id} no longer matches inspected evidence identity"
             )
 
@@ -359,8 +363,6 @@ class ObservationExtractor:
                 )
 
         if self.evidence_reader.inspect(identity.session_id) != identity:
-            from tools.bizman_detector.evidence import EvidenceIntegrityError
-
             raise EvidenceIntegrityError(
                 f"session {identity.session_id} changed while observations were extracted"
             )
