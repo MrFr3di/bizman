@@ -3,14 +3,17 @@
 ## Точки входа
 
 - `README.md` — назначение репозитория, состав корпуса и правила работы.
+- `docs/ROADMAP.md` — единый архитектурный roadmap: Change Detector, Core/package migration, Agent Index, MCP, State, analytics, experiments и guarded automation.
 - `knowledge/catalog.json` — главный машинный каталог с актуальными путями и counts.
 - `AGENTS.md` — инструкции для Codex/агентов.
 - `SECURITY.md` — правила работы с приватными HAR/session/auth данными.
 
 ## Архитектура
 
+- `docs/ROADMAP.md` — целевая последовательность PR и acceptance gates.
 - `docs/architecture/storage.md` — разделение raw/derived и правила хранения.
 - `docs/architecture/provenance.md` — provenance, evidence и уровни уверенности.
+- `docs/CI.md` — актуальная политика PR quality gate и Chrome for Testing E2E.
 - `docs/research/captures.md` — сведения об исходных захватах.
 - `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные.
 
@@ -47,14 +50,17 @@
 
 ## Проверка
 
-Локально, без зависимостей и без расхода GitHub Actions quota:
+Локальный quality gate:
 
 ```bash
+python3 -m pip install -r tools/requirements.txt
+python3 -m compileall -q tools tests
+python3 -m unittest discover -s tests -v
 python3 tools/validate_repo.py
 ```
 
-GitHub workflow `.github/workflows/manual-validate.yml` запускается только вручную через `workflow_dispatch`; автоматических `push`, `pull_request` и scheduled запусков нет.
+Публичный репозиторий также использует `.github/workflows/collector-e2e.yml` как `pull_request` quality gate для релевантных изменений и `workflow_dispatch` для явных повторных запусков. Routine `push` и scheduled workflows отсутствуют. Актуальные детали — в `docs/CI.md`.
 
 ## Правило для агентов
 
-Начинайте с `knowledge/catalog.json`, затем открывайте manifest конкретного корпуса и только нужные `part-*` файлы. Не читайте весь corpus без необходимости и не превращайте `inferred`/`hypothesis` в `observed` без evidence.
+До появления Agent Index/MCP начинайте с `knowledge/catalog.json`, затем открывайте manifest конкретного корпуса и только нужные `part-*` файлы. Не читайте весь corpus без необходимости и не превращайте `inferred`/`hypothesis` в `observed` без evidence. После реализации roadmap обычные agent-запросы должны идти через стабильные refs/Core/MCP, а raw JSONL останется внутренним evidence source.
