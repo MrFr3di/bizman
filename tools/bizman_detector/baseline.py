@@ -84,10 +84,12 @@ class _ObservedEndpoint:
 
 
 def _source_label(repo_root: Path, path: Path) -> str:
+    resolved_root = repo_root.resolve()
+    resolved = path.resolve()
     try:
-        return path.resolve().relative_to(repo_root.resolve()).as_posix()
+        return resolved.relative_to(resolved_root).as_posix()
     except ValueError:
-        return str(path)
+        return str(resolved)
 
 
 def _load_json(path: Path, *, repo_root: Path) -> Any:
@@ -121,54 +123,52 @@ def _resolve_declared_part(dataset_dir: Path, name: object, *, source: str) -> P
     return candidate
 
 
-def _load_partitioned_json(
-    repo_root: Path,
-    index_path: Path,
-) -> tuple[_SourceRecord, ...]:
-    index = _load_json(index_path, repo_root=repo_root)
-    index_label = _source_label(repo_root, index_path)
-    if not isinstance(index, Mapping):
-        raise BaselineFormatError(f"{index_label}: partition index must be an object")
+def _partition_manifest(repo_root: Path, index_path: Path) -> tuple[Mapping[str, Any], str]:
+    value = _load_json(index_path, repo_root=repo_root)
+    label = _source_label(repo_root, index_path)
+    if not isinstance(value, Mapping):
+        raise BaselineFormatError(f"{label}: partition index must be an object")
+    return value, label
+
+
+def _load_partitioned_json(repo_root: Path, index_path: Path) -> tuple[_SourceRecord, ...]:
+    index, index_label = _partition_manifest(repo_root, index_path)
     total = _require_non_negative_int(
         index.get("total_records"), source=index_label, field="total_records"
     )
     parts = index.get("parts")
     if not isinstance(parts, list) or not parts:
         raise BaselineFormatError(f"{index_label}: parts must be a non-empty array")
-
-    default_key = index.get("record_key", index.get("list_key"))
-    if default_key is not None and not isinstance(default_key, str):
+    list_key = index.get("record_key", index.get("list_key"))
+    if list_key is not None and not isinstance(list_key, str):
         raise BaselineFormatError(f"{index_label}: record/list key must be a string")
 
-    records: list[_SourceRecord] = []
-    seen_parts: set[Path] = set()
+    result: list[_SourceRecord] = []
+    seen: set[Path] = set()
     expected_offset = 0
-    for descriptor_index, descriptor in enumerate(parts):
+    for part_index, descriptor in enumerate(parts):
         if not isinstance(descriptor, Mapping):
             raise BaselineFormatError(
-                f"{index_label}: part descriptor {descriptor_index} must be an object"
+                f"{index_label}: parts[{part_index}] must be an object"
             )
         part_path = _resolve_declared_part(
             index_path.parent,
             descriptor.get("file", descriptor.get("path")),
             source=index_label,
         )
-        if part_path in seen_parts:
-            raise BaselineFormatError(
-                f"{index_label}: duplicate part {part_path.name!r}"
-            )
-        seen_parts.add(part_path)
-
+        if part_path in seen:
+            raise BaselineFormatError(f"{index_label}: duplicate part {part_path.name!r}")
+        seen.add(part_path)
         declared = _require_non_negative_int(
             descriptor.get("records", descriptor.get("count")),
             source=index_label,
-            field=f"parts[{descriptor_index}].records",
+            field=f"parts[{part_index}].records",
         )
         if "offset" in descriptor:
             offset = _require_non_negative_int(
                 descriptor.get("offset"),
                 source=index_label,
-                field=f"parts[{descriptor_index}].offset",
+                field=f"parts[{part_index}].offset",
             )
             if offset != expected_offset:
                 raise BaselineFormatError(
@@ -177,11 +177,11 @@ def _load_partitioned_json(
 
         payload = _load_json(part_path, repo_root=repo_root)
         if isinstance(payload, list):
-            part_records = payload
+            records = payload
         elif isinstance(payload, Mapping):
-            key = default_key or "records"
-            part_records = payload.get(key)
-            if not isinstance(part_records, list):
+            key = list_key or "records"
+            records = payload.get(key)
+            if not isinstance(records, list):
                 raise BaselineFormatError(
                     f"{_source_label(repo_root, part_path)}: {key!r} must be an array"
                 )
@@ -189,16 +189,15 @@ def _load_partitioned_json(
             raise BaselineFormatError(
                 f"{_source_label(repo_root, part_path)}: partition must be an array or object"
             )
-
-        if len(part_records) != declared:
+        if len(records) != declared:
             raise BaselineFormatError(
                 f"{_source_label(repo_root, part_path)} declares {declared} records "
-                f"but contains {len(part_records)}"
+                f"but contains {len(records)}"
             )
-        for record_index, value in enumerate(part_records):
-            records.append(
+        for record_index, record in enumerate(records):
+            result.append(
                 _SourceRecord(
-                    value=value,
+                    value=record,
                     source=f"{_source_label(repo_root, part_path)}#record-{record_index}",
                 )
             )
@@ -208,17 +207,11 @@ def _load_partitioned_json(
         raise BaselineFormatError(
             f"{index_label}: parts contain {expected_offset} records, total_records is {total}"
         )
-    return tuple(records)
+    return tuple(result)
 
 
-def _load_partitioned_jsonl(
-    repo_root: Path,
-    index_path: Path,
-) -> tuple[_SourceRecord, ...]:
-    index = _load_json(index_path, repo_root=repo_root)
-    index_label = _source_label(repo_root, index_path)
-    if not isinstance(index, Mapping):
-        raise BaselineFormatError(f"{index_label}: partition index must be an object")
+def _load_partitioned_jsonl(repo_root: Path, index_path: Path) -> tuple[_SourceRecord, ...]:
+    index, index_label = _partition_manifest(repo_root, index_path)
     total = _require_non_negative_int(
         index.get("total_records"), source=index_label, field="total_records"
     )
@@ -226,34 +219,32 @@ def _load_partitioned_jsonl(
     if not isinstance(parts, list) or not parts:
         raise BaselineFormatError(f"{index_label}: parts must be a non-empty array")
 
-    records: list[_SourceRecord] = []
-    seen_parts: set[Path] = set()
+    result: list[_SourceRecord] = []
+    seen: set[Path] = set()
     expected_offset = 0
-    for descriptor_index, descriptor in enumerate(parts):
+    for part_index, descriptor in enumerate(parts):
         if not isinstance(descriptor, Mapping):
             raise BaselineFormatError(
-                f"{index_label}: part descriptor {descriptor_index} must be an object"
+                f"{index_label}: parts[{part_index}] must be an object"
             )
         part_path = _resolve_declared_part(
             index_path.parent,
             descriptor.get("file", descriptor.get("path")),
             source=index_label,
         )
-        if part_path in seen_parts:
-            raise BaselineFormatError(
-                f"{index_label}: duplicate part {part_path.name!r}"
-            )
-        seen_parts.add(part_path)
+        if part_path in seen:
+            raise BaselineFormatError(f"{index_label}: duplicate part {part_path.name!r}")
+        seen.add(part_path)
         declared = _require_non_negative_int(
             descriptor.get("records", descriptor.get("count")),
             source=index_label,
-            field=f"parts[{descriptor_index}].records",
+            field=f"parts[{part_index}].records",
         )
         if "offset" in descriptor:
             offset = _require_non_negative_int(
                 descriptor.get("offset"),
                 source=index_label,
-                field=f"parts[{descriptor_index}].offset",
+                field=f"parts[{part_index}].offset",
             )
             if offset != expected_offset:
                 raise BaselineFormatError(
@@ -269,19 +260,18 @@ def _load_partitioned_jsonl(
                         continue
                     actual += 1
                     try:
-                        value = json.loads(line)
+                        record = json.loads(line)
                     except json.JSONDecodeError as exc:
                         raise BaselineFormatError(
                             f"invalid JSONL in {label}:{line_number}: {exc}"
                         ) from exc
-                    records.append(
-                        _SourceRecord(value=value, source=f"{label}:{line_number}")
+                    result.append(
+                        _SourceRecord(record, f"{label}:{line_number}")
                     )
         except FileNotFoundError as exc:
             raise BaselineFormatError(f"missing curated file: {label}") from exc
         except UnicodeDecodeError as exc:
             raise BaselineFormatError(f"invalid UTF-8 in {label}: {exc}") from exc
-
         if actual != declared:
             raise BaselineFormatError(
                 f"{label} declares {declared} records but contains {actual}"
@@ -292,7 +282,7 @@ def _load_partitioned_jsonl(
         raise BaselineFormatError(
             f"{index_label}: parts contain {expected_offset} records, total_records is {total}"
         )
-    return tuple(records)
+    return tuple(result)
 
 
 def _normalize_status(value: object, *, source: str) -> int:
@@ -305,41 +295,34 @@ def _normalize_status(value: object, *, source: str) -> int:
     return value
 
 
-def _normalized_count_mapping(
-    value: object,
-    *,
-    source: str,
-    kind: str,
-) -> tuple[tuple[Any, int], ...]:
-    if not isinstance(value, Mapping):
-        raise BaselineFormatError(f"{source}: {kind} must be an object")
+def _count_map(value: object, *, source: str, kind: str) -> tuple[tuple[Any, int], ...]:
+    if not isinstance(value, Mapping) or not value:
+        raise BaselineFormatError(f"{source}: {kind} must be a non-empty object")
     normalized: dict[Any, int] = {}
     for raw_key, raw_count in value.items():
-        key: Any
         if kind == "methods":
             try:
-                key = normalize_method(raw_key)
+                key: Any = normalize_method(raw_key)
             except ValueError as exc:
                 raise BaselineFormatError(f"{source}: invalid method {raw_key!r}") from exc
         else:
             key = _normalize_status(raw_key, source=source)
-        count = _require_non_negative_int(raw_count, source=source, field=f"{kind}.{raw_key}")
+        count = _require_non_negative_int(
+            raw_count, source=source, field=f"{kind}.{raw_key}"
+        )
         if count == 0:
             raise BaselineFormatError(f"{source}: {kind}.{raw_key} count must be positive")
         if key in normalized:
             raise BaselineFormatError(f"{source}: duplicate normalized {kind} key {key!r}")
         normalized[key] = count
-    if not normalized:
-        raise BaselineFormatError(f"{source}: {kind} must not be empty")
     return tuple(sorted(normalized.items()))
 
 
-def _compile_endpoint_aggregates(
-    records: tuple[_SourceRecord, ...],
-    redaction: RedactionPolicy,
+def _endpoint_aggregates(
+    records: tuple[_SourceRecord, ...], redaction: RedactionPolicy
 ) -> tuple[_EndpointAggregate, ...]:
-    aggregates: list[_EndpointAggregate] = []
-    seen_patterns: set[str] = set()
+    result: list[_EndpointAggregate] = []
+    seen: set[str] = set()
     for record in records:
         value = record.value
         if not isinstance(value, Mapping):
@@ -348,61 +331,52 @@ def _compile_endpoint_aggregates(
             pattern = normalize_origin_relative_path(value.get("path_pattern"))
         except ValueError as exc:
             raise BaselineFormatError(f"{record.source}: invalid path_pattern") from exc
-        if pattern in seen_patterns:
+        if pattern in seen:
             raise BaselineConsistencyError(
                 f"{record.source}: duplicate endpoint path_pattern {pattern!r}"
             )
-        seen_patterns.add(pattern)
+        seen.add(pattern)
         count = _require_non_negative_int(value.get("count"), source=record.source, field="count")
         if count == 0:
             raise BaselineFormatError(f"{record.source}: endpoint count must be positive")
-        method_counts = _normalized_count_mapping(
-            value.get("methods"), source=record.source, kind="methods"
-        )
-        status_counts = _normalized_count_mapping(
-            value.get("statuses"), source=record.source, kind="statuses"
-        )
+        methods = _count_map(value.get("methods"), source=record.source, kind="methods")
+        statuses = _count_map(value.get("statuses"), source=record.source, kind="statuses")
         query_keys = value.get("query_keys")
         if not isinstance(query_keys, list):
             raise BaselineFormatError(f"{record.source}: query_keys must be an array")
-        normalized_query_keys = normalize_key_set(query_keys, redaction)
-        if sum(item[1] for item in method_counts) != count:
+        if sum(count_value for _, count_value in methods) != count:
             raise BaselineConsistencyError(
                 f"{record.source}: method counts do not sum to endpoint count {count}"
             )
-        if sum(item[1] for item in status_counts) != count:
+        if sum(count_value for _, count_value in statuses) != count:
             raise BaselineConsistencyError(
                 f"{record.source}: status counts do not sum to endpoint count {count}"
             )
-        aggregates.append(
+        result.append(
             _EndpointAggregate(
                 path_pattern=pattern,
                 count=count,
-                method_counts=method_counts,
-                status_counts=status_counts,
-                query_keys=normalized_query_keys,
+                method_counts=methods,
+                status_counts=statuses,
+                query_keys=normalize_key_set(query_keys, redaction),
                 source=record.source,
             )
         )
-    return tuple(sorted(aggregates, key=lambda item: item.path_pattern))
+    return tuple(sorted(result, key=lambda item: item.path_pattern))
 
 
-def _compile_endpoint_families(
+def _endpoint_families(
     aggregates: tuple[_EndpointAggregate, ...],
-    application_events: tuple[_SourceRecord, ...],
+    events: tuple[_SourceRecord, ...],
     redaction: RedactionPolicy,
 ) -> tuple[EndpointFamily, ...]:
     matcher = PathMatcher(item.path_pattern for item in aggregates)
-    observed: dict[str, _ObservedEndpoint] = {
-        item.path_pattern: _ObservedEndpoint.empty() for item in aggregates
-    }
+    observed = {item.path_pattern: _ObservedEndpoint.empty() for item in aggregates}
 
-    for record in application_events:
+    for record in events:
         value = record.value
         if not isinstance(value, Mapping):
-            raise BaselineFormatError(
-                f"{record.source}: application event must be an object"
-            )
+            raise BaselineFormatError(f"{record.source}: application event must be an object")
         try:
             path = normalize_origin_relative_path(value.get("path"))
             method = normalize_method(value.get("method"))
@@ -424,32 +398,29 @@ def _compile_endpoint_families(
             raise BaselineConsistencyError(
                 f"{record.source}: application event path {path!r} is not in endpoint census"
             )
-
-        endpoint = observed[match.path_pattern]
         query_keys = normalize_key_set(query.keys(), redaction)
-        endpoint.total_count += 1
-        endpoint.method_counts[method] += 1
-        endpoint.status_counts[status] += 1
-        endpoint.query_keys.update(query_keys)
-        endpoint.variants_by_method[method].add(
+        target = observed[match.path_pattern]
+        target.total_count += 1
+        target.method_counts[method] += 1
+        target.status_counts[status] += 1
+        target.query_keys.update(query_keys)
+        target.variants_by_method[method].add(
             EndpointVariant(query_keys=query_keys, status=status)
         )
 
     families: list[EndpointFamily] = []
     for aggregate in aggregates:
         actual = observed[aggregate.path_pattern]
-        expected_methods = dict(aggregate.method_counts)
-        expected_statuses = dict(aggregate.status_counts)
         if actual.total_count != aggregate.count:
             raise BaselineConsistencyError(
                 f"{aggregate.source}: endpoint count {aggregate.count} != "
                 f"application-event count {actual.total_count}"
             )
-        if dict(actual.method_counts) != expected_methods:
+        if dict(actual.method_counts) != dict(aggregate.method_counts):
             raise BaselineConsistencyError(
                 f"{aggregate.source}: method census disagrees with application events"
             )
-        if dict(actual.status_counts) != expected_statuses:
+        if dict(actual.status_counts) != dict(aggregate.status_counts):
             raise BaselineConsistencyError(
                 f"{aggregate.source}: status census disagrees with application events"
             )
@@ -457,7 +428,6 @@ def _compile_endpoint_families(
             raise BaselineConsistencyError(
                 f"{aggregate.source}: query-key census disagrees with application events"
             )
-
         methods = tuple(
             EndpointMethodContract(
                 method=method,
@@ -465,13 +435,11 @@ def _compile_endpoint_families(
             )
             for method in sorted(actual.variants_by_method)
         )
-        families.append(
-            EndpointFamily(path_pattern=aggregate.path_pattern, methods=methods)
-        )
+        families.append(EndpointFamily(aggregate.path_pattern, methods))
     return tuple(families)
 
 
-def _canonical_form_action(value: object, *, source: str) -> str:
+def _form_action_path(value: object, *, source: str) -> str:
     if not isinstance(value, str) or not value:
         raise BaselineFormatError(f"{source}: form action must be a non-empty string")
     parsed = urlsplit(value)
@@ -485,9 +453,8 @@ def _canonical_form_action(value: object, *, source: str) -> str:
         raise BaselineFormatError(f"{source}: invalid form action path") from exc
 
 
-def _compile_forms(
-    records: tuple[_SourceRecord, ...],
-    redaction: RedactionPolicy,
+def _forms(
+    records: tuple[_SourceRecord, ...], redaction: RedactionPolicy
 ) -> tuple[FormSignature, ...]:
     signatures: set[FormSignature] = set()
     for record in records:
@@ -498,7 +465,6 @@ def _compile_forms(
             method = normalize_method(value.get("method"))
         except ValueError as exc:
             raise BaselineFormatError(f"{record.source}: invalid form method") from exc
-        action_path = _canonical_form_action(value.get("action"), source=record.source)
         fields = value.get("fields")
         if not isinstance(fields, list):
             raise BaselineFormatError(f"{record.source}: fields must be an array")
@@ -512,16 +478,16 @@ def _compile_forms(
         signatures.add(
             FormSignature(
                 method=method,
-                action_path=action_path,
+                action_path=_form_action_path(value.get("action"), source=record.source),
                 field_names=normalize_key_set(names, redaction),
             )
         )
     return tuple(sorted(signatures))
 
 
-def _match_known_endpoint(
-    *,
+def _known_endpoint(
     raw_path: object,
+    *,
     method: str,
     source: str,
     matcher: PathMatcher,
@@ -540,12 +506,12 @@ def _match_known_endpoint(
         )
     if method not in methods_by_pattern[match.path_pattern]:
         raise BaselineConsistencyError(
-            f"{source}: {method} {path} is not observed in endpoint application events"
+            f"{source}: {method} {path} is not observed in application events"
         )
     return match.path_pattern
 
 
-def _compile_operations(
+def _operations(
     value: Any,
     *,
     source: str,
@@ -553,24 +519,15 @@ def _compile_operations(
     matcher: PathMatcher,
     methods_by_pattern: Mapping[str, frozenset[str]],
 ) -> tuple[OperationSignature, ...]:
-    if not isinstance(value, Mapping):
-        raise BaselineFormatError(f"{source}: operation index must be an object")
-    operations = value.get("operations")
-    if not isinstance(operations, list):
+    if not isinstance(value, Mapping) or not isinstance(value.get("operations"), list):
         raise BaselineFormatError(f"{source}: operations must be an array")
+    items = value["operations"]
     signatures: set[OperationSignature] = set()
-    for index, item in enumerate(operations):
+    observed_total = 0
+    for index, item in enumerate(items):
         item_source = f"{source}#operation-{index}"
         if not isinstance(item, Mapping):
             raise BaselineFormatError(f"{item_source}: operation must be an object")
-        method = "POST"
-        pattern = _match_known_endpoint(
-            raw_path=item.get("path"),
-            method=method,
-            source=item_source,
-            matcher=matcher,
-            methods_by_pattern=methods_by_pattern,
-        )
         query_keys = item.get("query_keys")
         body_keys = item.get("body_keys")
         observations = item.get("observations")
@@ -592,6 +549,7 @@ def _compile_operations(
                     source=f"{item_source}.observations[{observation_index}]",
                 )
             )
+        declared_count = len(observations)
         if "count" in item:
             declared_count = _require_non_negative_int(
                 item.get("count"), source=item_source, field="count"
@@ -600,19 +558,34 @@ def _compile_operations(
                 raise BaselineConsistencyError(
                     f"{item_source}: count {declared_count} != observations {len(observations)}"
                 )
+        observed_total += declared_count
         signatures.add(
             OperationSignature(
-                method=method,
-                path_pattern=pattern,
+                method="POST",
+                path_pattern=_known_endpoint(
+                    item.get("path"),
+                    method="POST",
+                    source=item_source,
+                    matcher=matcher,
+                    methods_by_pattern=methods_by_pattern,
+                ),
                 query_keys=normalize_key_set(query_keys, redaction),
                 body_keys=normalize_key_set(body_keys, redaction),
                 statuses=tuple(sorted(statuses)),
             )
         )
+    if "post_count" in value:
+        post_count = _require_non_negative_int(
+            value.get("post_count"), source=source, field="post_count"
+        )
+        if post_count != observed_total:
+            raise BaselineConsistencyError(
+                f"{source}: post_count {post_count} != operation observations {observed_total}"
+            )
     return tuple(sorted(signatures))
 
 
-def _compile_actions(
+def _actions(
     value: Any,
     *,
     source: str,
@@ -620,19 +593,15 @@ def _compile_actions(
     matcher: PathMatcher,
     methods_by_pattern: Mapping[str, frozenset[str]],
 ) -> tuple[ActionRequestFamily, ...]:
-    if not isinstance(value, Mapping):
-        raise BaselineFormatError(f"{source}: action catalog must be an object")
-    items = value.get("items")
-    if not isinstance(items, list):
+    if not isinstance(value, Mapping) or not isinstance(value.get("items"), list):
         raise BaselineFormatError(f"{source}: items must be an array")
+    items = value["items"]
     if "count" in value:
         declared = _require_non_negative_int(value.get("count"), source=source, field="count")
         if declared != len(items):
-            raise BaselineConsistencyError(
-                f"{source}: count {declared} != items {len(items)}"
-            )
+            raise BaselineConsistencyError(f"{source}: count {declared} != items {len(items)}")
 
-    actions: list[ActionRequestFamily] = []
+    result: list[ActionRequestFamily] = []
     seen_ids: set[str] = set()
     for index, item in enumerate(items):
         item_source = f"{source}#item-{index}"
@@ -652,21 +621,12 @@ def _compile_actions(
             method = normalize_method(item.get("method"))
         except ValueError as exc:
             raise BaselineFormatError(f"{item_source}: invalid action method") from exc
-        pattern = _match_known_endpoint(
-            raw_path=item.get("path"),
-            method=method,
-            source=item_source,
-            matcher=matcher,
-            methods_by_pattern=methods_by_pattern,
-        )
-
         form_fields = item.get("form_fields")
-        query_key_sets = item.get("query_key_sets")
-        statuses = item.get("statuses")
-        if not isinstance(form_fields, list):
-            raise BaselineFormatError(f"{item_source}: form_fields must be an array")
-        if not isinstance(query_key_sets, list):
-            raise BaselineFormatError(f"{item_source}: query_key_sets must be an array")
+        query_sets = item.get("query_key_sets")
+        if not isinstance(form_fields, list) or not isinstance(query_sets, list):
+            raise BaselineFormatError(
+                f"{item_source}: form_fields and query_key_sets must be arrays"
+            )
         field_names: list[object] = []
         for field_index, field in enumerate(form_fields):
             if not isinstance(field, Mapping):
@@ -675,35 +635,51 @@ def _compile_actions(
                 )
             field_names.append(field.get("name"))
         normalized_query_sets: set[tuple[str, ...]] = set()
-        for query_index, query_set in enumerate(query_key_sets):
-            if not isinstance(query_set, list):
+        for query_index, query_keys in enumerate(query_sets):
+            if not isinstance(query_keys, list):
                 raise BaselineFormatError(
                     f"{item_source}: query_key_sets[{query_index}] must be an array"
                 )
-            normalized_query_sets.add(normalize_key_set(query_set, redaction))
-        status_counts = _normalized_count_mapping(
-            statuses, source=item_source, kind="statuses"
+            normalized_query_sets.add(normalize_key_set(query_keys, redaction))
+        status_counts = _count_map(
+            item.get("statuses"), source=item_source, kind="statuses"
         )
-        actions.append(
+        if "observed_count" in item:
+            observed_count = _require_non_negative_int(
+                item.get("observed_count"), source=item_source, field="observed_count"
+            )
+            if observed_count != sum(count for _, count in status_counts):
+                raise BaselineConsistencyError(
+                    f"{item_source}: observed_count disagrees with status counts"
+                )
+        result.append(
             ActionRequestFamily(
                 action_id=action_id,
                 method=method,
-                path_pattern=pattern,
+                path_pattern=_known_endpoint(
+                    item.get("path"),
+                    method=method,
+                    source=item_source,
+                    matcher=matcher,
+                    methods_by_pattern=methods_by_pattern,
+                ),
                 field_names=normalize_key_set(field_names, redaction),
                 query_key_sets=tuple(sorted(normalized_query_sets)),
                 statuses=tuple(status for status, _ in status_counts),
             )
         )
-    return tuple(sorted(actions))
+    return tuple(sorted(result))
 
 
 def _redaction_semantics(policy: RedactionPolicy) -> dict[str, Any]:
+    patterns = [
+        {"pattern": pattern.pattern, "flags": pattern.flags}
+        for pattern in policy.drop_field_patterns
+    ]
+    patterns.sort(key=lambda item: (item["pattern"], item["flags"]))
     return {
         "drop_headers": sorted(name.casefold() for name in policy.drop_headers),
-        "drop_field_patterns": sorted(
-            {"pattern": pattern.pattern, "flags": pattern.flags}
-            for pattern in policy.drop_field_patterns
-        , key=lambda item: (item["pattern"], item["flags"])),
+        "drop_field_patterns": patterns,
         "first_party_only": policy.first_party_only,
         "max_request_bytes": policy.max_request_bytes,
         "max_response_bytes": policy.max_response_bytes,
@@ -786,31 +762,26 @@ class BaselineCompiler:
             root, root / "knowledge/http/forms/index.json"
         )
 
-        aggregates = _compile_endpoint_aggregates(endpoint_records, redaction)
-        endpoints = _compile_endpoint_families(
-            aggregates, application_events, redaction
-        )
+        aggregates = _endpoint_aggregates(endpoint_records, redaction)
+        endpoints = _endpoint_families(aggregates, application_events, redaction)
         matcher = PathMatcher(endpoint.path_pattern for endpoint in endpoints)
         methods_by_pattern = {
             endpoint.path_pattern: frozenset(method.method for method in endpoint.methods)
             for endpoint in endpoints
         }
-        forms = _compile_forms(form_records, redaction)
+        forms = _forms(form_records, redaction)
 
         operation_path = root / "knowledge/http/operation-index.json"
-        operation_value = _load_json(operation_path, repo_root=root)
-        operations = _compile_operations(
-            operation_value,
+        operations = _operations(
+            _load_json(operation_path, repo_root=root),
             source=_source_label(root, operation_path),
             redaction=redaction,
             matcher=matcher,
             methods_by_pattern=methods_by_pattern,
         )
-
         action_path = root / "knowledge/actions/catalog.json"
-        action_value = _load_json(action_path, repo_root=root)
-        actions = _compile_actions(
-            action_value,
+        actions = _actions(
+            _load_json(action_path, repo_root=root),
             source=_source_label(root, action_path),
             redaction=redaction,
             matcher=matcher,
