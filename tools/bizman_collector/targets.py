@@ -77,6 +77,7 @@ class TargetOrchestrator:
         self.registry = TargetRegistry()
         self._attaching: set[str] = set()
         self._configured_sessions: set[str] = set()
+        self._action_configured_sessions: set[str] = set()
 
         configured = [action_binding_name is not None, action_script is not None]
         if any(configured) and not all(configured):
@@ -113,6 +114,11 @@ class TargetOrchestrator:
     def _is_first_party_target(self, info: dict[str, Any]) -> bool:
         url = info.get("url")
         return isinstance(url, str) and self.first_party.matches_url(url)
+
+    @staticmethod
+    def _has_explicit_target_url(info: dict[str, Any]) -> bool:
+        url = info.get("url")
+        return isinstance(url, str) and bool(url.strip())
 
     def _is_attachable_page(self, info: dict[str, Any]) -> bool:
         return info.get("type") == "page" and self._is_first_party_target(info)
@@ -158,7 +164,11 @@ class TargetOrchestrator:
                 info=info,
             )
             target_type = info.get("type") if isinstance(info.get("type"), str) else None
-            await self._configure_session(session_id, target_type=target_type)
+            await self._configure_session(
+                session_id,
+                target_type=target_type,
+                allow_action=True,
+            )
         finally:
             self._attaching.discard(target_id)
 
@@ -246,24 +256,33 @@ class TargetOrchestrator:
         session_id: str,
         *,
         target_type: str | None = None,
+        allow_action: bool = False,
     ) -> None:
-        if session_id in self._configured_sessions:
-            return
-        self._configured_sessions.add(session_id)
+        first_setup = session_id not in self._configured_sessions
+        if first_setup:
+            self._configured_sessions.add(session_id)
+            if self._supports("Network.enable"):
+                try:
+                    await self.cdp.command(
+                        "Network.enable",
+                        self._network_enable_params(),
+                        session_id=session_id,
+                    )
+                except CdpProtocolError as exc:
+                    self._warn(f"Network.enable failed for session {session_id}: {exc}")
 
-        if self._supports("Network.enable"):
-            try:
-                await self.cdp.command(
-                    "Network.enable",
-                    self._network_enable_params(),
-                    session_id=session_id,
-                )
-            except CdpProtocolError as exc:
-                self._warn(f"Network.enable failed for session {session_id}: {exc}")
+        if (
+            allow_action
+            and target_type in _ACTION_TARGET_TYPES
+            and session_id not in self._action_configured_sessions
+        ):
+            self._action_configured_sessions.add(session_id)
+            await self._configure_action_observer(
+                session_id,
+                target_type=target_type,
+            )
 
-        await self._configure_action_observer(session_id, target_type=target_type)
-
-        if self._supports("Target.setAutoAttach"):
+        if first_setup and self._supports("Target.setAutoAttach"):
             try:
                 await self.cdp.command(
                     "Target.setAutoAttach",
@@ -296,6 +315,7 @@ class TargetOrchestrator:
                     await self._configure_session(
                         session_id,
                         target_type=target_type,
+                        allow_action=True,
                     )
                 return
             if self._is_attachable_page(info):
@@ -323,6 +343,17 @@ class TargetOrchestrator:
                     await self._configure_session(
                         session_id,
                         target_type=target_type,
+                        allow_action=True,
+                    )
+                elif not self._has_explicit_target_url(info):
+                    # Auto-attached workers/frames can initially have an empty URL.
+                    # Keep passive Network/Target coverage, but do not install any
+                    # DOM observer until a later targetInfoChanged proves the target
+                    # is first-party.
+                    await self._configure_session(
+                        session_id,
+                        target_type=None,
+                        allow_action=False,
                     )
             return
 
@@ -331,6 +362,7 @@ class TargetOrchestrator:
             if isinstance(session_id, str):
                 self.registry.remove_session(session_id)
                 self._configured_sessions.discard(session_id)
+                self._action_configured_sessions.discard(session_id)
             return
 
         if method == "Target.targetDestroyed":
@@ -340,3 +372,4 @@ class TargetOrchestrator:
                 self.registry.remove_target(target_id)
                 if isinstance(session_id, str):
                     self._configured_sessions.discard(session_id)
+                    self._action_configured_sessions.discard(session_id)
