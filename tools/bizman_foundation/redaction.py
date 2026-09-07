@@ -8,27 +8,33 @@ import re
 from typing import Any
 
 
-_DEFAULT_DROP_HEADERS = frozenset(
-    {
-        "authorization",
-        "proxy-authorization",
-        "cookie",
-        "set-cookie",
-        "x-api-key",
-        "x-auth-token",
-        "x-csrf-token",
-        "x-xsrf-token",
-        "sec-websocket-key",
-        "sec-websocket-accept",
-    }
-)
+_DEFAULT_DROP_HEADERS = frozenset({
+    "authorization",
+    "proxy-authorization",
+    "cookie",
+    "set-cookie",
+    "x-api-key",
+    "x-auth-token",
+    "x-csrf-token",
+    "x-xsrf-token",
+    "sec-websocket-key",
+    "sec-websocket-accept",
+})
 
 _DEFAULT_DROP_FIELD_PATTERNS = (
-    re.compile(r"(?:^|[_-])(password|passwd|pwd)(?:$|[_-])", re.IGNORECASE),
-    re.compile(r"(?:^|[_-])(token|secret|session)(?:$|[_-])", re.IGNORECASE),
-    re.compile(r"csrf", re.IGNORECASE),
-    re.compile(r"authorization", re.IGNORECASE),
-    re.compile(r"cookie", re.IGNORECASE),
+    re.compile(
+        r"(?:password|passwd|pwd|token|secret|session|csrf|authorization|cookie)",
+        re.IGNORECASE,
+    ),
+)
+
+_DEFAULT_MIME_ALLOWLIST = (
+    "application/json",
+    "application/x-www-form-urlencoded",
+    "text/html",
+    "text/plain",
+    "text/javascript",
+    "application/javascript",
 )
 
 
@@ -39,6 +45,7 @@ class RedactionPolicy:
     first_party_only: bool = True
     max_request_bytes: int = 1_048_576
     max_response_bytes: int = 2_097_152
+    mime_allowlist: tuple[str, ...] = _DEFAULT_MIME_ALLOWLIST
 
     @classmethod
     def default(cls) -> "RedactionPolicy":
@@ -48,6 +55,7 @@ class RedactionPolicy:
             first_party_only=True,
             max_request_bytes=1_048_576,
             max_response_bytes=2_097_152,
+            mime_allowlist=_DEFAULT_MIME_ALLOWLIST,
         )
 
     @classmethod
@@ -55,9 +63,7 @@ class RedactionPolicy:
         headers = value.get("headers", {})
         fields = value.get("fields", {})
         drop_headers = headers.get("drop", []) if isinstance(headers, Mapping) else []
-        drop_patterns = (
-            fields.get("drop_patterns", []) if isinstance(fields, Mapping) else []
-        )
+        drop_patterns = fields.get("drop_patterns", []) if isinstance(fields, Mapping) else []
         if not isinstance(drop_headers, list) or not all(
             isinstance(item, str) for item in drop_headers
         ):
@@ -73,6 +79,7 @@ class RedactionPolicy:
         first_party_only = bodies.get("first_party_only", True)
         max_request_bytes = bodies.get("max_request_bytes", 1_048_576)
         max_response_bytes = bodies.get("max_response_bytes", 2_097_152)
+        mime_allowlist = bodies.get("mime_allowlist", list(_DEFAULT_MIME_ALLOWLIST))
         if not isinstance(first_party_only, bool):
             raise ValueError("redaction bodies.first_party_only must be boolean")
         if not isinstance(max_request_bytes, int) or max_request_bytes < 0:
@@ -83,6 +90,10 @@ class RedactionPolicy:
             raise ValueError(
                 "redaction bodies.max_response_bytes must be a non-negative integer"
             )
+        if not isinstance(mime_allowlist, list) or not all(
+            isinstance(item, str) for item in mime_allowlist
+        ):
+            raise ValueError("redaction bodies.mime_allowlist must be a list of strings")
 
         return cls(
             drop_headers=frozenset(item.casefold() for item in drop_headers),
@@ -90,6 +101,7 @@ class RedactionPolicy:
             first_party_only=first_party_only,
             max_request_bytes=max_request_bytes,
             max_response_bytes=max_response_bytes,
+            mime_allowlist=tuple(mime_allowlist),
         )
 
     def should_drop_field(self, name: str) -> bool:
