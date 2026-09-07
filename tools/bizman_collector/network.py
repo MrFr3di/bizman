@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 
+from tools.bizman_collector.events import CollectorClock, EventSequencer
 from tools.bizman_collector.storage import ArtifactStore
 from tools.bizman_foundation.fingerprint import canonical_json_bytes, canonical_sha256
 from tools.bizman_foundation.redaction import RedactionPolicy, redact_headers, redact_mapping
@@ -94,19 +95,17 @@ class NetworkNormalizer:
         first_party: FirstPartyPolicy,
         redaction: RedactionPolicy,
         artifacts: ArtifactStore,
+        sequencer: EventSequencer | None = None,
+        clock: CollectorClock | None = None,
     ) -> None:
         self.session_id = session_id
         self.first_party = first_party
         self.redaction = redaction
         self.artifacts = artifacts
-        self._sequence = 0
+        self.sequencer = sequencer or EventSequencer()
+        self.clock = clock or CollectorClock()
         self._requests: dict[str, dict[str, Any]] = {}
         self._websockets: dict[str, dict[str, Any]] = {}
-
-    def _next_sequence(self) -> int:
-        value = self._sequence
-        self._sequence += 1
-        return value
 
     def _query(self, url: str) -> dict[str, list[str]]:
         parsed = urlparse(url)
@@ -180,16 +179,24 @@ class NetworkNormalizer:
         target_id: str | None,
         request_id: str | None,
     ) -> dict[str, Any]:
-        monotonic = params.get("timestamp", 0.0)
-        if not isinstance(monotonic, (int, float)) or monotonic < 0:
-            monotonic = 0.0
+        source_monotonic = params.get("timestamp")
+        if not isinstance(source_monotonic, (int, float)) or source_monotonic < 0:
+            source_monotonic = None
+        observed_at = (
+            _wall_time_iso(params.get("wallTime"))
+            if isinstance(params.get("wallTime"), (int, float))
+            else self.clock.wall_iso()
+        )
         return {
             "schema_version": "1.0",
             "event_id": new_uuid7(),
             "session_id": self.session_id,
-            "sequence": self._next_sequence(),
-            "observed_at": _wall_time_iso(params.get("wallTime")),
-            "monotonic_time": float(monotonic),
+            "sequence": self.sequencer.next(),
+            "observed_at": observed_at,
+            "monotonic_time": float(self.clock.monotonic()),
+            "source_monotonic_time": (
+                float(source_monotonic) if source_monotonic is not None else None
+            ),
             "source": "cdp.network",
             "event_type": event_type,
             "confidence": "observed",
@@ -458,10 +465,14 @@ class NetworkNormalizer:
         )
         return self._finish_event(event)
 
-    def _on_Network_webSocketFrameReceived(self, params: dict[str, Any], target_id: str | None) -> dict[str, Any] | None:
+    def _on_Network_webSocketFrameReceived(
+        self, params: dict[str, Any], target_id: str | None
+    ) -> dict[str, Any] | None:
         return self._websocket_frame(params, target_id, direction="received")
 
-    def _on_Network_webSocketFrameSent(self, params: dict[str, Any], target_id: str | None) -> dict[str, Any] | None:
+    def _on_Network_webSocketFrameSent(
+        self, params: dict[str, Any], target_id: str | None
+    ) -> dict[str, Any] | None:
         return self._websocket_frame(params, target_id, direction="sent")
 
     def _on_Network_webSocketClosed(
@@ -479,5 +490,11 @@ class NetworkNormalizer:
             target_id=target_id,
             request_id=request_id,
         )
-        event.update({"url_path": self._path(state["url"]), "method": None, "status_code": None})
+        event.update(
+            {
+                "url_path": self._path(state["url"]),
+                "method": None,
+                "status_code": None,
+            }
+        )
         return self._finish_event(event)
