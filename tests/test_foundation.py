@@ -230,6 +230,66 @@ class ValidatorV2Tests(unittest.TestCase):
             result = validate_repository(root)
             self.assertTrue(any("forbidden committed file" in error for error in result.errors))
 
+    def test_validator_enforces_schema_date_time_formats(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._minimal_root(root)
+            (root / "schemas/capture-index.schema.json").write_text(
+                json.dumps(
+                    {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "type": "object",
+                        "required": ["generated_at", "captures"],
+                        "properties": {
+                            "generated_at": {"type": "string", "format": "date-time"},
+                            "captures": {"type": "array"},
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "knowledge/sources/captures.json").write_text(
+                json.dumps({"generated_at": "not-a-date", "captures": []}),
+                encoding="utf-8",
+            )
+            result = validate_repository(root)
+            self.assertTrue(
+                any("capture-index.schema.json" in error and "date-time" in error for error in result.errors)
+            )
+
+    def test_validator_validates_redaction_policy_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._minimal_root(root)
+            (root / "config").mkdir()
+            (root / "schemas/redaction-policy.schema.json").write_text(
+                json.dumps(
+                    {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "type": "object",
+                        "required": ["bodies"],
+                        "properties": {
+                            "bodies": {
+                                "type": "object",
+                                "required": ["first_party_only"],
+                                "properties": {
+                                    "first_party_only": {"type": "boolean"}
+                                },
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "config/redaction-policy.json").write_text(
+                json.dumps({"bodies": {"first_party_only": "yes"}}),
+                encoding="utf-8",
+            )
+            result = validate_repository(root)
+            self.assertTrue(
+                any("redaction-policy.schema.json" in error for error in result.errors)
+            )
+
     def test_validator_validates_source_manifests_against_source_schema(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
