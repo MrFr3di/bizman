@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/session-manifest.schema.json",
+  "title": "BizMan live collection session manifest",
+  "type": "object",
+  "required": [
+    "schema_version", "session_id", "started_at", "ended_at", "collector", "browser",
+    "protocol", "event_files", "artifact_count"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "session_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "started_at": {"type": "string", "format": "date-time"},
+    "ended_at": {"type": ["string", "null"], "format": "date-time"},
+    "collector": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "bizman-cdp"},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "browser": {
+      "type": "object",
+      "required": ["product", "version"],
+      "properties": {
+        "product": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "protocol": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "cdp"},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "event_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "artifact_count": {"type": "integer", "minimum": 0}
+  },
+  "additionalProperties": false
+}

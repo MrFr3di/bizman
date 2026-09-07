@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/redaction-policy.schema.json",
+  "title": "BizMan capture-time redaction policy",
+  "type": "object",
+  "required": ["schema_version", "headers", "fields", "bodies"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "headers": {
+      "type": "object",
+      "required": ["drop"],
+      "properties": {
+        "drop": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "fields": {
+      "type": "object",
+      "required": ["drop_patterns"],
+      "properties": {
+        "drop_patterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "bodies": {
+      "type": "object",
+      "required": [
+        "first_party_only", "max_request_bytes", "max_response_bytes", "mime_allowlist"
+      ],
+      "properties": {
+        "first_party_only": {"type": "boolean"},
+        "max_request_bytes": {"type": "integer", "minimum": 0},
+        "max_response_bytes": {"type": "integer", "minimum": 0},
+        "mime_allowlist": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

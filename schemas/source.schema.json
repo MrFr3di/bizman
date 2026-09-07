@@ -1,13 +1,41 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/bizman/source.schema.json",
+  "title": "BizMan HAR source manifest",
   "type": "object",
-  "required": ["id", "kind", "source_filename", "sha256", "entries"],
+  "required": [
+    "id", "kind", "source_filename", "source_file_committed", "size_bytes", "sha256",
+    "entries", "captured_from", "captured_to", "hosts", "methods", "resource_types",
+    "sensitive_header_names_detected", "privacy"
+  ],
   "properties": {
-    "id": {"type": "string", "pattern": "^src\\."},
+    "id": {"type": "string", "pattern": "^src\\.[a-z0-9][a-z0-9.-]*$"},
     "kind": {"const": "har_capture"},
-    "source_filename": {"type": "string"},
+    "source_filename": {"type": "string", "minLength": 1},
+    "source_file_committed": {"const": false},
+    "size_bytes": {"type": "integer", "minimum": 0},
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "entries": {"type": "integer", "minimum": 0}
-  }
+    "entries": {"type": "integer", "minimum": 0},
+    "captured_from": {"type": "string", "format": "date-time"},
+    "captured_to": {"type": "string", "format": "date-time"},
+    "hosts": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "methods": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "resource_types": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "sensitive_header_names_detected": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "privacy": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
 }

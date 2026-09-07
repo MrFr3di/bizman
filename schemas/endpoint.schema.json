@@ -1,12 +1,41 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/bizman/endpoint.schema.json",
+  "title": "BizMan observed endpoint signature",
   "type": "object",
-  "required": ["id", "path", "confidence"],
+  "required": [
+    "path_pattern", "count", "methods", "statuses", "mime_types", "resource_types",
+    "captures", "query_keys", "examples"
+  ],
   "properties": {
-    "id": {"type": "string", "pattern": "^bm\\.endpoint\\."},
-    "methods": {"type": "array", "items": {"enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]}},
-    "path": {"type": "string", "pattern": "^/"},
-    "confidence": {"enum": ["observed", "documented", "discovered-reference", "inferred", "hypothesis", "verified"]}
-  }
+    "path_pattern": {"type": "string", "pattern": "^/"},
+    "count": {"type": "integer", "minimum": 1},
+    "methods": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "statuses": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "mime_types": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "resource_types": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "captures": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "query_keys": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "examples": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
 }
