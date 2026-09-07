@@ -10,7 +10,16 @@
     "raw_har_committed": false,
     "raw_storage": "external/private",
     "provenance": "Every derived record retains capture/entry evidence or source-level provenance where applicable.",
-    "confidence_levels": ["observed", "documented", "inferred", "hypothesis", "verified", "contradicted", "deprecated"],
+    "confidence_levels": [
+      "observed",
+      "documented",
+      "discovered-reference",
+      "inferred",
+      "hypothesis",
+      "verified",
+      "contradicted",
+      "deprecated"
+    ],
     "ci": "manual-only",
     "ci_command": "python3 tools/validate_repo.py"
   },
