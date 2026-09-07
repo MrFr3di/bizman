@@ -23,6 +23,10 @@ class RuleConfigurationError(ValueError):
     """Rule catalog or semantic version configuration is invalid."""
 
 
+class RuleApplicationError(ValueError):
+    """A promotable semantic fact cannot be classified by the active catalog."""
+
+
 def _positive_version(value: object, *, name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise RuleConfigurationError(f"{name} must be a positive integer")
@@ -114,7 +118,9 @@ class RuleEngine:
                 continue
             descriptor = self._by_kind.get(fact.kind)
             if descriptor is None:
-                continue
+                raise RuleApplicationError(
+                    f"no registered rule for promotable fact kind {fact.kind!r}"
+                )
 
             finding = self._finding(fact, descriptor)
             existing = merged.get(finding.change_id)
@@ -133,6 +139,7 @@ class RuleEngine:
 
 __all__ = [
     "RULE_DESCRIPTORS",
+    "RuleApplicationError",
     "RuleConfigurationError",
     "RuleEngine",
 ]
