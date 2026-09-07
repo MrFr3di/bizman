@@ -309,6 +309,14 @@ class TargetOrchestrator:
             except CdpProtocolError as exc:
                 self._warn(f"Target.setAutoAttach failed for session {session_id}: {exc}")
 
+    def _remove_terminal_target(self, target_id: str) -> None:
+        session_id = self.registry.target_to_session.get(target_id)
+        self.registry.remove_target(target_id)
+        if isinstance(session_id, str):
+            self._configured_sessions.discard(session_id)
+            self._action_binding_sessions.discard(session_id)
+            self._action_configured_sessions.discard(session_id)
+
     async def handle_event(self, event: CdpEvent) -> None:
         method = event.method
         params = event.params
@@ -379,12 +387,8 @@ class TargetOrchestrator:
                 self._action_configured_sessions.discard(session_id)
             return
 
-        if method == "Target.targetDestroyed":
+        if method in {"Target.targetDestroyed", "Target.targetCrashed"}:
             target_id = params.get("targetId")
             if isinstance(target_id, str):
-                session_id = self.registry.target_to_session.get(target_id)
-                self.registry.remove_target(target_id)
-                if isinstance(session_id, str):
-                    self._configured_sessions.discard(session_id)
-                    self._action_binding_sessions.discard(session_id)
-                    self._action_configured_sessions.discard(session_id)
+                self._remove_terminal_target(target_id)
+            return
