@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable
+from typing import Any, Callable
 
 from tools.bizman_collector.cdp import CdpEvent, CdpProtocolError
 from tools.bizman_collector.discovery import ProtocolCapabilities
 from tools.bizman_collector.network import FirstPartyPolicy
 
 WarningSink = Callable[[str], None]
+_ACTION_TARGET_TYPES = frozenset({"page", "iframe"})
 
 
 @dataclass(slots=True)
@@ -60,15 +61,29 @@ class TargetOrchestrator:
         first_party: FirstPartyPolicy,
         capabilities: ProtocolCapabilities | None = None,
         max_post_data_size: int | None = None,
+        action_binding_name: str | None = None,
+        action_world_name: str | None = None,
+        action_script: str | None = None,
         warning_sink: WarningSink | None = None,
     ) -> None:
         self.cdp = cdp
         self.first_party = first_party
         self.capabilities = capabilities
         self.max_post_data_size = max_post_data_size
+        self.action_binding_name = action_binding_name
+        self.action_world_name = action_world_name
+        self.action_script = action_script
         self.warning_sink = warning_sink
         self.registry = TargetRegistry()
         self._attaching: set[str] = set()
+
+        configured = [action_binding_name is not None, action_script is not None]
+        if any(configured) and not all(configured):
+            raise ValueError("action_binding_name and action_script must be configured together")
+
+    @property
+    def action_observer_enabled(self) -> bool:
+        return self.action_binding_name is not None and self.action_script is not None
 
     def _warn(self, message: str) -> None:
         if self.warning_sink is not None:
@@ -79,14 +94,17 @@ class TargetOrchestrator:
             return True
         return self.capabilities.has_command(method)
 
+    def _supports_parameter(self, method: str, parameter: str) -> bool:
+        return (
+            self.capabilities is not None
+            and self.capabilities.command_supports_parameter(method, parameter)
+        )
+
     def _network_enable_params(self) -> dict[str, Any]:
         if (
             self.max_post_data_size is not None
             and self.max_post_data_size >= 0
-            and self.capabilities is not None
-            and self.capabilities.command_supports_parameter(
-                "Network.enable", "maxPostDataSize"
-            )
+            and self._supports_parameter("Network.enable", "maxPostDataSize")
         ):
             return {"maxPostDataSize": self.max_post_data_size}
         return {}
@@ -137,11 +155,96 @@ class TargetOrchestrator:
                 session_id=session_id,
                 info=info,
             )
-            await self._configure_session(session_id)
+            target_type = info.get("type") if isinstance(info.get("type"), str) else None
+            await self._configure_session(session_id, target_type=target_type)
         finally:
             self._attaching.discard(target_id)
 
-    async def _configure_session(self, session_id: str) -> None:
+    async def _configure_action_observer(
+        self,
+        session_id: str,
+        *,
+        target_type: str | None,
+    ) -> None:
+        if not self.action_observer_enabled or target_type not in _ACTION_TARGET_TYPES:
+            return
+
+        required = (
+            "Runtime.enable",
+            "Runtime.addBinding",
+            "Page.addScriptToEvaluateOnNewDocument",
+        )
+        missing = [method for method in required if not self._supports(method)]
+        if missing:
+            self._warn(
+                f"action observer disabled for session {session_id}: missing CDP commands {', '.join(missing)}"
+            )
+            return
+
+        try:
+            await self.cdp.command("Runtime.enable", session_id=session_id)
+        except CdpProtocolError as exc:
+            self._warn(f"Runtime.enable failed for session {session_id}: {exc}")
+            return
+
+        world_supported = bool(
+            self.action_world_name
+            and self._supports_parameter(
+                "Page.addScriptToEvaluateOnNewDocument", "worldName"
+            )
+        )
+        scoped_binding_supported = bool(
+            world_supported
+            and self._supports_parameter("Runtime.addBinding", "executionContextName")
+        )
+
+        binding_params: dict[str, Any] = {"name": self.action_binding_name}
+        if scoped_binding_supported:
+            binding_params["executionContextName"] = self.action_world_name
+        try:
+            await self.cdp.command(
+                "Runtime.addBinding",
+                binding_params,
+                session_id=session_id,
+            )
+        except CdpProtocolError as exc:
+            self._warn(f"Runtime.addBinding failed for session {session_id}: {exc}")
+            return
+
+        script_params: dict[str, Any] = {"source": self.action_script}
+        if world_supported:
+            script_params["worldName"] = self.action_world_name
+        elif self.action_world_name:
+            self._warn(
+                f"Page.addScriptToEvaluateOnNewDocument worldName unsupported for session {session_id}; using the default world"
+            )
+
+        if self._supports_parameter(
+            "Page.addScriptToEvaluateOnNewDocument", "runImmediately"
+        ):
+            script_params["runImmediately"] = True
+        else:
+            self._warn(
+                f"Page.addScriptToEvaluateOnNewDocument runImmediately unsupported for session {session_id}; current document may require a future navigation before action observation begins"
+            )
+
+        try:
+            await self.cdp.command(
+                "Page.addScriptToEvaluateOnNewDocument",
+                script_params,
+                session_id=session_id,
+            )
+        except CdpProtocolError as exc:
+            self._warn(
+                f"Page.addScriptToEvaluateOnNewDocument failed for session {session_id}: {exc}"
+            )
+
+    async def _configure_session(
+        self,
+        session_id: str,
+        *,
+        target_type: str | None = None,
+    ) -> None:
         if self._supports("Network.enable"):
             try:
                 await self.cdp.command(
@@ -151,6 +254,8 @@ class TargetOrchestrator:
                 )
             except CdpProtocolError as exc:
                 self._warn(f"Network.enable failed for session {session_id}: {exc}")
+
+        await self._configure_action_observer(session_id, target_type=target_type)
 
         if self._supports("Target.setAutoAttach"):
             try:
@@ -196,7 +301,8 @@ class TargetOrchestrator:
                     session_id=session_id,
                     info=info,
                 )
-                await self._configure_session(session_id)
+                target_type = info.get("type") if isinstance(info.get("type"), str) else None
+                await self._configure_session(session_id, target_type=target_type)
             return
 
         if method == "Target.detachedFromTarget":
