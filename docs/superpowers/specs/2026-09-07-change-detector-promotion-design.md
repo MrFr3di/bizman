@@ -1,299 +1,584 @@
 # Change Detector + Promotion Bundle Design
 
-Status: approved architectural direction in chat on 2026-09-07.
+Status: revised production design after architecture audit on 2026-09-07.
+
+This document supersedes the first 2D draft. The revised design was checked against the current BizMan collector/corpus, Python 3.14 `sqlite3`, SQLite STRICT/WAL/transaction guidance, JSON Schema Draft 2020-12, transactional-outbox guidance, and the normalization/diff/rule separation used by mature schema-diff tools such as Buf and oasdiff.
 
 ## Goal
 
-Turn sanitized local collector sessions into deterministic, reviewable novelty reports without committing operational data or putting an LLM in the evidence path.
+Turn immutable, sanitized BizMan collector sessions into deterministic, replayable and reviewable structural findings without putting an LLM in the evidence path and without committing operational state.
 
-The v1 detector answers a narrow question: **what protocol/form/action structure was observed at runtime that is not represented by the current curated corpus?**
+The v1 question is deliberately narrow:
 
-It does not attempt to infer game economics, scrape response bodies, mutate curated knowledge automatically, or decide whether an observed change is strategically important.
+> What HTTP/form/action structure was observed at runtime that the current curated BizMan contract does not represent, and is there enough evidence to make that statement safely?
 
-## Data flow
+The last clause is essential. Missing evidence is never interpreted as an empty value or as “known”.
 
-```text
-BizManData/sessions + events + sanitized CAS
-                 |
-                 v
-            SessionReader
-                 |
-                 v
-         SemanticExtractor
-                 |
-       +---------+----------+
-       |                    |
-       v                    v
- CuratedBaseline        DetectorState
- (repo, read-only)      (local SQLite)
-       |                    |
-       +---------+----------+
-                 v
-          ChangeDetector
-                 |
-                 v
-         PromotionBundle
-       (local, metadata-only)
-                 |
-                 v
-          human/model triage
-                 |
-                 v
-        curated knowledge/Git
-```
+## Non-goals
 
-Git remains code, schemas, documentation, and curated derived knowledge only. `BizManData`, detector SQLite files, local bundles, CAS, browser profiles, cookies, and auth state remain outside the repository.
+2D v1 does not:
 
-## v1 novelty classes
+- mutate the game or browser;
+- fetch response bodies that the collector did not persist;
+- infer prices, economics or strategy;
+- auto-edit curated knowledge;
+- use an LLM to parse, normalize, compare, deduplicate or persist evidence;
+- introduce Kafka, EventStoreDB, DuckDB or another server database;
+- treat the current endpoint census as a complete protocol schema.
 
-The first detector version intentionally covers only structures that the current collector can observe safely and reliably.
+## Architectural principles
 
-### 1. Endpoint novelty
+1. **Immutable evidence is the source of truth.** JSONL/CAS collector output is never rewritten by the detector.
+2. **Comparison uses compiled semantic contracts, not source-file bytes.** Repartitioning or pretty-printing curated JSON must not create novelty.
+3. **Interpretation is versioned.** Baseline, normalization/extraction semantics, redaction semantics and rule versions participate in an analysis profile.
+4. **Unknown is first-class.** `None`/unavailable structural evidence is different from a confirmed empty set.
+5. **Diff and policy are separate.** Semantic deltas are computed before versioned rules classify them as findings.
+6. **Operational state is rebuildable.** SQLite is a local projection/checkpoint/outbox, not the evidence store.
+7. **Promotion publication is crash-safe.** SQLite state and pending promotion payload are committed atomically; file materialization is idempotent downstream work.
+8. **Everything promoted is value-free.** Only normalized paths, methods, status codes, structural key names, rule metadata and sanitized evidence IDs can leave the detector core.
 
-Source: `http.request` and `http.response` events.
-
-Baseline: `knowledge/http/endpoints/index.json` and its partitions.
-
-Detect:
-
-- `endpoint.new`: request method/path does not match a known endpoint pattern;
-- `endpoint.method_added`: path pattern is known but method is new;
-- `endpoint.query_key_added`: method/path is known but a normalized query-key class is new;
-- `endpoint.status_added`: response status for a known method/path is not represented by the baseline.
-
-A baseline `{placeholder}` occupies exactly one path segment. Matching is segment-aware; it never uses an unconstrained substring wildcard.
-
-Digit-only query-key names are canonicalized to `{numeric-key}` in both baseline and runtime observations. This prevents `/user/check/message?123=` style identifiers from generating a new change for every numeric key.
-
-### 2. Form signature novelty
-
-Source: `dom.action` events with form metadata, primarily `submit`.
-
-Baseline: `knowledge/http/forms/index.json` and its partitions.
-
-Canonical form key:
+## Target data flow
 
 ```text
-(method, normalized action pathname)
+curated knowledge
+      |
+      v
+BaselineCompiler
+      |
+      v
+RuntimeContract IR -------------------+
+      |                                |
+      |                          AnalysisProfile
+      |                                |
+      +--------------------------------+
+                                       |
+BizManData/session manifest            |
++ immutable JSONL                      |
++ sanitized CAS                        |
+      |                                |
+      v                                |
+EvidenceReader + integrity checks      |
+      |                                |
+      v                                |
+ObservationExtractor                   |
+      |                                |
+      v                                |
+Observation IR                         |
+      |                                |
+      +---------------> SemanticDiff <-+
+                              |
+                              v
+                           DiffFacts
+                              |
+                              v
+                      versioned RuleEngine
+                              |
+                 +------------+------------+
+                 |            |            |
+               known      indeterminate   finding
+                                           |
+                                           v
+                           SQLite STRICT/WAL transaction
+                           changes + checkpoint + outbox
+                                           |
+                                           v
+                           Promotion materializer
+                                           |
+                                           v
+                              value-free bundle
+                                           |
+                                           v
+                                human/model triage
+                                           |
+                                           v
+                              curated knowledge/Git
 ```
 
-Field names are normalized (`product[0]` -> `product[n]`) and redacted with the repository redaction policy before comparison. Baseline field values are never loaded into detector state or promotion bundles.
-
-Detect:
-
-- `form.new`: no form exists for the canonical method/action;
-- `form.field_added`: the runtime safe field set contains a field class absent from every matching baseline form.
-
-A runtime field set that is a subset of a known safe baseline form is not novel. This is required because sensitive baseline field names such as password fields are intentionally absent from runtime action events.
-
-### 3. POST operation novelty
-
-Source: first-party `http.request` events with method `POST`.
-
-Baseline: `knowledge/http/operation-index.json`.
-
-Canonical operation signature:
+## Package boundaries
 
 ```text
-(path pattern, normalized query-key set, normalized sanitized body-key set)
+tools/bizman_detector/
+├── __init__.py          public version constants only
+├── model.py             immutable IR/value objects and enums
+├── normalization.py     pure canonicalization + path matcher
+├── baseline.py          curated sources -> RuntimeContract
+├── evidence.py          manifests/JSONL/CAS validation + hashing
+├── extract.py           validated events -> Observation IR
+├── diff.py              observations vs contract -> DiffFacts
+├── rules/
+│   ├── __init__.py      rule registry + analysis-profile rule metadata
+│   ├── http.py
+│   ├── forms.py
+│   ├── operations.py
+│   └── relations.py
+├── state.py             SQLite schema/checkpoints/changes/outbox
+├── promotion.py         bundle builder/schema validation/materialization
+└── runner.py            orchestration only
 ```
 
-The detector may read only sanitized request-body CAS artifacts already produced by the collector. It extracts key names and discards values immediately. JSON bodies are considered only when they are objects or lists of objects; form bodies use `application/x-www-form-urlencoded`. Indexed names are canonicalized (`selected[397]` -> `selected[n]`).
+No plugin framework is introduced in v1. `rules/*` are plain deterministic Python functions/classes with stable IDs and integer versions.
 
-Detect:
+## Version model
 
-- `operation.new_signature`: no baseline operation for the matched path contains the same normalized query/body key sets;
-- `operation.query_key_added` / `operation.body_key_added`: emitted when a closest same-path operation exists and the delta is additive.
-
-No request-body values appear in a bundle.
-
-### 4. Action-to-HTTP relation novelty
-
-Source: `correlation.action_http` events with `strong` or `probable` status plus their referenced immutable action/request events.
-
-Baseline: `knowledge/actions/catalog.json` plus operation signatures.
-
-Detect:
-
-- `action_http.new_relation`: a trusted/observed form action is strongly/probably linked to a request method/path that is not represented by the known action catalog, or its form action pathname conflicts with the linked request pathname.
-
-`temporal-only` correlations never create an action relation promotion candidate in v1.
-
-### 5. Structural conflicts
-
-If a runtime observation is internally contradictory (for example a strong submit correlation where the safe form action path and HTTP request path disagree), the detector emits a `conflict` novelty class rather than silently choosing one interpretation.
-
-## Normalization
-
-Normalization is deterministic and value-free.
-
-### Paths
-
-- input must be an origin-relative absolute pathname beginning with `/`;
-- query and fragments are not part of the path key;
-- known endpoint placeholders match one non-empty slash-delimited segment;
-- trailing-slash differences remain significant unless both forms are explicitly represented by the baseline. The detector does not invent server routing equivalence.
-
-### Field/query keys
-
-- surrounding whitespace is stripped;
-- empty names are discarded;
-- sensitive names are dropped with `RedactionPolicy.should_drop_field`;
-- every `[digits]` component becomes `[n]`;
-- a name consisting entirely of decimal digits becomes `{numeric-key}`;
-- keys are deduplicated and lexicographically sorted before hashing/comparison.
-
-### Status and methods
-
-Methods are uppercase ASCII tokens. Status codes must be integers in 100..599; Python booleans are rejected as numeric values.
-
-## Curated baseline
-
-`CuratedBaseline.load(repo_root, redaction_policy)` reads only the declared curated files needed by v1:
-
-- endpoint partitions from `knowledge/http/endpoints/index.json`;
-- form partitions from `knowledge/http/forms/index.json`;
-- `knowledge/http/operation-index.json`;
-- `knowledge/actions/catalog.json`.
-
-The loader ignores example values, form values, HAR entry payloads, and other unnecessary evidence data.
-
-The baseline identifier is a SHA-256 hash over a canonical normalized semantic object built from endpoint/form/operation/action signatures. It is **not** a hash of file bytes. Reformatting JSON or repartitioning equivalent records therefore does not invalidate detector state.
-
-Malformed baseline records fail closed with a path-specific error; the detector never silently treats an unreadable curated dataset as empty.
-
-## Session input contract
-
-`SessionReader` scans finalized local manifests under `BizManData/sessions/<session_id>/manifest.json`.
-
-Accepted terminal statuses: `completed` and `cancelled`. A normally interrupted interactive collector session is still valid evidence. `failed` sessions are skipped by default and reported in the CLI summary.
-
-Before detection, a session reader verifies:
-
-- manifest is valid JSON and contains the expected session ID;
-- all referenced event files exist under the configured data directory;
-- every JSONL line is an object;
-- every event has the same session ID;
-- event `sequence` values are contiguous starting at zero;
-- duplicate event IDs within a session are rejected.
-
-Artifact references are resolved only through the collector SHA-256 CAS layout. Paths from event content are never treated as filesystem paths.
-
-The final manifest fingerprint is SHA-256 over canonical JSON and is recorded in detector state. If the same `(session_id, baseline_sha256)` was already processed with a different manifest hash, the detector raises an immutability error rather than silently replacing history.
-
-## Change identity
-
-Each change is represented by a value-free semantic payload. Its fingerprint is SHA-256 over canonical JSON.
-
-Stable ID:
+The detector has explicit semantic versions independent of package release numbers:
 
 ```text
-chg.<64 lowercase hex SHA-256>
+CONTRACT_SCHEMA_VERSION = 1
+NORMALIZATION_VERSION   = 1
+EXTRACTION_VERSION      = 1
+PROMOTION_SCHEMA_VERSION = 1
 ```
 
-The fingerprint excludes timestamps, session IDs, event IDs, counters, and display text. The same structural novelty therefore has the same change ID across sessions processed against the same baseline.
+Each rule has `rule_id` and `rule_version`.
 
-Evidence references are separate from identity and contain only sanitized event IDs/session ID plus normalized structural fields.
+### Baseline identity
+
+`baseline_sha256` hashes a canonical normalized `RuntimeContract` envelope:
+
+```json
+{
+  "contract_schema_version": 1,
+  "normalization_version": 1,
+  "endpoints": [],
+  "forms": [],
+  "operations": [],
+  "action_request_families": []
+}
+```
+
+It does not hash partition bytes, record ordering, examples, counts or values.
+
+### Redaction identity
+
+The detector computes `redaction_policy_sha256` from semantic policy content: sorted dropped headers, field pattern text+flags, body limits, first-party flag and normalized MIME allowlist. This prevents an interpretation change from silently reusing old checkpoints even when current baseline records happen not to be affected by the changed policy.
+
+### Analysis profile
+
+`analysis_profile_sha256` is the checkpoint namespace:
+
+```text
+SHA256({
+  baseline_sha256,
+  contract_schema_version,
+  normalization_version,
+  extraction_version,
+  redaction_policy_sha256,
+  rules: sorted [{rule_id, rule_version}]
+})
+```
+
+A baseline update, normalization change, extraction change, redaction-policy change or rule-version change therefore replays historical sessions automatically without deleting SQLite.
+
+## Runtime Contract IR
+
+The current curated corpus is intentionally heterogeneous. The compiler turns it into one value-free contract before runtime comparison.
+
+### Endpoint families
+
+Sources:
+
+- endpoint path patterns from `knowledge/http/endpoints/index.json` partitions;
+- concrete observations from `knowledge/http/application-events/index.json` partitions.
+
+The endpoint census alone is insufficient because `methods`, `statuses` and `query_keys` are separately aggregated and lose the exact method/status relationship. Therefore each curated application event is matched to exactly one endpoint path pattern, and endpoint contract information is compiled per `(path_pattern, method)`.
+
+For each method/path family retain only:
+
+- normalized path pattern;
+- method;
+- union of observed safe query-key classes for that method/path;
+- set of observed response status codes for that method/path.
+
+Values, timestamps, capture names, response hashes and examples do not enter the contract identity.
+
+If a curated application event matches no endpoint pattern or is ambiguous at the highest specificity, baseline compilation fails with a source-specific consistency error. It is not silently converted into a literal fallback.
+
+### Path matching and ambiguity
+
+Paths are origin-relative absolute pathnames. v1 does **not** percent-decode or Unicode-normalize them; doing so can change slash/segment semantics (for example `%2F`). Query and fragment components are not part of path identity.
+
+A `{placeholder}` occupies exactly one non-empty slash-delimited segment. Literal segments are escaped, not interpreted as regex.
+
+Matching priority:
+
+1. exact literal path;
+2. matching template with the greatest number of literal segments;
+3. then the fewest placeholders.
+
+If two distinct patterns remain tied at highest specificity, matching is ambiguous and the detector fails closed. JSON/source ordering never decides a match.
+
+Trailing slash remains significant.
+
+For performance, exact paths use a dictionary and templates are bucketed by segment count; a trie is unnecessary for the current 68-endpoint corpus.
+
+### Methods
+
+Methods are canonicalized to uppercase after ASCII-token validation. Whitespace-containing or non-token values are invalid evidence, not normalized guesses.
+
+### Query/field key normalization
+
+Normalization order:
+
+1. input must be a string;
+2. trim surrounding Unicode whitespace;
+3. discard empty names;
+4. apply `RedactionPolicy.should_drop_field` to the trimmed original name;
+5. replace each ASCII `[0-9]+` index component with `[n]`;
+6. if the entire name matches ASCII `[0-9]+`, replace with `{numeric-key}`;
+7. deduplicate and lexicographically sort sets.
+
+ASCII digits are intentional; `str.isdecimal()` is not used because it gives broader Unicode semantics that are harder to reproduce across producers.
+
+### Forms
+
+Source: `knowledge/http/forms/index.json` partitions.
+
+A form has two identities:
+
+```text
+FormFamilyKey = (method, canonical action path)
+FormSignature = sorted safe normalized field-name set
+```
+
+The action path uses endpoint pattern canonicalization when it uniquely matches an endpoint; otherwise a valid literal origin-relative path remains literal.
+
+Sensitive field names and all values are discarded before IR construction.
+
+At runtime:
+
+- a field set that is a subset of a known signature is known (runtime intentionally omits sensitive fields);
+- additional safe fields produce an additive form diff;
+- a family with no compatible signature may produce `form.signature_new` rather than conflating family existence with signature identity.
+
+### POST operations
+
+Source: `knowledge/http/operation-index.json`.
+
+Canonical signature:
+
+```text
+(canonical path pattern, normalized query-key set, normalized body-key set)
+```
+
+Multiple signatures for one path (notably `/units/vendor/select/`) are first-class and must not be collapsed.
+
+For runtime evidence, `body_keys=None` means **structurally unknown/unavailable**. It is never equivalent to `body_keys=()`.
+
+The current collector omits `request_body_ref` when a body is absent, over the capture limit, unsupported by MIME policy, malformed or structurally unsafe. Because those cases are not distinguishable from the event alone, absence of `request_body_ref` is `UNKNOWN_BODY` in v1. No operation novelty rule fires from unknown body evidence.
+
+### Action/request families
+
+Source: `knowledge/actions/catalog.json` plus operation contracts.
+
+The curated action catalog proves known write request families `(method, path)` and structural form/query keys. It does not prove a full historical DOM-action graph.
+
+Therefore v1 relation rules are deliberately narrow:
+
+- a strong/probable correlation to an unseen write request family can be a new finding;
+- a safe form action path that conflicts with its linked request path is a separate conflict finding;
+- `temporal-only` correlation never creates a promotion finding.
+
+## Evidence reader and integrity
+
+Accepted session statuses are `completed` and `cancelled`. `failed` sessions are skipped by default and reported.
+
+### Manifest
+
+The reader validates manifests against `schemas/session-manifest.schema.json` with one reusable Draft 2020-12 validator and `FormatChecker`.
+
+It verifies the path directory name equals `session_id`.
+
+### Event files
+
+Manifest event paths must:
+
+- be relative POSIX-style paths;
+- contain no `..`;
+- resolve under the configured data directory even through symlinks;
+- reside under `events/`;
+- refer to regular `.jsonl` files.
+
+The reader streams event files in manifest order. It never loads the whole JSONL session into memory.
+
+Each binary line has a maximum size guard. Every line must be valid UTF-8 JSON, an object, pass `schemas/event.schema.json`, use the session ID, and have a contiguous sequence starting at zero. Duplicate event IDs are rejected.
+
+A reusable Draft 2020-12 event validator is created once per reader, never per event.
+
+### Evidence identity
+
+`manifest_sha256` is SHA-256 over canonical manifest JSON.
+
+Each event file is SHA-256 hashed over its actual bytes while streaming. The session evidence identity is:
+
+```text
+evidence_sha256 = SHA256({
+  manifest_sha256,
+  event_files: ordered [{path, sha256, bytes}]
+})
+```
+
+Checkpoint immutability is based on `evidence_sha256`, not only the manifest hash. Editing a JSONL file without changing the manifest is therefore detected.
+
+### CAS verification
+
+Only references matching `sha256:<64 lowercase hex>` are accepted. Paths are derived from the digest; event content is never treated as a path.
+
+Whenever an artifact is dereferenced, the reader recomputes SHA-256 over the actual bytes and requires it to equal the reference digest. Mismatch is corruption and aborts processing.
+
+Body artifacts retain the collector size bound; the detector also enforces an independent maximum read size.
+
+## Observation IR
+
+Validated events are projected immediately to immutable value-free observations. Raw event dicts and headers are not retained after extraction.
+
+Core v1 types:
+
+```text
+HttpObservation
+  method
+  literal_path
+  canonical_path_pattern | None
+  query_keys
+  status | None
+  body_keys: tuple[str,...] | None
+  request_event_id
+  response_event_id | None
+
+FormObservation
+  method
+  action_path
+  field_names
+  action_event_id
+
+RelationObservation
+  correlation_status
+  action_event_id
+  request_event_id
+  safe action/request structural metadata
+```
+
+For body keys:
+
+```text
+None  = evidence unavailable / indeterminate
+()    = confirmed structurally empty body (reserved for evidence formats that can prove it)
+```
+
+With current collector output, no `request_body_ref` yields `None`.
+
+The extractor may retain minimal action/request metadata needed to resolve later correlation references, but never whole raw events. Pending relation-source state has a hard upper bound; exceeding it fails closed rather than risking unbounded memory.
+
+## Semantic diff
+
+`diff.py` compares Observation IR with RuntimeContract and emits data-only `DiffFact` values. It does not know Promotion Bundle format or persistence.
+
+Comparison states are:
+
+```text
+KNOWN
+NOVEL
+INDETERMINATE
+CONFLICT
+```
+
+Examples:
+
+- unknown body on a POST -> `INDETERMINATE`, not `operation.new_signature`;
+- ambiguous path match -> hard baseline/matching error, not NOVEL;
+- strong form/action path disagreement -> `CONFLICT`;
+- extra safe query key on a known method/path -> NOVEL additive fact.
+
+`INDETERMINATE` diagnostics are counted in run summaries but are not promoted as changes in v1.
+
+## Rule catalog
+
+Rules consume DiffFacts and produce immutable Findings. They have stable IDs and integer versions. v1 catalog:
+
+| Rule ID | v | Finding kind |
+|---|---:|---|
+| `BM-HTTP-001` | 1 | `endpoint.new` |
+| `BM-HTTP-002` | 1 | `endpoint.method_added` |
+| `BM-HTTP-003` | 1 | `endpoint.query_key_added` |
+| `BM-HTTP-004` | 1 | `endpoint.status_added` |
+| `BM-FORM-001` | 1 | `form.signature_new` |
+| `BM-FORM-002` | 1 | `form.field_added` |
+| `BM-OP-001` | 1 | `operation.new_signature` |
+| `BM-OP-002` | 1 | `operation.query_key_added` |
+| `BM-OP-003` | 1 | `operation.body_key_added` |
+| `BM-REL-001` | 1 | `action_http.request_family_new` |
+| `BM-REL-002` | 1 | `action_http.path_conflict` |
+
+A rule test asserts the exact set of rule IDs produced by a fixture, not merely that one expected finding is present.
+
+### Finding identity
+
+Finding identity excludes timestamps, session IDs, event IDs, occurrence counters and display prose. It includes semantic versioning:
+
+```text
+change_id = "chg." + SHA256({
+  normalization_version,
+  extraction_version,
+  rule_id,
+  rule_version,
+  kind,
+  novelty_class,
+  subject,
+  delta
+})
+```
+
+Evidence IDs remain outside identity and are merged/sorted for duplicate same-session findings.
 
 ## Detector state
 
-Default location:
+Default:
 
 ```text
 <BizManData>/detector/state.sqlite3
 ```
 
-The database is operational and rebuildable; it is forbidden from Git.
+The DB is operational/rebuildable and forbidden from Git.
 
-Python uses the stdlib `sqlite3` module. On initialization the detector requires SQLite >= 3.37 and creates `STRICT` tables. Connections configure:
+Minimum SQLite: 3.37 for STRICT tables.
+
+Every read-write connection configures immediately:
 
 ```sql
+PRAGMA trusted_schema = OFF;
 PRAGMA foreign_keys = ON;
 PRAGMA busy_timeout = 5000;
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
 ```
 
-WAL is appropriate because detector state may later be inspected by a concurrent local reader while one detector writer is processing sessions. The database remains rebuildable from sanitized session history, so `synchronous=NORMAL` is an intentional durability/performance trade-off.
+WAL is used only on local filesystems. BizMan does not support detector state on a network filesystem.
 
-Schema v1:
+`NORMAL` is intentional because the projection is rebuildable; SQLite documents WAL+NORMAL as consistent but potentially losing the last committed transaction on power loss, which replay can recover.
+
+Database identification/versioning uses:
+
+```text
+PRAGMA application_id = 1112359985   -- 0x424D4431 = "BMD1"
+PRAGMA user_version = 1
+```
+
+A nonzero foreign application ID or unknown newer user_version fails closed. No destructive automatic migration is performed in v1.
+
+### Explicit Python transaction control
+
+Python 3.14 recommends the `autocommit` API. BizMan needs explicit `BEGIN IMMEDIATE`, not implicit `BEGIN DEFERRED`.
+
+On Python >=3.12 the state connection uses SQLite autocommit mode (`autocommit=True`) and executes SQL `BEGIN IMMEDIATE` / `COMMIT` / `ROLLBACK` explicitly. On Python 3.11 compatibility mode uses `isolation_level=None`, which likewise leaves transaction boundaries to explicit SQL.
+
+This choice is deliberate: PEP-249 `autocommit=False` keeps a DEFERRED transaction open and conflicts with our explicit IMMEDIATE write-lock boundary.
+
+### Schema v1
 
 ```sql
-CREATE TABLE detector_meta (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-) STRICT;
-
 CREATE TABLE processed_sessions (
     session_id TEXT NOT NULL,
+    analysis_profile_sha256 TEXT NOT NULL,
     baseline_sha256 TEXT NOT NULL,
+    evidence_sha256 TEXT NOT NULL,
     manifest_sha256 TEXT NOT NULL,
-    bundle_id TEXT,
     processed_at TEXT NOT NULL,
-    PRIMARY KEY (session_id, baseline_sha256)
+    PRIMARY KEY (session_id, analysis_profile_sha256)
 ) STRICT;
 
-CREATE TABLE seen_changes (
-    baseline_sha256 TEXT NOT NULL,
-    change_fingerprint TEXT NOT NULL,
+CREATE TABLE changes (
+    analysis_profile_sha256 TEXT NOT NULL,
+    change_id TEXT NOT NULL,
+    rule_id TEXT NOT NULL,
+    rule_version INTEGER NOT NULL CHECK (rule_version > 0),
+    kind TEXT NOT NULL,
+    novelty_class TEXT NOT NULL,
+    identity_json TEXT NOT NULL,
     first_session_id TEXT NOT NULL,
     first_seen_at TEXT NOT NULL,
     last_session_id TEXT NOT NULL,
     last_seen_at TEXT NOT NULL,
     occurrence_count INTEGER NOT NULL CHECK (occurrence_count > 0),
-    PRIMARY KEY (baseline_sha256, change_fingerprint)
+    PRIMARY KEY (analysis_profile_sha256, change_id)
+) STRICT;
+
+CREATE TABLE promotion_outbox (
+    bundle_id TEXT PRIMARY KEY,
+    analysis_profile_sha256 TEXT NOT NULL,
+    baseline_sha256 TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    state TEXT NOT NULL CHECK (state IN ('pending','materialized')),
+    created_at TEXT NOT NULL,
+    materialized_at TEXT
 ) STRICT;
 ```
 
-State schema version is stored in `detector_meta`. Unknown newer schema versions fail closed; no destructive automatic migration is attempted.
+`identity_json` and `payload_json` contain only canonical value-free detector structures. Keeping them makes state auditable even if a materialized local file is removed.
 
-A baseline change naturally creates a new namespace because both processed sessions and seen changes include `baseline_sha256`. Historical sessions can therefore be replayed against a new curated baseline without deleting the database.
+## Transactional outbox and idempotence
 
-## Idempotence and transaction ordering
+The old “write bundle file, then commit SQLite” order is replaced because it is a filesystem/database dual write.
 
-Detection for one session is computed entirely in memory before state mutation.
+Per session:
 
-Only **first-seen** change fingerprints for the active baseline are included in a new Promotion Bundle. Repeated observations update `occurrence_count` but do not emit duplicate bundles.
+1. validate/hash evidence and build Observation IR;
+2. compute DiffFacts and Findings in memory;
+3. execute `BEGIN IMMEDIATE`;
+4. re-check `(session_id, analysis_profile_sha256)`;
+5. determine first-seen findings under the write lock;
+6. build deterministic canonical bundle payload for first-seen findings, if any;
+7. upsert occurrence counts;
+8. insert the processed-session checkpoint;
+9. insert the pending outbox row containing the exact bundle payload;
+10. `COMMIT`;
+11. materialize pending outbox rows to files using atomic temp-write + file `fsync` + `os.replace` + parent-directory fsync where supported;
+12. mark successfully verified files `materialized` in a short subsequent transaction.
 
-Commit ordering:
+No filesystem I/O occurs inside the main write transaction.
 
-1. read/validate session and calculate all changes;
-2. determine which change fingerprints are new using a read transaction;
-3. construct a deterministic bundle using session terminal time and sorted changes;
-4. atomically write the bundle using temp file + flush + `fsync` + `os.replace`;
-5. enter `BEGIN IMMEDIATE`;
-6. re-check processed-session and change uniqueness under the write lock;
-7. upsert change counts and insert the processed-session checkpoint;
-8. commit.
+Crash cases:
 
-If the process crashes after step 4 but before SQLite commit, rerunning the session reproduces the same bundle ID/path and safely replaces the same deterministic content. If the transaction commits, the session checkpoint prevents a second emission.
+- before commit: no state is visible;
+- after commit but before file write: pending outbox survives and next run writes it;
+- after file write but before mark: next run verifies identical bytes/hash and marks it;
+- existing file with different bytes for the deterministic bundle path: hard integrity error.
+
+This is the transactional-outbox pattern adapted to a local file materializer rather than a message broker.
 
 ## Promotion Bundle
 
-Default local location:
+Default path:
 
 ```text
-<BizManData>/promotions/<baseline-prefix>/<session_id>/<bundle_id>.json
+<BizManData>/promotions/<analysis-profile-prefix>/<session_id>/<bundle_id>.json
 ```
 
-A bundle is deterministic except for no wall-clock generation timestamp; it uses the finalized session's `ended_at` as `created_at`.
-
-Bundle shape:
+Envelope includes provenance sufficient to replay interpretation:
 
 ```json
 {
   "schema_version": "1.0",
   "bundle_id": "promotion.<sha256>",
+  "analysis_profile_sha256": "...",
   "baseline_sha256": "...",
+  "redaction_policy_sha256": "...",
   "session_id": "...",
-  "session_manifest_sha256": "...",
-  "created_at": "...",
-  "changes": [
+  "evidence_sha256": "...",
+  "manifest_sha256": "...",
+  "created_at": "<session ended_at>",
+  "detector": {
+    "normalization_version": 1,
+    "extraction_version": 1
+  },
+  "findings": [
     {
       "change_id": "chg.<sha256>",
+      "rule_id": "BM-HTTP-003",
+      "rule_version": 1,
       "kind": "endpoint.query_key_added",
       "novelty_class": "extended",
-      "confidence": "observed",
+      "evidence_confidence": "observed",
       "subject": {"method": "GET", "path_pattern": "/example/"},
       "delta": {"added_query_keys": ["mode"]},
       "evidence_event_ids": ["..."]
@@ -302,64 +587,100 @@ Bundle shape:
 }
 ```
 
-Allowed `novelty_class` values: `new`, `extended`, `conflict`.
+`bundle_id` is SHA-256 of the canonical payload excluding the `bundle_id` field itself.
 
-Bundles contain no cookies, auth headers, query values, form values, request body values, raw HTML, WebSocket payloads, or arbitrary CAS bytes. They may contain structural key names that have already passed redaction.
+`schemas/promotion-bundle.schema.json` uses Draft 2020-12 and `additionalProperties:false` for all stable envelopes.
 
-A Draft 2020-12 schema in `schemas/promotion-bundle.schema.json` validates the persisted bundle.
+Bundles never contain query values, body values, form values, headers, cookies, auth material, raw HTML, WebSocket payloads or arbitrary CAS bytes.
 
-## CLI
+## Dry-run semantics
 
-Entry point:
+`--dry-run` performs full baseline/evidence validation, extraction, diff and rules without creating or modifying SQLite/bundles.
 
-```text
-python tools/detect_changes.py --data-dir ~/BizManData --repo-root .
-```
-
-Options in v1:
-
-- `--session <uuid>` repeatable: process only selected sessions;
-- `--dry-run`: detect and print summary without bundle or SQLite writes;
-- `--redaction-policy <path>`: defaults to repository `config/redaction-policy.json`.
-
-Default behavior scans finalized sessions in `(started_at, session_id)` order and skips already processed `(session_id, baseline_sha256)` checkpoints.
-
-Output is a concise JSON summary containing baseline hash, scanned/processed/skipped session counts, first-seen change count, repeated change count, and written bundle paths.
-
-A malformed session or baseline is a hard error. One corrupted evidence source must not be silently converted into “no changes”.
+If an existing detector DB exists, dry-run may open it read-only to classify findings as already-seen versus first-seen. If no DB exists, it uses an empty state view. It never materializes pending outbox rows.
 
 ## LLM boundary
 
-No LLM is used by `SessionReader`, `SemanticExtractor`, `ChangeDetector`, SQLite state, or bundle generation.
+No model participates before Promotion Bundle materialization.
 
-A later triage command may send **only the value-free Promotion Bundle** to an OpenAI-compatible provider. That future adapter can route cheap local work to Ornith and escalate ambiguous bundles to Luna/Sol, but model output is never accepted directly into curated knowledge without deterministic validation/review.
+A later triage adapter can send only schema-valid value-free bundles to an OpenAI-compatible provider. Local Ornith can perform cheap first-pass classification; ambiguous bundles can escalate to Luna/Sol. Model output is advisory and cannot mutate curated knowledge without deterministic validation/review.
 
-## Verification
+## Performance and resource bounds
 
-Unit/contract tests must cover at least:
+- baseline compiles once per detector invocation;
+- exact endpoint matching is O(1); templates are bucketed by segment count;
+- JSONL input is streamed;
+- event schema validator is reused;
+- raw events are not accumulated;
+- relation-source indexes contain only minimal metadata and have a hard bound;
+- CAS artifacts have an independent detector read-size cap;
+- SQLite writes are one IMMEDIATE transaction per processed session;
+- outbox file writes occur after commit.
 
-- placeholder endpoint matching and exact trailing-slash behavior;
-- numeric query-key and indexed form/body-key normalization;
-- known endpoint/form/operation suppression;
-- every v1 novelty type;
-- sensitive baseline form fields being ignored safely;
-- method-only versus path-specific action relation handling;
-- deterministic baseline/change/bundle fingerprints;
-- no request/query/form values in bundles;
-- corrupt/non-contiguous session rejection;
-- CAS traversal resistance by reference-only resolution;
-- same session/baseline idempotence;
-- changed manifest rejection for an existing checkpoint;
-- same session replay under a new baseline hash;
-- SQLite STRICT schema, WAL mode, and transaction rollback;
-- crash-safe deterministic bundle overwrite semantics;
-- Draft 2020-12 validation of bundle fixtures.
+A non-gating benchmark will compare detector throughput/memory on a large synthetic session. Performance tuning must not disable schema validation, integrity hashing or CAS digest verification.
 
-PR-level integration should synthesize a small sanitized collector session rather than use real credentials or production game writes. Existing real Chrome collector E2E remains a regression gate because changes under `tools/**` continue to trigger it.
+## CI and verification policy
 
-## Technology basis
+The repository is public, so GitHub-hosted standard-runner billing is not the old private-repository constraint. CI is still batched by meaningful TDD/review checkpoints rather than used as a substitute for design.
 
+Detector-only changes require:
+
+```text
+compileall
+unit/contract/deep-regression tests
+validate_repo.py
+synthetic detector integration
+promotion schema validation
+idempotence + crash/outbox recovery tests
+```
+
+The real Chrome collector E2E remains a final regression gate before merge. It does not need to run as the development loop for every detector-only commit unless shared collector/foundation code is changed.
+
+Security/integrity tests additionally scan persisted promotion/outbox/SQLite content for synthetic forbidden values.
+
+## Required test classes
+
+At minimum:
+
+- ASCII numeric/index field normalization;
+- exact/template path matching, specificity and ambiguity rejection;
+- percent-encoded path preservation and trailing-slash exactness;
+- baseline compilation from endpoint patterns + application-event method/status/query observations;
+- multiple operation signatures for `/units/vendor/select/`;
+- sensitive baseline fields removed;
+- semantic baseline hash stable across ordering/repartitioning;
+- analysis profile changes when baseline/redaction/rule/extraction semantics change;
+- manifest Draft 2020-12 validation;
+- event Draft 2020-12 validation with one reusable validator;
+- oversized/non-UTF8/truncated JSONL rejection;
+- event-file mutation changes evidence hash;
+- CAS traversal rejection and digest mismatch rejection;
+- `UNKNOWN_BODY` never becoming an empty operation signature;
+- exact rule-ID sets for all v1 known/novel/indeterminate/conflict fixtures;
+- stable change identity excluding evidence IDs/timestamps;
+- SQLite STRICT/WAL/trusted-schema/application-id/user-version checks;
+- explicit `BEGIN IMMEDIATE` rollback/contention behavior;
+- replay under changed analysis profile;
+- transactional outbox crash cases;
+- deterministic promotion bytes/path;
+- no synthetic secret value in bundle, outbox payload or SQLite file;
+- end-to-end detector rerun idempotence;
+- non-gating large-session throughput/memory benchmark.
+
+## Technology and practice basis
+
+Official/current references used by this design:
+
+- Python 3.14 `sqlite3` transaction control: https://docs.python.org/3/library/sqlite3.html
 - SQLite STRICT tables: https://www.sqlite.org/stricttables.html
 - SQLite WAL: https://www.sqlite.org/wal.html
-- Python `sqlite3`: https://docs.python.org/3/library/sqlite3.html
+- SQLite transactions / BEGIN IMMEDIATE: https://www.sqlite.org/lang_transaction.html
+- SQLite PRAGMAs / trusted_schema / synchronous / user_version: https://www.sqlite.org/pragma.html
+- SQLite database application ID: https://www.sqlite.org/fileformat.html
 - JSON Schema Draft 2020-12: https://json-schema.org/draft/2020-12
+- AWS transactional outbox: https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html
+- AWS event sourcing: https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/event-sourcing-pattern.html
+- Buf breaking-change baseline model: https://buf.build/docs/breaking/
+- oasdiff diff/check separation: https://github.com/oasdiff/oasdiff/blob/main/docs/DIFF.md
+- oasdiff rule/check conventions: https://github.com/oasdiff/oasdiff/blob/main/docs/CUSTOMIZING-CHECKS.md
+- OpenTelemetry local file-storage operational-state guidance: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/storage/filestorage/README.md
