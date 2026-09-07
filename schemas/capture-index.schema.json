@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/capture-index.schema.json",
+  "title": "BizMan source capture index",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "policy", "captures"],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "generated_at": {"type": "string", "format": "date"},
+    "policy": {"type": "string", "minLength": 1},
+    "captures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id", "legacy_source_ids", "file_name", "sha256", "bytes",
+          "entries", "first_party_entries", "application_entries", "started_at",
+          "ended_at", "creator", "pages", "methods", "top_hosts", "top_mime_types"
+        ],
+        "properties": {
+          "source_id": {"type": "string", "pattern": "^src\\."},
+          "legacy_source_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "uniqueItems": true
+          },
+          "file_name": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0},
+          "entries": {"type": "integer", "minimum": 0},
+          "first_party_entries": {"type": "integer", "minimum": 0},
+          "application_entries": {"type": "integer", "minimum": 0},
+          "started_at": {"type": "string", "format": "date-time"},
+          "ended_at": {"type": "string", "format": "date-time"},
+          "creator": {
+            "type": "object",
+            "required": ["name", "version"],
+            "properties": {
+              "name": {"type": "string"},
+              "version": {"type": "string"}
+            },
+            "additionalProperties": false
+          },
+          "pages": {"type": "integer", "minimum": 0},
+          "methods": {
+            "type": "object",
+            "additionalProperties": {"type": "integer", "minimum": 0}
+          },
+          "top_hosts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["host", "count"],
+              "properties": {
+                "host": {"type": "string"},
+                "count": {"type": "integer", "minimum": 0}
+              },
+              "additionalProperties": false
+            }
+          },
+          "top_mime_types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["mime", "count"],
+              "properties": {
+                "mime": {"type": "string"},
+                "count": {"type": "integer", "minimum": 0}
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

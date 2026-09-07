@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/event.schema.json",
+  "title": "BizMan normalized runtime event",
+  "type": "object",
+  "required": [
+    "schema_version", "event_id", "session_id", "sequence", "observed_at",
+    "monotonic_time", "source", "event_type", "confidence"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sequence": {"type": "integer", "minimum": 0},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "monotonic_time": {"type": "number", "minimum": 0},
+    "source": {
+      "enum": [
+        "cdp.network", "cdp.page", "cdp.runtime", "dom.action", "bas.action", "system"
+      ]
+    },
+    "event_type": {"type": "string", "minLength": 1},
+    "confidence": {
+      "enum": [
+        "observed", "documented", "discovered-reference", "inferred", "hypothesis",
+        "verified", "contradicted", "deprecated"
+      ]
+    },
+    "target_id": {"type": ["string", "null"]},
+    "frame_id": {"type": ["string", "null"]},
+    "loader_id": {"type": ["string", "null"]},
+    "request_id": {"type": ["string", "null"]},
+    "redirect_index": {"type": "integer", "minimum": 0},
+    "method": {"type": ["string", "null"]},
+    "url_path": {"type": ["string", "null"]},
+    "route_pattern": {"type": ["string", "null"]},
+    "status_code": {
+      "type": ["integer", "null"],
+      "minimum": 100,
+      "maximum": 599
+    },
+    "request_body_ref": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "response_body_ref": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "fingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "action_refs": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": true
+}

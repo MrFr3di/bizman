@@ -1,1 +1,108 @@
-{"schema_version":"1.0","generated_at":"2026-09-06","policy":"Raw HAR files are not committed. SHA-256 identifies the exact supplied source files.","captures":[{"source_id":"har:bizmania.ru.har","file_name":"bizmania.ru.har","sha256":"55459efda3f6c7cc1e823a97afb69aa5cf8c719f05bb7e6f3fd4f1069d59a79b","bytes":83523651,"entries":10210,"first_party_entries":9696,"application_entries":316,"started_at":"2026-09-06T11:31:14.202Z","ended_at":"2026-09-06T11:37:53.704Z","creator":{"name":"WebInspector","version":"537.36"},"pages":126,"methods":{"GET":10205,"POST":5},"top_hosts":[{"host":"bizmania.ru","count":9696},{"host":"mc.yandex.ru","count":380},{"host":"counter.yadro.ru","count":126},{"host":"vk.com","count":6},{"host":"cdn.connect.mail.ru","count":1},{"host":"login.vk.com","count":1}],"top_mime_types":[{"mime":"image/png","count":4124},{"mime":"image/gif","count":2641},{"mime":"text/plain","count":1545},{"mime":"text/css","count":642},{"mime":"application/octet-stream","count":520},{"mime":"x-unknown","count":267},{"mime":"application/json","count":163},{"mime":"text/html","count":143},{"mime":"application/javascript","count":126},{"mime":"image/svg+xml","count":36},{"mime":"text/xml","count":2},{"mime":"text/javascript","count":1}]},{"source_id":"har:bizmania1.ru.har","file_name":"bizmania1.ru.har","sha256":"bb29ca8091cc4493427e1644bd477aea02ac1aa767767b4950fb390f8d9becff","bytes":13745245,"entries":1219,"first_party_entries":1183,"application_entries":57,"started_at":"2026-09-06T11:51:10.964Z","ended_at":"2026-09-06T11:54:24.224Z","creator":{"name":"WebInspector","version":"537.36"},"pages":9,"methods":{"GET":1207,"POST":12},"top_hosts":[{"host":"bizmania.ru","count":1183},{"host":"mc.yandex.ru","count":27},{"host":"counter.yadro.ru","count":9}],"top_mime_types":[{"mime":"image/png","count":430},{"mime":"image/gif","count":242},{"mime":"text/plain","count":235},{"mime":"text/css","count":103},{"mime":"application/octet-stream","count":100},{"mime":"text/html","count":45},{"mime":"x-unknown","count":33},{"mime":"image/svg+xml","count":13},{"mime":"application/javascript","count":9},{"mime":"application/json","count":9}]},{"source_id":"har:bizmaniaFAQ.ru.har","file_name":"bizmaniaFAQ.ru.har","sha256":"3636bc476b3e9fb7912c07ef886ec713f92e871baf5bbf776af0f75908da3aa9","bytes":61041796,"entries":5679,"first_party_entries":5323,"application_entries":182,"started_at":"2026-09-06T11:41:19.888Z","ended_at":"2026-09-06T11:45:27.475Z","creator":{"name":"WebInspector","version":"537.36"},"pages":89,"methods":{"GET":5679},"top_hosts":[{"host":"bizmania.ru","count":5323},{"host":"mc.yandex.ru","count":267},{"host":"counter.yadro.ru","count":89}],"top_mime_types":[{"mime":"image/png","count":2446},{"mime":"image/gif","count":1083},{"mime":"text/plain","count":893},{"mime":"text/css","count":445},{"mime":"application/octet-stream","count":356},{"mime":"x-unknown","count":182},{"mime":"text/html","count":89},{"mime":"application/javascript","count":89},{"mime":"application/json","count":89},{"mime":"image/jpeg","count":7}]}]}
+{
+  "schema_version": "2.0",
+  "generated_at": "2026-09-07",
+  "policy": "Raw HAR files are not committed. SHA-256 identifies the exact supplied source files; legacy IDs are aliases only.",
+  "captures": [
+    {
+      "source_id": "src.har.bizmania.2026-09-06.01",
+      "legacy_source_ids": ["har:bizmania.ru.har"],
+      "file_name": "bizmania.ru.har",
+      "sha256": "55459efda3f6c7cc1e823a97afb69aa5cf8c719f05bb7e6f3fd4f1069d59a79b",
+      "bytes": 83523651,
+      "entries": 10210,
+      "first_party_entries": 9696,
+      "application_entries": 316,
+      "started_at": "2026-09-06T11:31:14.202Z",
+      "ended_at": "2026-09-06T11:37:53.704Z",
+      "creator": {"name": "WebInspector", "version": "537.36"},
+      "pages": 126,
+      "methods": {"GET": 10205, "POST": 5},
+      "top_hosts": [
+        {"host": "bizmania.ru", "count": 9696},
+        {"host": "mc.yandex.ru", "count": 380},
+        {"host": "counter.yadro.ru", "count": 126},
+        {"host": "vk.com", "count": 6},
+        {"host": "cdn.connect.mail.ru", "count": 1},
+        {"host": "login.vk.com", "count": 1}
+      ],
+      "top_mime_types": [
+        {"mime": "image/png", "count": 4124},
+        {"mime": "image/gif", "count": 2641},
+        {"mime": "text/plain", "count": 1545},
+        {"mime": "text/css", "count": 642},
+        {"mime": "application/octet-stream", "count": 520},
+        {"mime": "x-unknown", "count": 267},
+        {"mime": "application/json", "count": 163},
+        {"mime": "text/html", "count": 143},
+        {"mime": "application/javascript", "count": 126},
+        {"mime": "image/svg+xml", "count": 36},
+        {"mime": "text/xml", "count": 2},
+        {"mime": "text/javascript", "count": 1}
+      ]
+    },
+    {
+      "source_id": "src.har.bizmania.2026-09-06.02",
+      "legacy_source_ids": ["har:bizmania1.ru.har"],
+      "file_name": "bizmania1.ru.har",
+      "sha256": "bb29ca8091cc4493427e1644bd477aea02ac1aa767767b4950fb390f8d9becff",
+      "bytes": 13745245,
+      "entries": 1219,
+      "first_party_entries": 1183,
+      "application_entries": 57,
+      "started_at": "2026-09-06T11:51:10.964Z",
+      "ended_at": "2026-09-06T11:54:24.224Z",
+      "creator": {"name": "WebInspector", "version": "537.36"},
+      "pages": 9,
+      "methods": {"GET": 1207, "POST": 12},
+      "top_hosts": [
+        {"host": "bizmania.ru", "count": 1183},
+        {"host": "mc.yandex.ru", "count": 27},
+        {"host": "counter.yadro.ru", "count": 9}
+      ],
+      "top_mime_types": [
+        {"mime": "image/png", "count": 430},
+        {"mime": "image/gif", "count": 242},
+        {"mime": "text/plain", "count": 235},
+        {"mime": "text/css", "count": 103},
+        {"mime": "application/octet-stream", "count": 100},
+        {"mime": "text/html", "count": 45},
+        {"mime": "x-unknown", "count": 33},
+        {"mime": "image/svg+xml", "count": 13},
+        {"mime": "application/javascript", "count": 9},
+        {"mime": "application/json", "count": 9}
+      ]
+    },
+    {
+      "source_id": "src.har.bizmania-faq.2026-09-06.01",
+      "legacy_source_ids": ["har:bizmaniaFAQ.ru.har"],
+      "file_name": "bizmaniaFAQ.ru.har",
+      "sha256": "3636bc476b3e9fb7912c07ef886ec713f92e871baf5bbf776af0f75908da3aa9",
+      "bytes": 61041796,
+      "entries": 5679,
+      "first_party_entries": 5323,
+      "application_entries": 182,
+      "started_at": "2026-09-06T11:41:19.888Z",
+      "ended_at": "2026-09-06T11:45:27.475Z",
+      "creator": {"name": "WebInspector", "version": "537.36"},
+      "pages": 89,
+      "methods": {"GET": 5679},
+      "top_hosts": [
+        {"host": "bizmania.ru", "count": 5323},
+        {"host": "mc.yandex.ru", "count": 267},
+        {"host": "counter.yadro.ru", "count": 89}
+      ],
+      "top_mime_types": [
+        {"mime": "image/png", "count": 2446},
+        {"mime": "image/gif", "count": 1083},
+        {"mime": "text/plain", "count": 893},
+        {"mime": "text/css", "count": 445},
+        {"mime": "application/octet-stream", "count": 356},
+        {"mime": "x-unknown", "count": 182},
+        {"mime": "text/html", "count": 89},
+        {"mime": "application/javascript", "count": 89},
+        {"mime": "application/json", "count": 89},
+        {"mime": "image/jpeg", "count": 7}
+      ]
+    }
+  ]
+}

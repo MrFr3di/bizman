@@ -2,12 +2,15 @@
 *.har
 *.har.gz
 *.har.zst
-cookies*
-session*
-storageState*
-auth*
+cookies*.json
+auth*.json
+session-state*.json
+session_state*.json
+storageState*.json
+storage-state*.json
 browser-profile/
 chrome-profile/
+BizManData/
 
 # Secrets
 .env

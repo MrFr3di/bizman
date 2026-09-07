@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "headers": {
+    "drop": [
+      "authorization",
+      "proxy-authorization",
+      "cookie",
+      "set-cookie",
+      "x-api-key",
+      "x-auth-token",
+      "x-csrf-token",
+      "x-xsrf-token",
+      "sec-websocket-key",
+      "sec-websocket-accept"
+    ]
+  },
+  "fields": {
+    "drop_patterns": [
+      "(?i)(?:password|passwd|pwd)",
+      "(?i)(?:(?:access|refresh|id|auth)[_-]?)?token",
+      "(?i)(?:(?:client|api)[_-]?)?secret",
+      "(?i)session(?:[_-]?(?:id|key|token))?",
+      "(?i)csrf",
+      "(?i)authorization",
+      "(?i)cookie"
+    ]
+  },
+  "bodies": {
+    "first_party_only": true,
+    "max_request_bytes": 1048576,
+    "max_response_bytes": 2097152,
+    "mime_allowlist": [
+      "application/json",
+      "application/x-www-form-urlencoded",
+      "text/html",
+      "text/plain",
+      "text/javascript",
+      "application/javascript"
+    ]
+  }
+}

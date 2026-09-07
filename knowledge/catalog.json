@@ -10,9 +10,19 @@
     "raw_har_committed": false,
     "raw_storage": "external/private",
     "provenance": "Every derived record retains capture/entry evidence or source-level provenance where applicable.",
-    "confidence_levels": ["observed", "documented", "inferred", "hypothesis", "verified", "contradicted", "deprecated"],
-    "ci": "manual-only",
-    "ci_command": "python3 tools/validate_repo.py"
+    "confidence_levels": [
+      "observed",
+      "documented",
+      "discovered-reference",
+      "inferred",
+      "hypothesis",
+      "verified",
+      "contradicted",
+      "deprecated"
+    ],
+    "ci": "pull-request-gated+manual",
+    "ci_local_command": "python3 -m compileall -q tools tests && python3 -m unittest discover -s tests -v && python3 tools/validate_repo.py",
+    "ci_workflow": ".github/workflows/collector-e2e.yml"
   },
   "datasets": [
     {"id":"captures","path":"knowledge/sources/captures.json","format":"json","records":3,"purpose":"Source provenance, SHA-256, sizes and capture-level statistics"},

@@ -13,6 +13,7 @@ Build a reproducible BizMania research, analytics, and automation system from ca
 Use these statuses consistently:
 - `observed`: directly present in HAR/HTML/JS/JSON.
 - `documented`: stated by captured BizMania Wiki/help.
+- `discovered-reference`: referenced by captured HTML/JavaScript but not observed executing.
 - `inferred`: reasoned from evidence but not directly stated.
 - `hypothesis`: unverified proposed explanation.
 - `verified`: deliberately reproduced by an experiment.
@@ -22,17 +23,35 @@ Use these statuses consistently:
 Every new protocol or mechanic claim must link to at least one source capture + entry, Wiki topic, or experiment.
 
 ## Data rules
-- Raw HAR files are evidence, not repository content.
-- Never commit cookies, Authorization headers, browser profiles, storage state, passwords, `.env`, SQLite/Parquet operational data, or raw captures.
+- The repository is public; committed content must be safe for public disclosure.
+- Raw HAR/CDP streams are evidence, not repository content.
+- Never commit cookies, Authorization headers, browser profiles, storage state, passwords, `.env`, SQLite/DuckDB/Parquet operational data, or raw captures.
+- Apply `config/redaction-policy.json` before durable normalized runtime events are written.
+- Canonical capture/source identifiers use `src.*`; old identifiers are preserved only as explicit aliases.
+- Runtime session/event identifiers use UUIDv7; curated knowledge keeps stable `bm.*` identifiers.
 - `knowledge/http/application-events/index.json` is the manifest for the sanitized first-party application-event corpus; read only the required `part-*` files.
 - Do not silently delete old observations. Add revisions or contradictions.
 - Prefer stable IDs and normalized route patterns over copying volatile URLs into prose.
 - Keep machine-readable knowledge as the source of truth; Markdown explains it.
 
 ## Validation and CI
-Run `python3 tools/validate_repo.py` before proposing changes to `knowledge/`, `schemas/`, or generated indexes.
-Do not add always-on GitHub Actions without explicit user approval. The repository owner has limited CI quota.
-The existing workflow is manual-only by design.
+Before proposing changes to `knowledge/`, `schemas/`, generated indexes or ingestion contracts, run:
+
+```bash
+python3 -m pip install -r tools/requirements.txt
+python3 -m compileall -q tools tests
+python3 -m unittest discover -s tests -v
+python3 tools/validate_repo.py
+```
+
+Relevant pull requests use GitHub-hosted CI for the same deterministic checks plus real Chrome for Testing CDP E2E coverage and a non-gating storage benchmark. Do not add routine `push` or scheduled workflows without a concrete need; use path-filtered PR checks and `workflow_dispatch`. See `docs/CI.md`.
+
+## Collector rules
+- Collection is passive by default. Keep the CDP command allowlist narrow and do not add mutating browser/game operations to the collector.
+- First-party filtering and redaction happen before durable persistence.
+- Do not persist WebSocket payloads by default.
+- Treat queue overflow, malformed protocol messages and storage failures as explicit failures; never silently drop evidence.
+- Runtime operational data belongs under external `BizManData`, never in Git.
 
 ## Scope
 Observe and document first. Recommendations and write automation must be separate from collection. Do not make destructive or state-changing requests merely to test an endpoint unless explicitly approved.

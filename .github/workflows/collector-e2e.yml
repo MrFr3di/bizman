@@ -1,0 +1,185 @@
+name: collector-quality-gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tools/**"
+      - "tests/**"
+      - "schemas/**"
+      - "config/**"
+      - "knowledge/**"
+      - ".github/workflows/**"
+      - "README.md"
+      - "AGENTS.md"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - "docs/CI.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bizman-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            tools/requirements.txt
+            tools/requirements.runtime.txt
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check -r tools/requirements.txt
+      - name: Compile Python sources
+        run: python -m compileall -q tools tests
+      - name: Run unit and contract tests
+        run: python -m unittest discover -s tests -v
+      - name: Validate structured knowledge
+        run: python tools/validate_repo.py
+
+  collector-e2e:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            tools/requirements.txt
+            tools/requirements.runtime.txt
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check -r tools/requirements.txt
+      - name: Run Chrome for Testing E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATA_DIR="$RUNNER_TEMP/BizManData"
+          CFT_DIR="$RUNNER_TEMP/chrome-for-testing"
+          PROFILE_DIR="$RUNNER_TEMP/bizman-cft-profile"
+          FIXTURE_LOG="$RUNNER_TEMP/bizman-fixture.log"
+          CHROME_LOG="$RUNNER_TEMP/bizman-chrome.log"
+          COLLECTOR_LOG="$RUNNER_TEMP/bizman-collector.log"
+
+          cleanup() {
+            if [[ -n "${CHROME_PID:-}" ]]; then kill "$CHROME_PID" 2>/dev/null || true; fi
+            if [[ -n "${FIXTURE_PID:-}" ]]; then kill "$FIXTURE_PID" 2>/dev/null || true; fi
+          }
+          trap cleanup EXIT
+
+          python tools/ci/fixture_server.py >"$FIXTURE_LOG" 2>&1 &
+          FIXTURE_PID=$!
+          for _ in {1..100}; do
+            if curl -fsS http://127.0.0.1:8765/healthz >/dev/null; then break; fi
+            sleep 0.1
+          done
+          curl -fsS http://127.0.0.1:8765/healthz >/dev/null
+
+          CHROME_BIN="$(python tools/ci/download_chrome_for_testing.py --output "$CFT_DIR")"
+          mkdir -p "$PROFILE_DIR"
+          "$CHROME_BIN" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --no-default-browser-check \
+            --remote-debugging-address=127.0.0.1 \
+            --remote-debugging-port=9222 \
+            --user-data-dir="$PROFILE_DIR" \
+            http://127.0.0.1:8765/ >"$CHROME_LOG" 2>&1 &
+          CHROME_PID=$!
+
+          for _ in {1..150}; do
+            if curl -fsS http://127.0.0.1:9222/json/version >/dev/null; then break; fi
+            sleep 0.1
+          done
+          curl -fsS http://127.0.0.1:9222/json/version >/dev/null
+
+          set +e
+          timeout --preserve-status --signal=INT --kill-after=5s 16s \
+            python tools/collect_live.py \
+              --endpoint http://127.0.0.1:9222 \
+              --data-dir "$DATA_DIR" \
+              --host 127.0.0.1 \
+              >"$COLLECTOR_LOG" 2>&1
+          COLLECTOR_EXIT=$?
+          set -e
+          if [[ "$COLLECTOR_EXIT" -ne 0 && "$COLLECTOR_EXIT" -ne 130 ]]; then
+            echo "collector exited with $COLLECTOR_EXIT"
+            cat "$COLLECTOR_LOG"
+            cat "$CHROME_LOG"
+            cat "$FIXTURE_LOG"
+            exit "$COLLECTOR_EXIT"
+          fi
+
+          python tools/ci/verify_collector_e2e.py --data-dir "$DATA_DIR"
+      - name: Upload debug logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: collector-e2e-debug
+          path: |
+            ${{ runner.temp }}/bizman-fixture.log
+            ${{ runner.temp }}/bizman-chrome.log
+            ${{ runner.temp }}/bizman-collector.log
+          if-no-files-found: ignore
+          retention-days: 3
+
+  benchmark:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Run A/B/C storage benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/benchmarks/storage_flush.py --events 50000 --repeats 5 \
+            | tee "$RUNNER_TEMP/storage-benchmark.json"
+      - name: Publish benchmark summary
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          from pathlib import Path
+          data = json.loads((Path(os.environ["RUNNER_TEMP"]) / "storage-benchmark.json").read_text())
+          print("## Storage flush A/B/C benchmark")
+          print(f"Implementation: `{data['implementation']}`")
+          print("| Variant | Flush every | Median s | events/s | Speedup vs A |")
+          print("|---|---:|---:|---:|---:|")
+          for name, item in data["variants"].items():
+              print(
+                  f"| {name} | {item['flush_every_events']} | "
+                  f"{item['median_seconds']:.4f} | {item['events_per_second']:.0f} | "
+                  f"{item['speedup_vs_A']:.2f}x |"
+              )
+          PY
