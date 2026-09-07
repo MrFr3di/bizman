@@ -83,10 +83,13 @@ def _source_monotonic_seconds(value: Any) -> float | None:
 
 
 class ExecutionContextRegistry:
-    """Map Runtime execution contexts to frames without persisting context payloads."""
+    """Map Runtime execution contexts to minimal correlation/security metadata."""
 
     def __init__(self) -> None:
-        self._contexts: dict[tuple[str, int], tuple[str | None, str | None]] = {}
+        self._contexts: dict[
+            tuple[str, int],
+            tuple[str | None, str | None, str | None],
+        ] = {}
 
     def register(
         self,
@@ -95,8 +98,13 @@ class ExecutionContextRegistry:
         context_id: int,
         frame_id: str | None,
         world_name: str | None,
+        origin: str | None = None,
     ) -> None:
-        self._contexts[(session_id, int(context_id))] = (frame_id, world_name)
+        self._contexts[(session_id, int(context_id))] = (
+            frame_id,
+            world_name,
+            origin,
+        )
 
     def frame_for(self, session_id: str, context_id: int) -> str | None:
         item = self._contexts.get((session_id, int(context_id)))
@@ -105,6 +113,10 @@ class ExecutionContextRegistry:
     def world_for(self, session_id: str, context_id: int) -> str | None:
         item = self._contexts.get((session_id, int(context_id)))
         return item[1] if item is not None else None
+
+    def origin_for(self, session_id: str, context_id: int) -> str | None:
+        item = self._contexts.get((session_id, int(context_id)))
+        return item[2] if item is not None else None
 
     def remove_context(self, session_id: str, context_id: int) -> None:
         self._contexts.pop((session_id, int(context_id)), None)

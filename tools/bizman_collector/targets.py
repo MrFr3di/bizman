@@ -76,6 +76,7 @@ class TargetOrchestrator:
         self.warning_sink = warning_sink
         self.registry = TargetRegistry()
         self._attaching: set[str] = set()
+        self._configured_sessions: set[str] = set()
 
         configured = [action_binding_name is not None, action_script is not None]
         if any(configured) and not all(configured):
@@ -109,11 +110,12 @@ class TargetOrchestrator:
             return {"maxPostDataSize": self.max_post_data_size}
         return {}
 
-    def _is_attachable_page(self, info: dict[str, Any]) -> bool:
-        if info.get("type") != "page":
-            return False
+    def _is_first_party_target(self, info: dict[str, Any]) -> bool:
         url = info.get("url")
         return isinstance(url, str) and self.first_party.matches_url(url)
+
+    def _is_attachable_page(self, info: dict[str, Any]) -> bool:
+        return info.get("type") == "page" and self._is_first_party_target(info)
 
     async def bootstrap(self) -> None:
         if self._supports("Target.setDiscoverTargets"):
@@ -245,6 +247,10 @@ class TargetOrchestrator:
         *,
         target_type: str | None = None,
     ) -> None:
+        if session_id in self._configured_sessions:
+            return
+        self._configured_sessions.add(session_id)
+
         if self._supports("Network.enable"):
             try:
                 await self.cdp.command(
@@ -281,7 +287,16 @@ class TargetOrchestrator:
                 return
             target_id = info.get("targetId")
             if isinstance(target_id, str) and target_id in self.registry.target_to_session:
+                session_id = self.registry.target_to_session[target_id]
                 self.registry.target_info[target_id] = dict(info)
+                if self._is_first_party_target(info):
+                    target_type = (
+                        info.get("type") if isinstance(info.get("type"), str) else None
+                    )
+                    await self._configure_session(
+                        session_id,
+                        target_type=target_type,
+                    )
                 return
             if self._is_attachable_page(info):
                 await self._attach_page(info)
@@ -301,17 +316,27 @@ class TargetOrchestrator:
                     session_id=session_id,
                     info=info,
                 )
-                target_type = info.get("type") if isinstance(info.get("type"), str) else None
-                await self._configure_session(session_id, target_type=target_type)
+                if self._is_first_party_target(info):
+                    target_type = (
+                        info.get("type") if isinstance(info.get("type"), str) else None
+                    )
+                    await self._configure_session(
+                        session_id,
+                        target_type=target_type,
+                    )
             return
 
         if method == "Target.detachedFromTarget":
             session_id = params.get("sessionId")
             if isinstance(session_id, str):
                 self.registry.remove_session(session_id)
+                self._configured_sessions.discard(session_id)
             return
 
         if method == "Target.targetDestroyed":
             target_id = params.get("targetId")
             if isinstance(target_id, str):
+                session_id = self.registry.target_to_session.get(target_id)
                 self.registry.remove_target(target_id)
+                if isinstance(session_id, str):
+                    self._configured_sessions.discard(session_id)

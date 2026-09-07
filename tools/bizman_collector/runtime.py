@@ -59,6 +59,7 @@ class CollectorEventPipeline:
         self,
         *,
         binding_name: str,
+        first_party: FirstPartyPolicy,
         contexts: ExecutionContextRegistry,
         action_normalizer: ActionNormalizer,
         network_normalizer: NetworkNormalizer,
@@ -66,6 +67,7 @@ class CollectorEventPipeline:
         writer: Any,
     ) -> None:
         self.binding_name = binding_name
+        self.first_party = first_party
         self.contexts = contexts
         self.action_normalizer = action_normalizer
         self.network_normalizer = network_normalizer
@@ -105,11 +107,13 @@ class CollectorEventPipeline:
             if isinstance(aux_data, dict) and isinstance(aux_data.get("frameId"), str):
                 frame_id = aux_data["frameId"]
             world_name = context.get("name") if isinstance(context.get("name"), str) else None
+            origin = context.get("origin") if isinstance(context.get("origin"), str) else None
             self.contexts.register(
                 session_id=session_id,
                 context_id=context_id,
                 frame_id=frame_id,
                 world_name=world_name,
+                origin=origin,
             )
             return
 
@@ -132,6 +136,10 @@ class CollectorEventPipeline:
         if not isinstance(payload, str):
             return
         if isinstance(context_id, bool) or not isinstance(context_id, int):
+            return
+
+        context_origin = self.contexts.origin_for(session_id, context_id)
+        if context_origin is None or not self.first_party.matches_url(context_origin):
             return
 
         normalized = self.action_normalizer.normalize_binding(
@@ -265,6 +273,7 @@ async def run_collection(
     )
     pipeline = CollectorEventPipeline(
         binding_name=ACTION_BINDING_NAME,
+        first_party=first_party,
         contexts=contexts,
         action_normalizer=action_normalizer,
         network_normalizer=network_normalizer,
@@ -300,7 +309,10 @@ async def run_collection(
                 action_binding_name=ACTION_BINDING_NAME if action_supported else None,
                 action_world_name=ACTION_WORLD_NAME if action_supported else None,
                 action_script=(
-                    build_action_observer_script(ACTION_BINDING_NAME)
+                    build_action_observer_script(
+                        ACTION_BINDING_NAME,
+                        first_party.hosts,
+                    )
                     if action_supported
                     else None
                 ),

@@ -1,19 +1,47 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 import json
 import re
 
 _BINDING_NAME_RE = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]{0,63}$")
 
 
-def build_action_observer_script(binding_name: str) -> str:
+def _normalize_allowed_hosts(allowed_hosts: Sequence[str]) -> tuple[str, ...]:
+    if isinstance(allowed_hosts, (str, bytes)):
+        raise TypeError("allowed_hosts must be a sequence of host roots")
+    normalized = tuple(
+        dict.fromkeys(
+            host.casefold().strip().rstrip(".")
+            for host in allowed_hosts
+            if isinstance(host, str) and host.strip()
+        )
+    )
+    if not normalized:
+        raise ValueError("allowed_hosts must contain at least one host root")
+    return normalized
+
+
+def build_action_observer_script(
+    binding_name: str,
+    allowed_hosts: Sequence[str],
+) -> str:
     """Build the fixed-shape, metadata-only DOM observer injected by CDP."""
 
     if not _BINDING_NAME_RE.fullmatch(binding_name):
         raise ValueError("binding_name must be a safe JavaScript identifier")
     binding_literal = json.dumps(binding_name)
+    hosts_literal = json.dumps(
+        list(_normalize_allowed_hosts(allowed_hosts)),
+        separators=(",", ":"),
+    )
     return f"""(() => {{
   const BINDING = {binding_literal};
+  const ALLOWED_HOSTS = {hosts_literal};
+  const currentHost = location.hostname.toLowerCase().replace(/\\.$/, "");
+  if (!ALLOWED_HOSTS.some((root) =>
+      currentHost === root || currentHost.endsWith(`.${{root}}`))) return;
+
   const INSTALL_KEY = Symbol.for("bizman.action-observer.v1");
   if (globalThis[INSTALL_KEY]) return;
   globalThis[INSTALL_KEY] = true;

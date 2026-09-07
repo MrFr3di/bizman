@@ -83,7 +83,7 @@ The live-ingestion implementation now includes:
 - version-aware Chrome/CDP discovery from `/json/version` and `/json/protocol`;
 - passive flattened CDP transport with an explicit command allowlist;
 - first-party HTTP/WebSocket normalization with capture-time redaction;
-- metadata-only DOM observation for `click`, `change` and `submit` through `Runtime.addBinding` plus `Page.addScriptToEvaluateOnNewDocument`;
+- metadata-only DOM observation for `click`, `change` and `submit` through `Runtime.addBinding` plus `Page.addScriptToEvaluateOnNewDocument`, gated both in the injected script and again by the CDP execution-context origin against configured first-party hosts;
 - strict action privacy: no form/input values, element text, HTML, cookies, Web Storage or clipboard content are collected;
 - deterministic, bounded action-to-HTTP correlation emitted as separate immutable `correlation.action_http` events;
 - no LLM or probabilistic model in the collector/correlator hot path; heuristic links remain `inferred` and never become `exact`;

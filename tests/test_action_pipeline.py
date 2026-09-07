@@ -66,6 +66,7 @@ class CollectorEventPipelineTests(unittest.TestCase):
         )
         pipeline = CollectorEventPipeline(
             binding_name=BINDING,
+            first_party=first_party,
             contexts=contexts,
             action_normalizer=action_normalizer,
             network_normalizer=network_normalizer,
@@ -84,6 +85,7 @@ class CollectorEventPipelineTests(unittest.TestCase):
                         "context": {
                             "id": 7,
                             "name": WORLD,
+                            "origin": "https://bizmania.ru",
                             "auxData": {"frameId": "f1"},
                         }
                     },
@@ -161,7 +163,14 @@ class CollectorEventPipelineTests(unittest.TestCase):
             pipeline, writer, contexts = self._pipeline(Path(tmp))
             created = CdpEvent(
                 method="Runtime.executionContextCreated",
-                params={"context": {"id": 9, "name": WORLD, "auxData": {"frameId": "f9"}}},
+                params={
+                    "context": {
+                        "id": 9,
+                        "name": WORLD,
+                        "origin": "https://bizmania.ru",
+                        "auxData": {"frameId": "f9"},
+                    }
+                },
                 session_id="cdp-session-1",
             )
             pipeline.handle_runtime(created, target_id="t1")

@@ -20,7 +20,10 @@ class FakeClock:
 
 class ActionScriptTests(unittest.TestCase):
     def test_script_never_reads_sensitive_value_or_storage_surfaces(self):
-        script = build_action_observer_script("__bizmanObserveV1")
+        script = build_action_observer_script(
+            "__bizmanObserveV1",
+            ("bizmania.ru",),
+        )
         forbidden = (
             ".value",
             "innerHTML",
@@ -47,10 +50,13 @@ class ExecutionContextRegistryTests(unittest.TestCase):
             context_id=7,
             frame_id="frame-1",
             world_name="bizman-observer-v1",
+            origin="https://bizmania.ru",
         )
         self.assertEqual(registry.frame_for("session-1", 7), "frame-1")
+        self.assertEqual(registry.origin_for("session-1", 7), "https://bizmania.ru")
         registry.remove_context("session-1", 7)
         self.assertIsNone(registry.frame_for("session-1", 7))
+        self.assertIsNone(registry.origin_for("session-1", 7))
 
         registry.register(
             session_id="session-1",
