@@ -18,11 +18,11 @@
 
 - `knowledge/http/application-events/index.json` — 555 значимых first-party событий.
 - `knowledge/http/post-observations.jsonl` — 17 реально наблюдавшихся POST.
-- `knowledge/actions/catalog.json` — 8 нормализованных write-action типов.
+- `knowledge/actions/catalog.json` — 11 нормализованных write-action типов.
 - `knowledge/http/endpoints/index.json` — 68 network endpoint signatures.
-- `knowledge/http/routes/index.json` — 732 маршрута из HTML/JavaScript.
+- `knowledge/http/routes/index.json` — 761 маршрута из HTML/JavaScript.
 - `knowledge/http/forms/index.json` — 87 уникальных HTML-форм.
-- `knowledge/forms/parameters.json` — 62 параметра форм с sample values.
+- `knowledge/forms/parameters.json` — 74 параметра форм с sample values.
 - `knowledge/http/json-responses/index.json` — 36 JSON-response наблюдений.
 - `knowledge/http/operation-index.json` — компактный индекс важных операций.
 
@@ -36,7 +36,7 @@
 ## Доменная модель
 
 - `knowledge/domain/products/index.json` — 303 товара.
-- `knowledge/domain/entities.json` — 18 наблюдавшихся company/city/unit сущностей.
+- `knowledge/domain/entities.json` — 19 наблюдавшихся company/city/unit сущностей.
 - `knowledge/entities/observed-ids.json` — дополнительные извлечённые ID, если нужны низкоуровневые связи.
 
 ## Wiki

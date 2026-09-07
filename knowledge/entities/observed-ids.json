@@ -1,12 +1,13 @@
 {
   "schema_version": "1.0",
   "status": "observed",
-  "source_scope": "three supplied HAR captures",
+  "source_scope": "three supplied HAR captures plus live CDP session 2026-09-07 (live-cdp-2026-09-07)",
   "entities": {
-    "unit_ids": ["13548","13597","17147","17245"],
+    "unit_ids": ["13548","13597","17147","17245","33670","33676"],
     "vendor_ids": ["8561"],
-    "product_ids": ["210","337","339","340","384","397","416","418","435","439","460","461","467"],
+    "product_ids": ["1","210","337","339","340","384","397","416","418","426","429","435","439","460","461","467"],
     "city_ids": ["24","25"],
-    "company_ids": ["13393"]
+    "company_ids": ["13393"],
+    "division_ids": ["33671","33677"]
   }
 }
