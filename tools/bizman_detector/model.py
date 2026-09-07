@@ -90,6 +90,53 @@ class RuntimeContract:
     actions: tuple[ActionRequestFamily, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class HttpObservation:
+    """Value-free structural projection of one first-party HTTP request."""
+
+    method: str
+    literal_path: str
+    canonical_path_pattern: str | None
+    query_keys: tuple[str, ...]
+    status: int | None
+    body_keys: tuple[str, ...] | None
+    request_event_id: str
+    response_event_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class FormObservation:
+    """Value-free structural projection of one observed browser form action."""
+
+    method: str
+    action_path: str
+    field_names: tuple[str, ...]
+    action_event_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class RelationObservation:
+    """Resolved action/request correlation using only structural metadata."""
+
+    correlation_status: str
+    action_event_id: str
+    request_event_id: str
+    action_method: str | None
+    action_path: str | None
+    request_method: str
+    request_literal_path: str
+    request_path_pattern: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ObservationSet:
+    """Immutable extraction result for one verified evidence identity."""
+
+    http: tuple[HttpObservation, ...]
+    forms: tuple[FormObservation, ...]
+    relations: tuple[RelationObservation, ...]
+
+
 @dataclass(frozen=True, slots=True, order=True)
 class RuleDescriptor:
     """Stable rule metadata participating in analysis-profile identity."""
@@ -118,10 +165,14 @@ __all__ = [
     "EndpointFamily",
     "EndpointMethodContract",
     "EndpointVariant",
+    "FormObservation",
     "FormSignature",
+    "HttpObservation",
     "MatchState",
+    "ObservationSet",
     "OperationSignature",
     "PathMatch",
+    "RelationObservation",
     "RuleDescriptor",
     "RuntimeContract",
 ]
