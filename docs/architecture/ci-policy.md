@@ -6,7 +6,7 @@ CI quota is intentionally conserved.
 - No workflow on push.
 - No automatic workflow on pull requests.
 - GitHub validation is manual-only through `workflow_dispatch`.
-- Normal validation runs locally with `python3 scripts/validate_knowledge.py`.
+- Normal validation runs locally with `python3 tools/validate_repo.py`.
 - The validator uses only the Python standard library and never reprocesses the large HAR captures.
 - The manual GitHub job has read-only repository permissions and a 3-minute timeout.
 
