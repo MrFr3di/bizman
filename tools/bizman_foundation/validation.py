@@ -309,6 +309,7 @@ def _scan_for_forbidden_files(root: Path, result: ValidationResult) -> None:
     forbidden_directories = {
         "browser-profile",
         "chrome-profile",
+        "bizmandata",
         "data",
         "local-data",
         "raw",
