@@ -113,7 +113,7 @@ class ActionInstrumentationTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(warnings, [])
 
-    async def test_fallback_never_scopes_binding_to_missing_world(self):
+    async def test_unscoped_binding_disables_observer(self):
         cdp = FakeCdp()
         warnings: list[str] = []
         orchestrator = TargetOrchestrator(
@@ -129,15 +129,11 @@ class ActionInstrumentationTests(unittest.IsolatedAsyncioTestCase):
         await orchestrator.bootstrap()
 
         session_calls = [call for call in cdp.calls if call[2] == "session-1"]
-        binding_call = next(call for call in session_calls if call[0] == "Runtime.addBinding")
-        self.assertEqual(binding_call[1], {"name": BINDING})
-        script_call = next(
-            call
-            for call in session_calls
-            if call[0] == "Page.addScriptToEvaluateOnNewDocument"
-        )
-        self.assertEqual(script_call[1], {"source": SCRIPT})
-        self.assertTrue(any("runImmediately" in warning for warning in warnings))
+        methods = [call[0] for call in session_calls]
+        self.assertNotIn("Runtime.enable", methods)
+        self.assertNotIn("Runtime.addBinding", methods)
+        self.assertNotIn("Page.addScriptToEvaluateOnNewDocument", methods)
+        self.assertTrue(any("secure" in warning.casefold() for warning in warnings))
 
     def test_passive_allowlist_adds_only_observation_commands(self):
         self.assertIn("Runtime.enable", PASSIVE_CDP_METHODS)
