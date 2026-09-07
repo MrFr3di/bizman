@@ -62,19 +62,28 @@ def _finding(*, change_id: str = "chg." + "1" * 64) -> Finding:
     )
 
 
-def _payload(first_seen: tuple[Finding, ...]) -> OutboxPayload | None:
+def _payload(
+    identity: EvidenceIdentity,
+    profile: AnalysisProfile,
+    first_seen: tuple[Finding, ...],
+) -> OutboxPayload | None:
     if not first_seen:
         return None
     payload_json = json.dumps(
-        {"change_ids": [item.change_id for item in first_seen]},
+        {
+            "analysis_profile_sha256": profile.sha256,
+            "evidence_sha256": identity.evidence_sha256,
+            "change_ids": [item.change_id for item in first_seen],
+        },
         sort_keys=True,
         separators=(",", ":"),
     )
+    digest = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
     return OutboxPayload(
-        bundle_id="bundle." + "2" * 64,
-        payload_sha256=hashlib.sha256(payload_json.encode("utf-8")).hexdigest(),
+        bundle_id="bundle." + digest,
+        payload_sha256=digest,
         payload_json=payload_json,
-        created_at="2026-09-07T12:01:00Z",
+        created_at=identity.ended_at,
     )
 
 
@@ -217,7 +226,11 @@ class DetectorStateTransactionTests(unittest.TestCase):
             state = DetectorState.open_rw(Path(tmp) / "state.sqlite3")
             self.addCleanup(state.close)
 
-            def fail(_: tuple[Finding, ...]) -> OutboxPayload | None:
+            def fail(
+                _identity: EvidenceIdentity,
+                _profile: AnalysisProfile,
+                _first_seen: tuple[Finding, ...],
+            ) -> OutboxPayload | None:
                 raise RuntimeError("synthetic failure")
 
             with self.assertRaisesRegex(RuntimeError, "synthetic failure"):
