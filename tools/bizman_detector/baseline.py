@@ -439,7 +439,7 @@ def _endpoint_families(
     return tuple(families)
 
 
-def _form_action_path(value: object, *, source: str) -> str:
+def _form_action_path(value: object, *, source: str, matcher: PathMatcher) -> str:
     if not isinstance(value, str) or not value:
         raise BaselineFormatError(f"{source}: form action must be a non-empty string")
     parsed = urlsplit(value)
@@ -448,13 +448,24 @@ def _form_action_path(value: object, *, source: str) -> str:
             f"{source}: form action must be origin-relative and fragment-free"
         )
     try:
-        return normalize_origin_relative_path(parsed.path)
+        path = normalize_origin_relative_path(parsed.path)
     except ValueError as exc:
         raise BaselineFormatError(f"{source}: invalid form action path") from exc
+    try:
+        match = matcher.match(path)
+    except AmbiguousPathError as exc:
+        raise BaselineConsistencyError(
+            f"{source}: form action path {path!r} is ambiguous in endpoint census"
+        ) from exc
+    if match.matched and match.path_pattern is not None:
+        return match.path_pattern
+    return path
 
 
 def _forms(
-    records: tuple[_SourceRecord, ...], redaction: RedactionPolicy
+    records: tuple[_SourceRecord, ...],
+    redaction: RedactionPolicy,
+    matcher: PathMatcher,
 ) -> tuple[FormSignature, ...]:
     signatures: set[FormSignature] = set()
     for record in records:
@@ -478,7 +489,9 @@ def _forms(
         signatures.add(
             FormSignature(
                 method=method,
-                action_path=_form_action_path(value.get("action"), source=record.source),
+                action_path=_form_action_path(
+                    value.get("action"), source=record.source, matcher=matcher
+                ),
                 field_names=normalize_key_set(names, redaction),
             )
         )
@@ -592,6 +605,7 @@ def _actions(
     redaction: RedactionPolicy,
     matcher: PathMatcher,
     methods_by_pattern: Mapping[str, frozenset[str]],
+    operations: tuple[OperationSignature, ...],
 ) -> tuple[ActionRequestFamily, ...]:
     if not isinstance(value, Mapping) or not isinstance(value.get("items"), list):
         raise BaselineFormatError(f"{source}: items must be an array")
@@ -634,6 +648,7 @@ def _actions(
                     f"{item_source}: form_fields[{field_index}] must be an object"
                 )
             field_names.append(field.get("name"))
+        normalized_field_names = normalize_key_set(field_names, redaction)
         normalized_query_sets: set[tuple[str, ...]] = set()
         for query_index, query_keys in enumerate(query_sets):
             if not isinstance(query_keys, list):
@@ -652,20 +667,52 @@ def _actions(
                 raise BaselineConsistencyError(
                     f"{item_source}: observed_count disagrees with status counts"
                 )
+        path_pattern = _known_endpoint(
+            item.get("path"),
+            method=method,
+            source=item_source,
+            matcher=matcher,
+            methods_by_pattern=methods_by_pattern,
+        )
+        matching_operations = tuple(
+            operation
+            for operation in operations
+            if operation.method == method and operation.path_pattern == path_pattern
+        )
+        if not matching_operations:
+            raise BaselineConsistencyError(
+                f"{item_source}: action has no matching operation contract"
+            )
+        operation_query_sets = {operation.query_keys for operation in matching_operations}
+        unsupported_query_sets = normalized_query_sets - operation_query_sets
+        if unsupported_query_sets:
+            raise BaselineConsistencyError(
+                f"{item_source}: action query shape is not represented by operation contracts"
+            )
+        operation_body_fields = {
+            key for operation in matching_operations for key in operation.body_keys
+        }
+        unsupported_fields = set(normalized_field_names) - operation_body_fields
+        if unsupported_fields:
+            raise BaselineConsistencyError(
+                f"{item_source}: action fields are not represented by operation contracts"
+            )
+        statuses = tuple(status for status, _ in status_counts)
+        operation_statuses = {
+            status for operation in matching_operations for status in operation.statuses
+        }
+        if set(statuses) - operation_statuses:
+            raise BaselineConsistencyError(
+                f"{item_source}: action statuses are not represented by operation contracts"
+            )
         result.append(
             ActionRequestFamily(
                 action_id=action_id,
                 method=method,
-                path_pattern=_known_endpoint(
-                    item.get("path"),
-                    method=method,
-                    source=item_source,
-                    matcher=matcher,
-                    methods_by_pattern=methods_by_pattern,
-                ),
-                field_names=normalize_key_set(field_names, redaction),
+                path_pattern=path_pattern,
+                field_names=normalized_field_names,
                 query_key_sets=tuple(sorted(normalized_query_sets)),
-                statuses=tuple(status for status, _ in status_counts),
+                statuses=statuses,
             )
         )
     return tuple(sorted(result))
@@ -769,7 +816,7 @@ class BaselineCompiler:
             endpoint.path_pattern: frozenset(method.method for method in endpoint.methods)
             for endpoint in endpoints
         }
-        forms = _forms(form_records, redaction)
+        forms = _forms(form_records, redaction, matcher)
 
         operation_path = root / "knowledge/http/operation-index.json"
         operations = _operations(
@@ -786,6 +833,7 @@ class BaselineCompiler:
             redaction=redaction,
             matcher=matcher,
             methods_by_pattern=methods_by_pattern,
+            operations=operations,
         )
 
         contract = RuntimeContract(
