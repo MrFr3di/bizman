@@ -185,6 +185,56 @@ jobs:
                   f"{item['speedup_vs_A']:.2f}x |"
               )
           PY
+      - name: Dump Sonar PR bugs and vulnerabilities (temporary diagnostic)
+        continue-on-error: true
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.parse
+          import urllib.request
+
+          query = urllib.parse.urlencode(
+              {
+                  "componentKeys": "MrFr3di_bizman",
+                  "pullRequest": "4",
+                  "resolved": "false",
+                  "ps": "500",
+              }
+          )
+          url = f"https://sonarcloud.io/api/issues/search?{query}"
+          with urllib.request.urlopen(url, timeout=30) as response:
+              payload = json.load(response)
+          print(f"SONAR_ISSUE_COUNT={payload.get('total')}")
+          for issue in payload.get("issues", []):
+              impacts = issue.get("impacts") or []
+              software_qualities = sorted(
+                  {
+                      str(impact.get("softwareQuality", ""))
+                      for impact in impacts
+                      if impact.get("softwareQuality")
+                  }
+              )
+              if issue.get("type") not in {"BUG", "VULNERABILITY"} and not set(
+                  software_qualities
+              ).intersection({"RELIABILITY", "SECURITY"}):
+                  continue
+              component = str(issue.get("component", ""))
+              prefix = "MrFr3di_bizman:"
+              if component.startswith(prefix):
+                  component = component[len(prefix):]
+              record = {
+                  "key": issue.get("key"),
+                  "rule": issue.get("rule"),
+                  "severity": issue.get("severity"),
+                  "type": issue.get("type"),
+                  "software_qualities": software_qualities,
+                  "component": component,
+                  "line": issue.get("line"),
+                  "message": issue.get("message"),
+              }
+              print("SONAR_ISSUE=" + json.dumps(record, sort_keys=True))
+          PY
       - name: Run detector matching and streaming benchmark
         id: detector-benchmark
         continue-on-error: true
