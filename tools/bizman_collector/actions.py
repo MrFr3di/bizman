@@ -30,10 +30,14 @@ def _bounded_string(value: Any, *, limit: int = _MAX_STRING) -> str | None:
 
 
 def _path_only(value: Any) -> str | None:
+    """Accept only an origin-relative path from the page observer boundary."""
+
     text = _bounded_string(value, limit=2048)
     if text is None:
         return None
     parsed = urlparse(text)
+    if parsed.scheme or parsed.netloc or parsed.params or parsed.query or parsed.fragment:
+        return None
     path = parsed.path
     if not path.startswith("/"):
         return None
