@@ -13,6 +13,8 @@ on:
       - "README.md"
       - "AGENTS.md"
       - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - "docs/CI.md"
 
 permissions:
   contents: read
@@ -158,7 +160,11 @@ jobs:
         with:
           python-version: "3.14"
       - name: Run A/B/C storage benchmark
-        run: python tools/benchmarks/storage_flush.py --events 50000 --repeats 5 | tee "$RUNNER_TEMP/storage-benchmark.json"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/benchmarks/storage_flush.py --events 50000 --repeats 5 \
+            | tee "$RUNNER_TEMP/storage-benchmark.json"
       - name: Publish benchmark summary
         shell: bash
         run: |
@@ -167,8 +173,13 @@ jobs:
           from pathlib import Path
           data = json.loads((Path(os.environ["RUNNER_TEMP"]) / "storage-benchmark.json").read_text())
           print("## Storage flush A/B/C benchmark")
-          print("| Variant | Median s | events/s | Speedup vs A |")
-          print("|---|---:|---:|---:|")
+          print(f"Implementation: `{data['implementation']}`")
+          print("| Variant | Flush every | Median s | events/s | Speedup vs A |")
+          print("|---|---:|---:|---:|---:|")
           for name, item in data["variants"].items():
-              print(f"| {name} | {item['median_seconds']:.4f} | {item['events_per_second']:.0f} | {item['speedup_vs_A']:.2f}x |")
+              print(
+                  f"| {name} | {item['flush_every_events']} | "
+                  f"{item['median_seconds']:.4f} | {item['events_per_second']:.0f} | "
+                  f"{item['speedup_vs_A']:.2f}x |"
+              )
           PY
