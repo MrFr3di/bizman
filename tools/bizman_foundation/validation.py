@@ -306,12 +306,44 @@ def _scan_for_forbidden_files(root: Path, result: ValidationResult) -> None:
         ".parquet",
         ".duckdb",
     }
-    forbidden_names = {".env", "cookies.json", "auth.json", "storageState.json"}
+    forbidden_directories = {
+        "browser-profile",
+        "chrome-profile",
+        "data",
+        "local-data",
+        "raw",
+        "artifacts",
+    }
+    sensitive_json_prefixes = (
+        "cookies",
+        "auth",
+        "storage-state",
+        "storage_state",
+        "storagestate",
+        "session-state",
+        "session_state",
+    )
+
     for path in root.rglob("*"):
         if not path.is_file() or ".git" in path.parts:
             continue
-        if path.suffix.lower() in forbidden_suffixes or path.name in forbidden_names:
-            result.errors.append(f"forbidden committed file: {path.relative_to(root)}")
+        relative = path.relative_to(root)
+        lower_name = path.name.casefold()
+        lower_parts = tuple(part.casefold() for part in relative.parts[:-1])
+        has_forbidden_dir = any(part in forbidden_directories for part in lower_parts)
+        is_env_file = lower_name == ".env" or lower_name.startswith(".env.")
+        is_sensitive_json_export = (
+            lower_name.endswith(".json")
+            and not lower_name.endswith(".schema.json")
+            and lower_name.startswith(sensitive_json_prefixes)
+        )
+        if (
+            path.suffix.lower() in forbidden_suffixes
+            or is_env_file
+            or is_sensitive_json_export
+            or has_forbidden_dir
+        ):
+            result.errors.append(f"forbidden committed file: {relative}")
 
 
 def validate_repository(root: Path) -> ValidationResult:
