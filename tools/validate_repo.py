@@ -180,9 +180,13 @@ def main() -> int:
 
     nav = load_json(ROOT / "knowledge/wiki/navigation.json")
     if isinstance(nav, dict):
-        if len(nav.get("captured_topics", [])) != 87:
+        captured = nav.get("captured_topics")
+        navigation = nav.get("navigation_topics")
+        captured_count = captured if isinstance(captured, int) else len(captured or [])
+        navigation_count = navigation if isinstance(navigation, int) else len(navigation or [])
+        if captured_count != 87:
             fail("knowledge/wiki/navigation.json: captured_topics != 87")
-        if len(nav.get("navigation_topics", [])) != 89:
+        if navigation_count != 89:
             fail("knowledge/wiki/navigation.json: navigation_topics != 89")
 
     scan_for_forbidden_files()
