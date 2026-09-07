@@ -90,8 +90,31 @@ class RuntimeContract:
     actions: tuple[ActionRequestFamily, ...]
 
 
+@dataclass(frozen=True, slots=True, order=True)
+class RuleDescriptor:
+    """Stable rule metadata participating in analysis-profile identity."""
+
+    rule_id: str
+    version: int
+    kind: str
+
+
+@dataclass(frozen=True, slots=True)
+class AnalysisProfile:
+    """Replay namespace for one complete deterministic detector interpretation."""
+
+    baseline_sha256: str
+    contract_schema_version: int
+    normalization_version: int
+    extraction_version: int
+    redaction_policy_sha256: str
+    rules: tuple[RuleDescriptor, ...]
+    sha256: str
+
+
 __all__ = [
     "ActionRequestFamily",
+    "AnalysisProfile",
     "EndpointFamily",
     "EndpointMethodContract",
     "EndpointVariant",
@@ -99,5 +122,6 @@ __all__ = [
     "MatchState",
     "OperationSignature",
     "PathMatch",
+    "RuleDescriptor",
     "RuntimeContract",
 ]
