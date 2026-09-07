@@ -20,8 +20,9 @@
       "contradicted",
       "deprecated"
     ],
-    "ci": "manual-only",
-    "ci_command": "python3 tools/validate_repo.py"
+    "ci": "pull-request-gated+manual",
+    "ci_local_command": "python3 -m compileall -q tools tests && python3 -m unittest discover -s tests -v && python3 tools/validate_repo.py",
+    "ci_workflow": ".github/workflows/collector-e2e.yml"
   },
   "datasets": [
     {"id":"captures","path":"knowledge/sources/captures.json","format":"json","records":3,"purpose":"Source provenance, SHA-256, sizes and capture-level statistics"},
