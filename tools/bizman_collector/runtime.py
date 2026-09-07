@@ -29,6 +29,9 @@ PASSIVE_CDP_METHODS = frozenset(
         "Target.attachToTarget",
         "Target.setAutoAttach",
         "Network.enable",
+        "Runtime.enable",
+        "Runtime.addBinding",
+        "Page.addScriptToEvaluateOnNewDocument",
     }
 )
 
