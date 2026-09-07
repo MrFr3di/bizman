@@ -1,21 +1,27 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from tools.bizman_detector import CONTRACT_SCHEMA_VERSION, NORMALIZATION_VERSION
+from tools.bizman_detector import (
+    CONTRACT_SCHEMA_VERSION,
+    EXTRACTION_VERSION,
+    NORMALIZATION_VERSION,
+)
 from tools.bizman_detector.model import (
     ActionRequestFamily,
+    AnalysisProfile,
     EndpointFamily,
     EndpointMethodContract,
     EndpointVariant,
     FormSignature,
     OperationSignature,
+    RuleDescriptor,
     RuntimeContract,
 )
 from tools.bizman_detector.normalization import (
@@ -265,9 +271,7 @@ def _load_partitioned_jsonl(repo_root: Path, index_path: Path) -> tuple[_SourceR
                         raise BaselineFormatError(
                             f"invalid JSONL in {label}:{line_number}: {exc}"
                         ) from exc
-                    result.append(
-                        _SourceRecord(record, f"{label}:{line_number}")
-                    )
+                    result.append(_SourceRecord(record, f"{label}:{line_number}"))
         except FileNotFoundError as exc:
             raise BaselineFormatError(f"missing curated file: {label}") from exc
         except UnicodeDecodeError as exc:
@@ -789,6 +793,88 @@ def _contract_semantics(contract: RuntimeContract) -> dict[str, Any]:
     }
 
 
+def _require_positive_version(value: object, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{name} must be positive")
+    return value
+
+
+def _require_sha256(value: object, *, name: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(char not in "0123456789abcdef" for char in value)
+    ):
+        raise ValueError(f"{name} must be a lowercase SHA-256 hex digest")
+    return value
+
+
+def build_analysis_profile(
+    compilation: BaselineCompilation,
+    rules: Iterable[RuleDescriptor],
+    *,
+    extraction_version: int = EXTRACTION_VERSION,
+) -> AnalysisProfile:
+    """Build the deterministic checkpoint namespace for detector interpretation."""
+
+    contract_schema_version = _require_positive_version(
+        compilation.contract.contract_schema_version,
+        name="contract_schema_version",
+    )
+    normalization_version = _require_positive_version(
+        compilation.contract.normalization_version,
+        name="normalization_version",
+    )
+    extraction = _require_positive_version(
+        extraction_version,
+        name="extraction_version",
+    )
+    baseline_sha256 = _require_sha256(
+        compilation.baseline_sha256,
+        name="baseline_sha256",
+    )
+    redaction_policy_sha256 = _require_sha256(
+        compilation.redaction_policy_sha256,
+        name="redaction_policy_sha256",
+    )
+
+    descriptors = tuple(rules)
+    seen_ids: set[str] = set()
+    for descriptor in descriptors:
+        if not isinstance(descriptor, RuleDescriptor):
+            raise TypeError("rules must contain RuleDescriptor values")
+        if not descriptor.rule_id:
+            raise ValueError("rule id must be non-empty")
+        if descriptor.rule_id in seen_ids:
+            raise ValueError(f"duplicate rule id: {descriptor.rule_id}")
+        seen_ids.add(descriptor.rule_id)
+        _require_positive_version(descriptor.version, name="rule version")
+        if not descriptor.kind:
+            raise ValueError("rule kind must be non-empty")
+
+    ordered_rules = tuple(sorted(descriptors, key=lambda item: item.rule_id))
+    semantics = {
+        "baseline_sha256": baseline_sha256,
+        "contract_schema_version": contract_schema_version,
+        "normalization_version": normalization_version,
+        "extraction_version": extraction,
+        "redaction_policy_sha256": redaction_policy_sha256,
+        "rules": [
+            {"rule_id": descriptor.rule_id, "rule_version": descriptor.version}
+            for descriptor in ordered_rules
+        ],
+    }
+    return AnalysisProfile(
+        baseline_sha256=baseline_sha256,
+        contract_schema_version=contract_schema_version,
+        normalization_version=normalization_version,
+        extraction_version=extraction,
+        redaction_policy_sha256=redaction_policy_sha256,
+        rules=ordered_rules,
+        sha256=canonical_sha256(semantics),
+    )
+
+
 class BaselineCompiler:
     """Compile curated repository evidence into a deterministic Runtime Contract."""
 
@@ -857,4 +943,5 @@ __all__ = [
     "BaselineConsistencyError",
     "BaselineError",
     "BaselineFormatError",
+    "build_analysis_profile",
 ]
