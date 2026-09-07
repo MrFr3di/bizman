@@ -137,6 +137,21 @@ class ObservationSet:
     relations: tuple[RelationObservation, ...]
 
 
+SemanticValue = str | int | tuple[str, ...] | None
+SemanticFields = tuple[tuple[str, SemanticValue], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DiffFact:
+    """Pure value-free semantic comparison result consumed by versioned rules."""
+
+    state: MatchState
+    kind: str
+    subject: SemanticFields
+    delta: SemanticFields = ()
+    evidence_event_ids: tuple[str, ...] = ()
+
+
 @dataclass(frozen=True, slots=True, order=True)
 class RuleDescriptor:
     """Stable rule metadata participating in analysis-profile identity."""
@@ -162,6 +177,7 @@ class AnalysisProfile:
 __all__ = [
     "ActionRequestFamily",
     "AnalysisProfile",
+    "DiffFact",
     "EndpointFamily",
     "EndpointMethodContract",
     "EndpointVariant",
@@ -175,4 +191,6 @@ __all__ = [
     "RelationObservation",
     "RuleDescriptor",
     "RuntimeContract",
+    "SemanticFields",
+    "SemanticValue",
 ]
