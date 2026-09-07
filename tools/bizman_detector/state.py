@@ -362,6 +362,22 @@ class DetectorState:
         prepared: list[tuple[Finding, str, bool]] = []
 
         with self._immediate_transaction():
+            evidence_rows = self._connection.execute(
+                """
+                SELECT DISTINCT evidence_sha256, manifest_sha256
+                FROM processed_sessions
+                WHERE session_id = ?
+                """,
+                (identity.session_id,),
+            ).fetchall()
+            expected_evidence = (identity.evidence_sha256, identity.manifest_sha256)
+            if evidence_rows and (
+                len(evidence_rows) != 1 or tuple(evidence_rows[0]) != expected_evidence
+            ):
+                raise StateIntegrityError(
+                    "session evidence identity conflicts across analysis profiles"
+                )
+
             checkpoint = self._connection.execute(
                 """
                 SELECT baseline_sha256, evidence_sha256, manifest_sha256
