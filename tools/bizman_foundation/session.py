@@ -48,9 +48,16 @@ def new_session_manifest(
         "session_id": new_uuid7(),
         "started_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "ended_at": None,
+        "status": "running",
         "collector": {"name": "bizman-cdp", "version": collector_version},
         "browser": {"product": browser_product, "version": browser_version},
-        "protocol": {"name": "cdp", "version": protocol_version},
+        "protocol": {
+            "name": "cdp",
+            "version": protocol_version,
+            "sha256": None,
+            "artifact_ref": None,
+        },
         "event_files": [],
         "artifact_count": 0,
+        "warnings": [],
     }
