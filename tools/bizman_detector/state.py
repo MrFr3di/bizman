@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
@@ -19,6 +19,7 @@ APPLICATION_ID: Final[int] = 0x424D4431
 USER_VERSION: Final[int] = 1
 _MIN_SQLITE_VERSION: Final[tuple[int, int, int]] = (3, 37, 0)
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_CHANGE_QUERY_CHUNK = 400
 
 
 class StateError(RuntimeError):
@@ -290,6 +291,37 @@ class DetectorState:
             raise StateCompatibilityError("detector database is missing required schema tables")
         if any(strict != 1 for strict in table_rows.values()):
             raise StateCompatibilityError("detector database tables must all be STRICT")
+
+    def existing_change_ids(
+        self,
+        analysis_profile_sha256: str,
+        change_ids: Iterable[str],
+    ) -> frozenset[str]:
+        """Return exactly the requested changes already present in one profile."""
+
+        profile_sha256 = _require_sha256(
+            analysis_profile_sha256,
+            name="analysis_profile_sha256",
+        )
+        if isinstance(change_ids, (str, bytes)):
+            raise TypeError("change_ids must be an iterable of change-id strings")
+        ordered = tuple(
+            sorted({_require_text(change_id, name="change_id") for change_id in change_ids})
+        )
+        if not ordered:
+            return frozenset()
+
+        result: set[str] = set()
+        for offset in range(0, len(ordered), _CHANGE_QUERY_CHUNK):
+            chunk = ordered[offset : offset + _CHANGE_QUERY_CHUNK]
+            placeholders = ",".join("?" for _ in chunk)
+            rows = self._connection.execute(
+                f"SELECT change_id FROM changes "
+                f"WHERE analysis_profile_sha256 = ? AND change_id IN ({placeholders})",
+                (profile_sha256, *chunk),
+            ).fetchall()
+            result.update(str(row[0]) for row in rows)
+        return frozenset(result)
 
     @contextmanager
     def _immediate_transaction(self) -> Iterator[None]:
