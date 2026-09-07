@@ -8,6 +8,8 @@ from urllib.parse import parse_qs
 
 from jsonschema import Draft202012Validator, FormatChecker
 
+ACTION_POST_PATH = "/api/action-post"
+
 
 def _load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -30,6 +32,24 @@ def _request_for_path(events: list[dict], path: str) -> dict:
     if not matches:
         raise AssertionError(f"missing HTTP request event for {path}")
     return matches[0]
+
+
+def _assert_no_artifact_secrets(
+    data_dir: Path,
+    secrets: tuple[str, ...],
+) -> None:
+    encoded = tuple((value, value.encode("utf-8")) for value in secrets)
+    artifact_root = data_dir / "artifacts" / "sha256"
+    if not artifact_root.exists():
+        return
+    for artifact in artifact_root.glob("*/*"):
+        artifact_bytes = artifact.read_bytes()
+        for value, needle in encoded:
+            if needle in artifact_bytes:
+                raise AssertionError(
+                    f"synthetic secret leaked into artifact "
+                    f"{artifact.relative_to(data_dir)}: {value}"
+                )
 
 
 def main() -> int:
@@ -84,7 +104,7 @@ def main() -> int:
         for event in events
         if event.get("event_type") == "http.request"
     }
-    for required in {"/api/get", "/api/post", "/redirect", "/api/action-post"}:
+    for required in {"/api/get", "/api/post", "/redirect", ACTION_POST_PATH}:
         if required not in request_paths:
             raise AssertionError(f"missing expected request path {required}; got {sorted(request_paths)}")
 
@@ -96,7 +116,7 @@ def main() -> int:
     if json.loads(body) != {"safe": "kept"}:
         raise AssertionError(f"unexpected sanitized POST artifact: {body}")
 
-    action_post = _request_for_path(events, "/api/action-post")
+    action_post = _request_for_path(events, ACTION_POST_PATH)
     action_body_ref = action_post.get("request_body_ref")
     if not isinstance(action_body_ref, str):
         raise AssertionError("sanitized action POST body was not persisted")
@@ -109,10 +129,10 @@ def main() -> int:
         for event in events
         if event.get("event_type") == "dom.action"
         and event.get("action_kind") == "submit"
-        and event.get("form_action_path") == "/api/action-post"
+        and event.get("form_action_path") == ACTION_POST_PATH
     ]
     if not submit_actions:
-        raise AssertionError("missing normalized DOM submit action for /api/action-post")
+        raise AssertionError(f"missing normalized DOM submit action for {ACTION_POST_PATH}")
     action = submit_actions[0]
     if action.get("form_method") != "POST":
         raise AssertionError(f"unexpected submit method: {action.get('form_method')}")
@@ -151,22 +171,10 @@ def main() -> int:
         if value in serialized_events or value in body or value in action_body:
             raise AssertionError(f"secret leaked into durable output: {value}")
 
-    # None of the unique synthetic secret values may appear in any persisted
-    # CAS artifact, including artifacts the verifier does not otherwise inspect.
     synthetic_secrets = tuple(
         value for value in forbidden if value.startswith("TOP_SECRET_")
     )
-    for artifact in (data_dir / "artifacts" / "sha256").glob("*/*"):
-        try:
-            artifact_text = artifact.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            continue
-        for value in synthetic_secrets:
-            if value in artifact_text:
-                raise AssertionError(
-                    f"synthetic secret leaked into artifact "
-                    f"{artifact.relative_to(data_dir)}: {value}"
-                )
+    _assert_no_artifact_secrets(data_dir, synthetic_secrets)
 
     websocket_types = {
         event.get("event_type")
