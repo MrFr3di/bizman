@@ -16,8 +16,10 @@
   },
   "fields": {
     "drop_patterns": [
-      "(?i)(?:^|[_-])(?:password|passwd|pwd)(?:$|[_-])",
-      "(?i)(?:^|[_-])(?:token|secret|session)(?:$|[_-])",
+      "(?i)(?:password|passwd|pwd)",
+      "(?i)(?:(?:access|refresh|id|auth)[_-]?)?token",
+      "(?i)(?:(?:client|api)[_-]?)?secret",
+      "(?i)session(?:[_-]?(?:id|key|token))?",
       "(?i)csrf",
       "(?i)authorization",
       "(?i)cookie"
