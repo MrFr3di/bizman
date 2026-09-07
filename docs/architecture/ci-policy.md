@@ -1,13 +1,33 @@
 # CI policy
 
-CI quota is intentionally conserved.
+The repository is public and uses GitHub-hosted CI as a focused pull-request quality gate where integration confidence justifies it.
 
-- No scheduled workflow.
-- No workflow on push.
-- No automatic workflow on pull requests.
-- GitHub validation is manual-only through `workflow_dispatch`.
-- Normal validation runs locally with `python3 tools/validate_repo.py`.
-- The validator uses only the Python standard library and never reprocesses the large HAR captures.
-- The manual GitHub job has read-only repository permissions and a 3-minute timeout.
+- No routine workflow on `push`.
+- No scheduled workflow without a concrete monitoring/evaluation requirement.
+- Relevant pull requests run the quality gate; `workflow_dispatch` remains available for explicit diagnostics/re-runs.
+- `permissions: contents: read` is the default workflow posture.
+- Validation starts with compilation, unit/contract tests and repository/schema validation.
+- Real Chrome for Testing E2E is used for collector/CDP/action-correlation changes and should be path-scoped as the CI is split further.
+- Benchmarks are non-gating unless a future performance regression budget is deliberately adopted.
+- Large raw HAR captures are never reprocessed in CI and remain outside Git.
 
-Add automatic CI only when the project has executable production code whose regression risk justifies the private-repository minutes.
+The target CI split in `docs/ROADMAP.md` is:
+
+```text
+validate
+  compile/lint/unit/schema/repo validation
+
+detector-integration
+  detector/evidence/index relevant changes
+
+collector-chrome-e2e
+  collector/CDP/action/correlation relevant changes
+
+benchmarks
+  non-gating by default
+
+agent-evals
+  non-gating initially
+```
+
+Until that split is implemented, `.github/workflows/collector-e2e.yml` remains the current PR-level quality gate. See `docs/CI.md` for the exact current workflow behavior.
