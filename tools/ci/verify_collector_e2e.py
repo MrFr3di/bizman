@@ -142,6 +142,7 @@ def main() -> int:
         "TOP_SECRET_BODY",
         "TOP_SECRET_WS_QUERY",
         "TOP_SECRET_WS_PAYLOAD",
+        "TOP_SECRET_ACTION_QUERY",
         "TOP_SECRET_INPUT_VALUE",
         "clientSecret",
         "accessToken",
@@ -150,17 +151,22 @@ def main() -> int:
         if value in serialized_events or value in body or value in action_body:
             raise AssertionError(f"secret leaked into durable output: {value}")
 
-    # The unique synthetic input value must not appear in any persisted CAS
-    # artifact, including artifacts the verifier doesn't otherwise inspect.
+    # None of the unique synthetic secret values may appear in any persisted
+    # CAS artifact, including artifacts the verifier does not otherwise inspect.
+    synthetic_secrets = tuple(
+        value for value in forbidden if value.startswith("TOP_SECRET_")
+    )
     for artifact in (data_dir / "artifacts" / "sha256").glob("*/*"):
         try:
             artifact_text = artifact.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        if "TOP_SECRET_INPUT_VALUE" in artifact_text:
-            raise AssertionError(
-                f"synthetic input value leaked into artifact {artifact.relative_to(data_dir)}"
-            )
+        for value in synthetic_secrets:
+            if value in artifact_text:
+                raise AssertionError(
+                    f"synthetic secret leaked into artifact "
+                    f"{artifact.relative_to(data_dir)}: {value}"
+                )
 
     websocket_types = {
         event.get("event_type")

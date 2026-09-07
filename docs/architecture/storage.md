@@ -4,7 +4,7 @@
 Репозиторий содержит код, схемы, документацию и структурированные производные данные. Здесь допустимы небольшие текстовые evidence-наборы, необходимые для поиска и воспроизводимости.
 
 ## Вне Git
-Исходные HAR, рабочие SQLite/Parquet, cookies, browser storage и будущие live-capture artifacts должны храниться локально вне worktree. Идеальная локальная схема:
+Исходные HAR, рабочие SQLite/Parquet, cookies, browser storage и live-capture artifacts должны храниться локально вне worktree. Идеальная локальная схема:
 
 ```text
 BizmanData/
@@ -18,7 +18,7 @@ BizmanData/
 
 ## Слои
 1. **RAW** — неизменяемый первичный capture. Не коммитится.
-2. **EVENTS** — append-only события/индексы; в Git допустим только sanitized metadata corpus.
+2. **EVENTS** — append-only наблюдения и производные link-events. Исходное наблюдение не переписывается после корреляции; `correlation.action_http` хранит связь отдельным immutable событием. В Git допустим только sanitized metadata corpus.
 3. **DOMAIN** — интерпретированные сущности, состояния и отношения.
 4. **CURATED** — знания, документация, аналитические представления.
 
@@ -28,6 +28,11 @@ BizmanData/
 - JSON: каталоги и индексы.
 - Parquet: будущая историческая аналитика вне Git.
 - SQLite: будущая локальная current-state модель вне Git.
+
+## Семантика событий и связей
+`dom.action` и `http.request` являются независимыми наблюдениями. Детерминированный correlator не добавляет ссылку задним числом внутрь этих событий: он выпускает отдельное `correlation.action_http` с `action_event_id`, `network_event_id`, score/status и явным набором сигналов. Это сохраняет append-only provenance и позволяет позже пересчитать или заменить алгоритм корреляции, не меняя исходные evidence-события.
+
+Эвристическая корреляция имеет `confidence=inferred`; статус `exact` для неё не используется. Значения полей формы, текст/HTML элементов, cookies/storage/clipboard не являются частью action event model.
 
 ## Почему не хранить raw HAR в private Git
 Private не означает безопасное секрет-хранилище. HAR тяжёлые, содержат много дубликатов статики и потенциально могут включать session/auth данные. SHA-256 в `knowledge/sources/captures.json` связывает производные данные с точным исходником без необходимости помещать raw в историю Git.
