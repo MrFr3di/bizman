@@ -1,0 +1,59 @@
+name: temporary-sonar-diagnostic
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/temporary-sonar-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sonar-issues:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Dump open reliability and security issues
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.parse
+          import urllib.request
+
+          query = urllib.parse.urlencode({
+              "componentKeys": "MrFr3di_bizman",
+              "pullRequest": "4",
+              "resolved": "false",
+              "ps": "500",
+          })
+          with urllib.request.urlopen(
+              f"https://sonarcloud.io/api/issues/search?{query}", timeout=30
+          ) as response:
+              payload = json.load(response)
+          print(f"SONAR_ISSUE_COUNT={payload.get('total')}")
+          for issue in payload.get("issues", []):
+              impacts = issue.get("impacts") or []
+              qualities = sorted({
+                  str(impact.get("softwareQuality", ""))
+                  for impact in impacts
+                  if impact.get("softwareQuality")
+              })
+              if issue.get("type") not in {"BUG", "VULNERABILITY"} and not set(qualities).intersection({"RELIABILITY", "SECURITY"}):
+                  continue
+              component = str(issue.get("component", ""))
+              prefix = "MrFr3di_bizman:"
+              if component.startswith(prefix):
+                  component = component[len(prefix):]
+              print("SONAR_ISSUE=" + json.dumps({
+                  "key": issue.get("key"),
+                  "rule": issue.get("rule"),
+                  "severity": issue.get("severity"),
+                  "type": issue.get("type"),
+                  "software_qualities": qualities,
+                  "component": component,
+                  "line": issue.get("line"),
+                  "message": issue.get("message"),
+              }, sort_keys=True))
+          PY
