@@ -181,8 +181,15 @@ class EvidenceReader:
             raise EvidenceFormatError(f"invalid session id: {session_id!r}")
         return session_id
 
+    def _trusted_root(self, *parts: str, name: str) -> Path:
+        data_root = self.data_dir.resolve(strict=False)
+        root = data_root.joinpath(*parts).resolve(strict=False)
+        if not root.is_relative_to(data_root):
+            raise EvidenceFormatError(f"{name} root escapes data directory")
+        return root
+
     def _session_directory(self, session_id: str) -> Path:
-        sessions_root = (self.data_dir / "sessions").resolve(strict=False)
+        sessions_root = self._trusted_root("sessions", name="sessions")
         candidate = sessions_root / session_id
         try:
             resolved = candidate.resolve(strict=True)
@@ -283,13 +290,13 @@ class EvidenceReader:
         if pure.suffix != ".jsonl":
             raise EvidenceFormatError(f"event file must use .jsonl: {event_rel!r}")
 
-        candidate = self.data_dir.joinpath(*pure.parts)
+        data_root = self.data_dir.resolve(strict=False)
+        events_root = self._trusted_root("events", name="events")
+        candidate = data_root.joinpath(*pure.parts)
         try:
             resolved = candidate.resolve(strict=True)
         except OSError as exc:
             raise EvidenceFormatError(f"missing event file {event_rel!r}: {exc}") from exc
-        data_root = self.data_dir.resolve(strict=False)
-        events_root = (data_root / "events").resolve(strict=False)
         if not resolved.is_relative_to(data_root):
             raise EvidenceFormatError(f"event file {event_rel!r} escapes data directory")
         if not resolved.is_relative_to(events_root):
@@ -467,7 +474,7 @@ class EvidenceReader:
         if match is None:
             raise EvidenceFormatError(f"invalid artifact reference: {ref!r}")
         digest = match.group(1)
-        artifact_root = (self.data_dir / "artifacts" / "sha256").resolve(strict=False)
+        artifact_root = self._trusted_root("artifacts", "sha256", name="artifact")
         candidate = artifact_root / digest[:2] / digest
         try:
             resolved = candidate.resolve(strict=True)
@@ -510,7 +517,7 @@ class EvidenceReader:
         if selected:
             session_ids = sorted({self._validate_session_id(item) for item in selected})
         else:
-            sessions_root = self.data_dir / "sessions"
+            sessions_root = self._trusted_root("sessions", name="sessions")
             if not sessions_root.exists():
                 return
             if not sessions_root.is_dir():
@@ -539,7 +546,7 @@ class EvidenceReader:
         if selected:
             session_ids = sorted({self._validate_session_id(item) for item in selected})
         else:
-            sessions_root = self.data_dir / "sessions"
+            sessions_root = self._trusted_root("sessions", name="sessions")
             if not sessions_root.exists():
                 return
             if not sessions_root.is_dir():
