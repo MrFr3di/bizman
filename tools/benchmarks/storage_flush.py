@@ -5,8 +5,13 @@ import argparse
 import json
 from pathlib import Path
 import statistics
+import sys
 import tempfile
 import time
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from tools.bizman_collector.storage import SessionWriter
 
