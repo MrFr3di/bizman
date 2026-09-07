@@ -162,6 +162,20 @@ class RuleDescriptor:
 
 
 @dataclass(frozen=True, slots=True)
+class Finding:
+    """Stable rule classification with semantic identity and external provenance."""
+
+    change_id: str
+    rule_id: str
+    rule_version: int
+    kind: str
+    novelty_class: str
+    subject: SemanticFields
+    delta: SemanticFields
+    evidence_event_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class AnalysisProfile:
     """Replay namespace for one complete deterministic detector interpretation."""
 
@@ -181,6 +195,7 @@ __all__ = [
     "EndpointFamily",
     "EndpointMethodContract",
     "EndpointVariant",
+    "Finding",
     "FormObservation",
     "FormSignature",
     "HttpObservation",
