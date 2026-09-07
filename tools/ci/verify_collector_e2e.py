@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -17,6 +18,18 @@ def _artifact_path(data_dir: Path, ref: str) -> Path:
     if algorithm != "sha256" or len(digest) != 64:
         raise AssertionError(f"invalid artifact ref: {ref}")
     return data_dir / "artifacts" / "sha256" / digest[:2] / digest
+
+
+def _request_for_path(events: list[dict], path: str) -> dict:
+    matches = [
+        event
+        for event in events
+        if event.get("event_type") == "http.request"
+        and event.get("url_path") == path
+    ]
+    if not matches:
+        raise AssertionError(f"missing HTTP request event for {path}")
+    return matches[0]
 
 
 def main() -> int:
@@ -71,24 +84,57 @@ def main() -> int:
         for event in events
         if event.get("event_type") == "http.request"
     }
-    for required in {"/api/get", "/api/post", "/redirect"}:
+    for required in {"/api/get", "/api/post", "/redirect", "/api/action-post"}:
         if required not in request_paths:
             raise AssertionError(f"missing expected request path {required}; got {sorted(request_paths)}")
 
-    post_events = [
-        event
-        for event in events
-        if event.get("event_type") == "http.request"
-        and event.get("url_path") == "/api/post"
-    ]
-    if not post_events:
-        raise AssertionError("missing POST fixture event")
-    body_ref = post_events[0].get("request_body_ref")
+    post_event = _request_for_path(events, "/api/post")
+    body_ref = post_event.get("request_body_ref")
     if not isinstance(body_ref, str):
-        raise AssertionError("sanitized POST body was not persisted")
+        raise AssertionError("sanitized JSON POST body was not persisted")
     body = _artifact_path(data_dir, body_ref).read_text(encoding="utf-8")
     if json.loads(body) != {"safe": "kept"}:
         raise AssertionError(f"unexpected sanitized POST artifact: {body}")
+
+    action_post = _request_for_path(events, "/api/action-post")
+    action_body_ref = action_post.get("request_body_ref")
+    if not isinstance(action_body_ref, str):
+        raise AssertionError("sanitized action POST body was not persisted")
+    action_body = _artifact_path(data_dir, action_body_ref).read_text(encoding="utf-8")
+    if parse_qs(action_body, keep_blank_values=True) != {"product": ["42"]}:
+        raise AssertionError(f"unexpected sanitized action POST artifact: {action_body}")
+
+    submit_actions = [
+        event
+        for event in events
+        if event.get("event_type") == "dom.action"
+        and event.get("action_kind") == "submit"
+        and event.get("form_action_path") == "/api/action-post"
+    ]
+    if not submit_actions:
+        raise AssertionError("missing normalized DOM submit action for /api/action-post")
+    action = submit_actions[0]
+    if action.get("form_method") != "POST":
+        raise AssertionError(f"unexpected submit method: {action.get('form_method')}")
+    if action.get("form_field_names") != ["product"]:
+        raise AssertionError(
+            f"unexpected sanitized form field names: {action.get('form_field_names')}"
+        )
+
+    links = [
+        event
+        for event in events
+        if event.get("event_type") == "correlation.action_http"
+        and event.get("action_event_id") == action.get("event_id")
+        and event.get("network_event_id") == action_post.get("event_id")
+    ]
+    if not links:
+        raise AssertionError("missing immutable action→HTTP correlation event")
+    link = links[0]
+    if link.get("correlation_status") not in {"strong", "probable"}:
+        raise AssertionError(f"unexpected correlation status: {link.get('correlation_status')}")
+    if link.get("correlation_status") == "exact":
+        raise AssertionError("heuristic action correlation must never be exact")
 
     serialized_events = "\n".join(json.dumps(event, sort_keys=True) for event in events)
     forbidden = (
@@ -96,12 +142,25 @@ def main() -> int:
         "TOP_SECRET_BODY",
         "TOP_SECRET_WS_QUERY",
         "TOP_SECRET_WS_PAYLOAD",
+        "TOP_SECRET_INPUT_VALUE",
         "clientSecret",
         "accessToken",
     )
     for value in forbidden:
-        if value in serialized_events or value in body:
+        if value in serialized_events or value in body or value in action_body:
             raise AssertionError(f"secret leaked into durable output: {value}")
+
+    # The unique synthetic input value must not appear in any persisted CAS
+    # artifact, including artifacts the verifier doesn't otherwise inspect.
+    for artifact in (data_dir / "artifacts" / "sha256").glob("*/*"):
+        try:
+            artifact_text = artifact.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        if "TOP_SECRET_INPUT_VALUE" in artifact_text:
+            raise AssertionError(
+                f"synthetic input value leaked into artifact {artifact.relative_to(data_dir)}"
+            )
 
     websocket_types = {
         event.get("event_type")
@@ -119,6 +178,9 @@ def main() -> int:
                 "status": manifest["status"],
                 "events": len(events),
                 "request_paths": sorted(path for path in request_paths if path),
+                "action_kind": action.get("action_kind"),
+                "correlation_status": link.get("correlation_status"),
+                "correlation_score": link.get("correlation_score"),
                 "websocket_types": sorted(websocket_types),
             },
             indent=2,
