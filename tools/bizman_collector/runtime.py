@@ -13,6 +13,7 @@ from tools.bizman_collector.cdp import (
     open_cdp_transport,
 )
 from tools.bizman_collector.discovery import BrowserDiscovery, discover_browser
+from tools.bizman_collector.events import CollectorClock, EventSequencer
 from tools.bizman_collector.network import FirstPartyPolicy, NetworkNormalizer
 from tools.bizman_collector.storage import ArtifactStore, SessionWriter
 from tools.bizman_collector.targets import TargetOrchestrator
@@ -117,11 +118,15 @@ async def run_collection(
         artifact_ref=protocol_ref,
     )
 
+    sequencer = EventSequencer()
+    clock = CollectorClock()
     normalizer = NetworkNormalizer(
         session_id=writer.session_id,
         first_party=first_party,
         redaction=redaction,
         artifacts=artifacts,
+        sequencer=sequencer,
+        clock=clock,
     )
 
     factory = transport_factory or open_cdp_transport
