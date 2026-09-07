@@ -93,6 +93,7 @@ class ActionOriginGuardTests(unittest.TestCase):
             writer = FakeWriter()
             pipeline = CollectorEventPipeline(
                 binding_name=BINDING,
+                observer_world_name=WORLD,
                 first_party=first_party,
                 contexts=contexts,
                 action_normalizer=ActionNormalizer(
