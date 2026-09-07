@@ -68,6 +68,7 @@ class RedactionTests(unittest.TestCase):
                             "first_party_only": True,
                             "max_request_bytes": 1048576,
                             "max_response_bytes": 2097152,
+                            "mime_allowlist": ["application/json"],
                         },
                     }
                 ),
@@ -79,6 +80,20 @@ class RedactionTests(unittest.TestCase):
             self.assertTrue(policy.first_party_only)
             self.assertEqual(policy.max_request_bytes, 1048576)
             self.assertEqual(policy.max_response_bytes, 2097152)
+            self.assertIn("application/json", policy.mime_allowlist)
+
+    def test_default_policy_drops_camel_case_secret_fields(self):
+        result = redact_mapping(
+            {
+                "safe": 1,
+                "accessToken": "a",
+                "clientSecret": "b",
+                "sessionId": "c",
+                "cookieValue": "d",
+            },
+            self.policy,
+        )
+        self.assertEqual(result, {"safe": 1})
 
 
 class SessionTests(unittest.TestCase):
@@ -229,6 +244,19 @@ class ValidatorV2Tests(unittest.TestCase):
             (root / "state.db").write_bytes(b"not-a-real-db")
             result = validate_repository(root)
             self.assertTrue(any("forbidden committed file" in error for error in result.errors))
+
+    def test_validator_rejects_secret_and_environment_file_variants(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._minimal_root(root)
+            (root / ".env.local").write_text("SECRET=x", encoding="utf-8")
+            (root / "cookies-export.json").write_text("{}", encoding="utf-8")
+            (root / "session-state.json").write_text("{}", encoding="utf-8")
+            (root / "auth-backup.json").write_text("{}", encoding="utf-8")
+            result = validate_repository(root)
+            self.assertGreaterEqual(
+                sum("forbidden committed file" in error for error in result.errors), 4
+            )
 
     def test_validator_enforces_schema_date_time_formats(self):
         with tempfile.TemporaryDirectory() as tmp:
