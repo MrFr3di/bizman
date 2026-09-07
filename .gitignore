@@ -1,0 +1,41 @@
+# Raw captures and browser state
+*.har
+*.har.gz
+*.har.zst
+cookies*
+session*
+storageState*
+auth*
+browser-profile/
+chrome-profile/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Operational/local data
+*.sqlite
+*.sqlite3
+*.db
+*.parquet
+*.duckdb
+data/
+local-data/
+raw/
+artifacts/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

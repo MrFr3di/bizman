@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "source_file": "knowledge/http/application-events.jsonl",
+  "total_records": 555,
+  "parts": [
+    {"file":"part-000.jsonl","records":60,"offset":0},
+    {"file":"part-001.jsonl","records":61,"offset":60},
+    {"file":"part-002.jsonl","records":60,"offset":121},
+    {"file":"part-003.jsonl","records":60,"offset":181},
+    {"file":"part-004.jsonl","records":58,"offset":241},
+    {"file":"part-005.jsonl","records":60,"offset":299},
+    {"file":"part-006.jsonl","records":58,"offset":359},
+    {"file":"part-007.jsonl","records":53,"offset":417},
+    {"file":"part-008a.jsonl","records":28,"offset":470},
+    {"file":"part-008b.jsonl","records":28,"offset":498},
+    {"file":"part-009.jsonl","records":29,"offset":526}
+  ]
+}

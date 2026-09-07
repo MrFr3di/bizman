@@ -1,0 +1,37 @@
+{
+  "schema_version": "2.0",
+  "generated_at": "2026-09-07",
+  "status": "curated-corpus-complete",
+  "source_capture_count": 3,
+  "network_entry_count": 17108,
+  "first_party_entry_count": 16202,
+  "application_event_count": 555,
+  "policy": {
+    "raw_har_committed": false,
+    "raw_storage": "external/private",
+    "provenance": "Every derived record retains capture/entry evidence or source-level provenance where applicable.",
+    "confidence_levels": ["observed", "documented", "inferred", "hypothesis", "verified", "contradicted", "deprecated"],
+    "ci": "manual-only",
+    "ci_command": "python3 tools/validate_repo.py"
+  },
+  "datasets": [
+    {"id":"captures","path":"knowledge/sources/captures.json","format":"json","records":3,"purpose":"Source provenance, SHA-256, sizes and capture-level statistics"},
+    {"id":"application-events","path":"knowledge/http/application-events/index.json","format":"partition-manifest/jsonl","records":555,"purpose":"All first-party non-static BizMania network events"},
+    {"id":"post-observations","path":"knowledge/http/post-observations.jsonl","format":"jsonl","records":17,"purpose":"All observed first-party POST requests with body/query evidence"},
+    {"id":"write-actions","path":"knowledge/actions/catalog.json","format":"json","records":8,"purpose":"Normalized observed state-changing action families"},
+    {"id":"endpoints","path":"knowledge/http/endpoints/index.json","format":"partition-manifest/json","records":68,"purpose":"Aggregated non-static first-party network endpoint census"},
+    {"id":"routes","path":"knowledge/http/routes/index.json","format":"partition-manifest/json","records":732,"purpose":"Normalized internal routes discovered in HTML and JavaScript"},
+    {"id":"forms","path":"knowledge/http/forms/index.json","format":"partition-manifest/json","records":87,"purpose":"Deduplicated captured HTML form signatures"},
+    {"id":"form-parameters","path":"knowledge/forms/parameters.json","format":"json","records":62,"purpose":"Cross-action form parameter index with sample values"},
+    {"id":"json-responses","path":"knowledge/http/json-responses/index.json","format":"partition-manifest/jsonl","records":36,"purpose":"Unique captured first-party JSON responses"},
+    {"id":"game-html-pages","path":"knowledge/pages/index.json","format":"partition-manifest/jsonl","records":180,"purpose":"Normalized text snapshots of captured non-Wiki game HTML pages"},
+    {"id":"assets","path":"knowledge/http/assets/index.json","format":"partition-manifest/json","records":914,"purpose":"Static first-party resource census without committing binaries"},
+    {"id":"javascript-index","path":"knowledge/javascript/script-index.json","format":"json","records":29,"purpose":"Unique captured JavaScript resources with hashes and provenance"},
+    {"id":"javascript-snippets","path":"knowledge/javascript/relevant-snippets.jsonl","format":"jsonl","records":14,"purpose":"Relevant JavaScript functions/routes for protocol research"},
+    {"id":"wiki-topics","path":"knowledge/wiki/topics/index.json","format":"partition-manifest/jsonl","records":87,"purpose":"Full normalized text of captured BizMania Wiki topics"},
+    {"id":"wiki-navigation","path":"knowledge/wiki/navigation.json","format":"json","records":89,"purpose":"Wiki taxonomy and capture coverage; 87 captured topics plus 2 missing-from-capture navigation topics"},
+    {"id":"products","path":"knowledge/domain/products/index.json","format":"partition-manifest/json","records":303,"purpose":"Product catalog from Wiki plus observed numeric IDs"},
+    {"id":"domain-entities","path":"knowledge/domain/entities.json","format":"json","records":18,"purpose":"Observed company, city and unit entities with evidence"},
+    {"id":"operation-index","path":"knowledge/http/operation-index.json","format":"json","purpose":"High-value operation-oriented index for automation and reverse engineering"}
+  ]
+}

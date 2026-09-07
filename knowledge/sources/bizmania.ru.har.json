@@ -1,0 +1,16 @@
+{
+  "id": "src.har.bizmania.2026-09-06.01",
+  "kind": "har_capture",
+  "source_filename": "bizmania.ru.har",
+  "source_file_committed": false,
+  "size_bytes": 83523651,
+  "sha256": "55459efda3f6c7cc1e823a97afb69aa5cf8c719f05bb7e6f3fd4f1069d59a79b",
+  "entries": 10210,
+  "captured_from": "2026-09-06T11:31:14.202Z",
+  "captured_to": "2026-09-06T11:37:53.704Z",
+  "hosts": {"mc.yandex.ru":380,"bizmania.ru":9696,"counter.yadro.ru":126,"vk.com":6,"cdn.connect.mail.ru":1,"login.vk.com":1},
+  "methods": {"GET":10205,"POST":5},
+  "resource_types": {"fetch":127,"websocket":127,"image":6941,"document":139,"stylesheet":642,"script":1676,"font":520,"xhr":38},
+  "sensitive_header_names_detected": [],
+  "privacy": "private-source; derived metadata committed; original HAR intentionally excluded"
+}

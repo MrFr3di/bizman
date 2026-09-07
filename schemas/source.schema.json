@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/source.schema.json",
+  "type": "object",
+  "required": ["id", "kind", "source_filename", "sha256", "entries"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^src\\."},
+    "kind": {"const": "har_capture"},
+    "source_filename": {"type": "string"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "entries": {"type": "integer", "minimum": 0}
+  }
+}

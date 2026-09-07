@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "records": [
+    {"script_path":"/js/menu.js","script_sha256":"55b4960317c9dc6e13835141e349d8fce3400b6c7ca9c8c5bce20f1135d230ad","line":206,"snippet":"window.location references: /bank/banklist, /analitics/technologiesprogress, /company/repairwizard, /company/buildhq"},
+    {"script_path":"/js/umap.js","script_sha256":"b8ae4b20483a7afef1c9b262638042aa6b08ef567b9d3d9a6620ad78b911c94b","line":4,"snippet":"unitMapCellUrl=/img/units/umapcell.png; unitMapCellHeight=72; unitMapCellBorder=30; unitMapOffsetTop=60"},
+    {"script_path":"/js/goods.js","script_sha256":"c2b8a68ca285d559b63659772e27ecfabecce01b166f85c9ba5f0709c33a0118","line":23,"snippet":"vendor dialog route: /units/vendor/?id=<unit>&vendor=<vendor>&product=<product>"},
+    {"script_path":"/js/goods.js","script_sha256":"c2b8a68ca285d559b63659772e27ecfabecce01b166f85c9ba5f0709c33a0118","line":37,"snippet":"select supplier route: /units/vendor/select/?id=<unit>&product=<product>"},
+    {"script_path":"/js/retailsupply.js","script_sha256":"1e0755894786ae3a127d97cff74943c093baaa7837fea2d847e5c56bfb4f0e47","line":62,"snippet":"vendor dialog route: /units/vendor/?id=<unit>&vendor=<vendor>&product=<product>"},
+    {"script_path":"/js/retailsupply.js","script_sha256":"1e0755894786ae3a127d97cff74943c093baaa7837fea2d847e5c56bfb4f0e47","line":65,"snippet":"change supplier route: /units/vendor/select?id=<unit>&replace=<vendor>&product=<product>"},
+    {"script_path":"/js/retailsupply.js","script_sha256":"1e0755894786ae3a127d97cff74943c093baaa7837fea2d847e5c56bfb4f0e47","line":66,"snippet":"deleteVendorProducts(unitId,vendorId,productId) referenced by UI"},
+    {"script_path":"/js/retailsupply.js","script_sha256":"1e0755894786ae3a127d97cff74943c093baaa7837fea2d847e5c56bfb4f0e47","line":157,"snippet":"function delVendor(id,fromProducts)"},
+    {"script_path":"/js/retailsupply.js","script_sha256":"1e0755894786ae3a127d97cff74943c093baaa7837fea2d847e5c56bfb4f0e47","line":168,"snippet":"function clearVendor(row,product); select route /units/vendor/select?id=<unit>&product=<product>"},
+    {"script_path":"/js/city.js","script_sha256":"c65e495cb3701336a3855b775fa4a2a0fe43d1ed901156c36308ad19e67f41d8","line":43,"snippet":"map init: /city/map/?cmd=init&id={ID}"},
+    {"script_path":"/js/city.js","script_sha256":"c65e495cb3701336a3855b775fa4a2a0fe43d1ed901156c36308ad19e67f41d8","line":44,"snippet":"map data: /city/map/?cmd=get&id={ID}"},
+    {"script_path":"/js/city.js","script_sha256":"c65e495cb3701336a3855b775fa4a2a0fe43d1ed901156c36308ad19e67f41d8","line":45,"snippet":"city cells: /city/data?"},
+    {"script_path":"/js/city.js","script_sha256":"c65e495cb3701336a3855b775fa4a2a0fe43d1ed901156c36308ad19e67f41d8","line":46,"snippet":"city retail: /city/data/retail"}
+  ]
+}

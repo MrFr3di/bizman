@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "source_file": "knowledge/wiki/topics.jsonl",
+  "total_records": 87,
+  "parts": [
+    {"file":"part-000.jsonl","records":7},{"file":"part-001.jsonl","records":7},{"file":"part-002.jsonl","records":1},{"file":"part-003.jsonl","records":1},{"file":"part-004.jsonl","records":5},{"file":"part-005.jsonl","records":2},{"file":"part-006.jsonl","records":1},{"file":"part-007.jsonl","records":7},{"file":"part-008.jsonl","records":5},{"file":"part-009.jsonl","records":2},{"file":"part-010.jsonl","records":6},{"file":"part-011.jsonl","records":6},{"file":"part-012.jsonl","records":6},{"file":"part-013.jsonl","records":6},{"file":"part-014.jsonl","records":6},{"file":"part-015.jsonl","records":6},{"file":"part-016.jsonl","records":5},{"file":"part-017.jsonl","records":2},{"file":"part-018a.jsonl","records":1},{"file":"part-018b.jsonl","records":1},{"file":"part-019.jsonl","records":4}
+  ]
+}

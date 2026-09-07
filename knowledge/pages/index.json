@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "source_file": "knowledge/pages/game-html-text.jsonl",
+  "total_records": 180,
+  "parts": [
+    {"file":"part-000.jsonl","records":10,"offset":0},
+    {"file":"part-001.jsonl","records":7,"offset":10},
+    {"file":"part-002.jsonl","records":12,"offset":17},
+    {"file":"part-003.jsonl","records":10,"offset":29},
+    {"file":"part-004.jsonl","records":8,"offset":39},
+    {"file":"part-005.jsonl","records":9,"offset":47},
+    {"file":"part-006.jsonl","records":8,"offset":56},
+    {"file":"part-007.jsonl","records":8,"offset":64},
+    {"file":"part-008.jsonl","records":13,"offset":72},
+    {"file":"part-009.jsonl","records":9,"offset":85},
+    {"file":"part-010.jsonl","records":10,"offset":94},
+    {"file":"part-011.jsonl","records":7,"offset":104},
+    {"file":"part-012.jsonl","records":7,"offset":111},
+    {"file":"part-013.jsonl","records":5,"offset":118},
+    {"file":"part-014.jsonl","records":2,"offset":123},
+    {"file":"part-015.jsonl","records":8,"offset":125},
+    {"file":"part-016.jsonl","records":10,"offset":133},
+    {"file":"part-017.jsonl","records":22,"offset":143},
+    {"file":"part-018.jsonl","records":15,"offset":165}
+  ]
+}

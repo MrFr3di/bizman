@@ -1,0 +1,135 @@
+{
+  "count": 8,
+  "items": [
+    {
+      "id": "bm.action.units.customise.headquarterretailsettings",
+      "method": "POST",
+      "path": "/units/customise/headquarterretailsettings/",
+      "observed_count": 2,
+      "statuses": {"200": 2},
+      "form_fields": [
+        {"name":"cityId","seen_in":2},
+        {"name":"autoSupplyReserve","seen_in":2},
+        {"name":"autoRetailModifier","seen_in":2},
+        {"name":"$post","seen_in":2}
+      ],
+      "query_key_sets": [["id"]],
+      "evidence": [
+        "src.har.bizmania.2026-09-06.01#entry-224",
+        "src.har.bizmania.2026-09-06.01#entry-377"
+      ],
+      "confidence":"observed"
+    },
+    {
+      "id":"bm.action.units.customise.quickhire",
+      "method":"POST",
+      "path":"/units/customise/quickhire/",
+      "observed_count":1,
+      "statuses":{"200":1},
+      "form_fields":[{"name":"oper","seen_in":1},{"name":"$post","seen_in":1}],
+      "query_key_sets":[["id"]],
+      "evidence":["src.har.bizmania.2026-09-06.02#entry-884"],
+      "confidence":"observed"
+    },
+    {
+      "id":"bm.action.units.service",
+      "method":"POST",
+      "path":"/units/service/",
+      "observed_count":1,
+      "statuses":{"302":1},
+      "form_fields":[
+        {"name":"product[0]","seen_in":1},{"name":"price[0]","seen_in":1},{"name":"price_currency","seen_in":1},
+        {"name":"autoRetailprice","seen_in":1},{"name":"autoRetailModifier","seen_in":1},{"name":"autoRetailpriceUseQuality","seen_in":1},
+        {"name":"p","seen_in":1},{"name":"sort","seen_in":1},{"name":"$post","seen_in":1}
+      ],
+      "query_key_sets":[["id","tab"]],
+      "evidence":["src.har.bizmania.2026-09-06.01#entry-6863"],
+      "confidence":"observed"
+    },
+    {
+      "id":"bm.action.units.shop",
+      "method":"POST",
+      "path":"/units/shop/",
+      "observed_count":3,
+      "statuses":{"302":3},
+      "form_fields":[
+        {"name":"product[0]","seen_in":3},{"name":"price[0]","seen_in":2},{"name":"price_currency","seen_in":2},{"name":"vendorPrice[0]","seen_in":2},{"name":"purchaseQuantity[0]","seen_in":3},
+        {"name":"product[1]","seen_in":3},{"name":"price[1]","seen_in":2},{"name":"vendorPrice[1]","seen_in":2},{"name":"purchaseQuantity[1]","seen_in":3},
+        {"name":"product[2]","seen_in":3},{"name":"price[2]","seen_in":2},{"name":"vendorPrice[2]","seen_in":2},{"name":"purchaseQuantity[2]","seen_in":3},
+        {"name":"product[3]","seen_in":3},{"name":"price[3]","seen_in":2},{"name":"vendorPrice[3]","seen_in":2},{"name":"purchaseQuantity[3]","seen_in":3},
+        {"name":"product[4]","seen_in":3},{"name":"price[4]","seen_in":2},{"name":"vendorPrice[4]","seen_in":2},{"name":"purchaseQuantity[4]","seen_in":3},
+        {"name":"product[5]","seen_in":3},{"name":"price[5]","seen_in":2},{"name":"vendorPrice[5]","seen_in":2},{"name":"purchaseQuantity[5]","seen_in":3},
+        {"name":"autoSupply","seen_in":3},{"name":"autoSupplyReserve","seen_in":3},{"name":"autoRetailprice","seen_in":3},{"name":"autoRetailModifier","seen_in":3},
+        {"name":"autoRetailpriceUseQuality","seen_in":3},{"name":"autoStaff","seen_in":3},{"name":"p","seen_in":3},{"name":"sort","seen_in":3},{"name":"$post","seen_in":3},
+        {"name":"cost[0]","seen_in":1},{"name":"cost[1]","seen_in":1},{"name":"cost[2]","seen_in":1},{"name":"cost[3]","seen_in":1},{"name":"cost[4]","seen_in":1},{"name":"cost[5]","seen_in":1}
+      ],
+      "query_key_sets":[["id","tab"]],
+      "evidence":[
+        "src.har.bizmania.2026-09-06.01#entry-5190",
+        "src.har.bizmania.2026-09-06.02#entry-168",
+        "src.har.bizmania.2026-09-06.02#entry-768"
+      ],
+      "confidence":"observed"
+    },
+    {
+      "id":"bm.action.units.vendor.buyvendorproducts",
+      "method":"POST",
+      "path":"/units/vendor/buyvendorproducts/",
+      "observed_count":1,
+      "statuses":{"200":1},
+      "form_fields":[{"name":"product","seen_in":1},{"name":"$post","seen_in":1}],
+      "query_key_sets":[["id","vendor"]],
+      "evidence":["src.har.bizmania.2026-09-06.01#entry-5287"],
+      "confidence":"observed"
+    },
+    {
+      "id":"bm.action.units.vendor.delvendorproduct",
+      "method":"POST",
+      "path":"/units/vendor/delvendorproduct/",
+      "observed_count":1,
+      "statuses":{"200":1},
+      "form_fields":[{"name":"$post","seen_in":1}],
+      "query_key_sets":[["id","product","vendor"]],
+      "evidence":["src.har.bizmania.2026-09-06.02#entry-691"],
+      "confidence":"observed"
+    },
+    {
+      "id":"bm.action.units.vendor.fastretailprices",
+      "method":"POST",
+      "path":"/units/vendor/fastretailprices/",
+      "observed_count":1,
+      "statuses":{"200":1},
+      "form_fields":[{"name":"oper","seen_in":1},{"name":"$post","seen_in":1}],
+      "query_key_sets":[["id"]],
+      "evidence":["src.har.bizmania.2026-09-06.02#entry-1103"],
+      "confidence":"observed"
+    },
+    {
+      "id":"bm.action.units.vendor.select",
+      "method":"POST",
+      "path":"/units/vendor/select/",
+      "observed_count":7,
+      "statuses":{"200":7},
+      "form_fields":[
+        {"name":"vendors","seen_in":4},{"name":"product","seen_in":4},{"name":"newFilter","seen_in":4},{"name":"vendor","seen_in":7},{"name":"p","seen_in":7},{"name":"$scene","seen_in":7},{"name":"sort","seen_in":7},{"name":"$post","seen_in":7},
+        {"name":"replace","seen_in":3},{"name":"supplySize","seen_in":3},{"name":"product[0]","seen_in":3},{"name":"selected[397]","seen_in":3},{"name":"price[0]","seen_in":3},{"name":"purchase[0]","seen_in":3},
+        {"name":"product[1]","seen_in":3},{"name":"selected[210]","seen_in":3},{"name":"price[1]","seen_in":3},{"name":"purchase[1]","seen_in":3},
+        {"name":"product[2]","seen_in":3},{"name":"selected[439]","seen_in":3},{"name":"price[2]","seen_in":3},{"name":"purchase[2]","seen_in":3},
+        {"name":"product[3]","seen_in":3},{"name":"selected[435]","seen_in":2},{"name":"price[3]","seen_in":3},{"name":"purchase[3]","seen_in":2},
+        {"name":"product[4]","seen_in":3},{"name":"selected[460]","seen_in":3},{"name":"price[4]","seen_in":3},{"name":"purchase[4]","seen_in":3},
+        {"name":"product[5]","seen_in":3},{"name":"selected[461]","seen_in":3},{"name":"price[5]","seen_in":3},{"name":"purchase[5]","seen_in":3},{"name":"appendVendor","seen_in":3}
+      ],
+      "query_key_sets":[["id"],["id","replace"]],
+      "evidence":[
+        "src.har.bizmania.2026-09-06.02#entry-296",
+        "src.har.bizmania.2026-09-06.02#entry-326",
+        "src.har.bizmania.2026-09-06.02#entry-537",
+        "src.har.bizmania.2026-09-06.02#entry-607",
+        "src.har.bizmania.2026-09-06.02#entry-634",
+        "src.har.bizmania.2026-09-06.02#entry-735",
+        "src.har.bizmania.2026-09-06.02#entry-761"
+      ],
+      "confidence":"observed"
+    }
+  ]
+}

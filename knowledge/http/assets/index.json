@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "source_file": "knowledge/http/asset-census.json",
+  "total_records": 914,
+  "parts": [
+    {"file":"part-000.json","records":123,"offset":0},
+    {"file":"part-001.json","records":115,"offset":123},
+    {"file":"part-002.json","records":111,"offset":238},
+    {"file":"part-003.json","records":112,"offset":349},
+    {"file":"part-004.json","records":118,"offset":461},
+    {"file":"part-005.json","records":126,"offset":579},
+    {"file":"part-006.json","records":128,"offset":705},
+    {"file":"part-007.json","records":81,"offset":833}
+  ]
+}

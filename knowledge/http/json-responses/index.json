@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "source_file": "knowledge/http/json-responses.jsonl",
+  "total_records": 36,
+  "parts": [
+    {"file":"part-000.jsonl","records":21,"offset":0},
+    {"file":"part-001a.jsonl","records":6,"offset":21},
+    {"file":"part-001b.jsonl","records":3,"offset":27},
+    {"file":"part-001c.jsonl","records":1,"offset":30},
+    {"file":"part-001d.jsonl","records":1,"offset":31},
+    {"file":"part-002.jsonl","records":4,"offset":32}
+  ]
+}
