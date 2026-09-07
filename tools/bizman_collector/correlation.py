@@ -21,11 +21,13 @@ class _Candidate:
 
 
 class ActionHttpCorrelator:
-    """Correlate immutable DOM actions with immutable first-party HTTP requests.
+    """Correlate immutable actions with immutable first-party HTTP requests.
 
-    The correlator is deliberately deterministic and bounded. It never mutates
-    source observations and never emits heuristic ``exact`` links. One request
-    can be linked at most once; one action may explain multiple requests.
+    Source observations are expected in strictly increasing session ``sequence``
+    order, which is guaranteed by the collector-wide ``EventSequencer``. That
+    monotonic contract provides exact replay rejection with O(1) dedupe memory.
+    Candidate state itself is bounded by ``max_recent`` and the time window.
+    Heuristic links never use the reserved ``exact`` status.
     """
 
     def __init__(
@@ -51,8 +53,7 @@ class ActionHttpCorrelator:
         self.max_recent = max_recent
         self._actions: deque[dict[str, Any]] = deque()
         self._requests: deque[dict[str, Any]] = deque()
-        self._linked_requests: set[str] = set()
-        self._emitted_pairs: set[tuple[str, str]] = set()
+        self._last_source_sequence = -1
         self._max_seen_time = 0.0
 
     @staticmethod
@@ -69,6 +70,13 @@ class ActionHttpCorrelator:
     def _event_id(event: dict[str, Any]) -> str | None:
         value = event.get("event_id")
         return value if isinstance(value, str) and value else None
+
+    @staticmethod
+    def _event_sequence(event: dict[str, Any]) -> int | None:
+        value = event.get("sequence")
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            return None
+        return value
 
     @staticmethod
     def _is_action(event: dict[str, Any]) -> bool:
@@ -91,6 +99,15 @@ class ActionHttpCorrelator:
         collection.append(event)
         while len(collection) > self.max_recent:
             collection.popleft()
+
+    def _remove_request(self, request: dict[str, Any]) -> None:
+        request_id = self._event_id(request)
+        if request_id is None:
+            return
+        for item in tuple(self._requests):
+            if self._event_id(item) == request_id:
+                self._requests.remove(item)
+                return
 
     def _prune(self, event_time: float) -> None:
         self._max_seen_time = max(self._max_seen_time, event_time)
@@ -117,7 +134,12 @@ class ActionHttpCorrelator:
         request_id = self._event_id(request)
         action_time = self._event_time(action)
         request_time = self._event_time(request)
-        if None in {action_id, request_id, action_time, request_time}:
+        if (
+            action_id is None
+            or request_id is None
+            or action_time is None
+            or request_time is None
+        ):
             return None
 
         action_target = action.get("target_id")
@@ -209,7 +231,10 @@ class ActionHttpCorrelator:
             signals.append("submit-structural")
 
         score = min(score, 1.0)
-        has_causal_signal = path_match or method_match or user_gesture
+        # A method match is supporting evidence, not a causal signal by itself:
+        # many unrelated requests in a page share GET/POST. A path match or an
+        # explicit request user-gesture signal is required for probable/strong.
+        has_causal_signal = path_match or user_gesture
         return _Candidate(
             action=action,
             request=request,
@@ -221,8 +246,6 @@ class ActionHttpCorrelator:
 
     @staticmethod
     def _status(candidate: _Candidate) -> str | None:
-        # Without a request/form causal signal, the evidence is temporal even
-        # when same-frame proximity happens to push the numeric score above .60.
         if not candidate.has_causal_signal:
             return "temporal-only" if candidate.score >= 0.40 else None
         if candidate.score >= 0.80:
@@ -257,12 +280,7 @@ class ActionHttpCorrelator:
         status = self._status(candidate)
         if action_id is None or request_id is None or status is None:
             return None
-        pair = (action_id, request_id)
-        if request_id in self._linked_requests or pair in self._emitted_pairs:
-            return None
 
-        self._linked_requests.add(request_id)
-        self._emitted_pairs.add(pair)
         event: dict[str, Any] = {
             "schema_version": "1.0",
             "event_id": new_uuid7(),
@@ -299,38 +317,40 @@ class ActionHttpCorrelator:
     def observe(self, event: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(event, dict):
             return []
+        if not self._is_action(event) and not self._is_request(event):
+            return []
         event_time = self._event_time(event)
         event_id = self._event_id(event)
-        if event_time is None or event_id is None:
+        sequence = self._event_sequence(event)
+        if event_time is None or event_id is None or sequence is None:
             return []
         if event.get("session_id") != self.session_id:
             return []
+        if sequence <= self._last_source_sequence:
+            return []
+        self._last_source_sequence = sequence
 
         self._prune(event_time)
 
         if self._is_action(event):
             self._remember(self._actions, event)
             links: list[dict[str, Any]] = []
-            for request in tuple(self._requests):
-                request_id = self._event_id(request)
-                if request_id is None or request_id in self._linked_requests:
-                    continue
-                best = self._best_for_request(request)
+            for pending_request in tuple(self._requests):
+                best = self._best_for_request(pending_request)
                 if best is None or self._event_id(best.action) != event_id:
                     continue
                 link = self._emit(best)
                 if link is not None:
+                    self._remove_request(pending_request)
                     links.append(link)
             return links
 
-        if self._is_request(event):
-            self._remember(self._requests, event)
-            if event_id in self._linked_requests:
-                return []
-            best = self._best_for_request(event)
-            if best is None:
-                return []
-            link = self._emit(best)
-            return [link] if link is not None else []
-
-        return []
+        self._remember(self._requests, event)
+        best = self._best_for_request(event)
+        if best is None:
+            return []
+        link = self._emit(best)
+        if link is None:
+            return []
+        self._remove_request(event)
+        return [link]
