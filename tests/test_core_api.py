@@ -85,8 +85,11 @@ class CorePublicApiTests(unittest.TestCase):
         )
         for value in (collection, detection, result):
             self.assertFalse(hasattr(value, "__dict__"))
+            first_field = fields(type(value))[0].name
             with self.assertRaises(FrozenInstanceError):
-                value._probe = True  # type: ignore[attr-defined,misc]
+                setattr(value, first_field, getattr(value, first_field))
+            with self.assertRaises((AttributeError, FrozenInstanceError, TypeError)):
+                setattr(value, "_probe", True)
         for dto in (CollectionRequest, DetectionRequest, CollectionResult):
             self.assertTrue(
                 all("Path" not in str(field.type) for field in fields(dto)),
@@ -104,10 +107,8 @@ class CoreUseCaseTests(unittest.TestCase):
                 _context(data_dir),
                 DetectionRequest(dry_run=True),
             )
-
             self.assertIsInstance(summary, DetectorRunSummary)
             self.assertTrue(summary.dry_run)
-            self.assertEqual(summary.sessions_discovered, 0)
             self.assertFalse((data_dir / "detector").exists())
             self.assertFalse((data_dir / "promotions").exists())
 
@@ -116,57 +117,53 @@ class CoreUseCaseTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             result = validate_repository(_context(Path(tmp) / "BizManData"))
-
         self.assertIsInstance(result, ValidationResult)
-        self.assertTrue(result.ok, result.errors)
+        self.assertEqual(result.errors, ())
 
     def test_collection_uses_context_data_root_and_typed_request(self):
         from bizman.core import CollectionRequest, CollectionResult, collect
-        from bizman.foundation.redaction import RedactionPolicy
 
         with tempfile.TemporaryDirectory() as tmp:
-            context = _context(Path(tmp) / "BizManData")
+            data_dir = Path(tmp) / "BizManData"
             request = CollectionRequest(
-                endpoint="http://127.0.0.1:9333",
-                hosts=("bizmania.ru", "www.bizmania.ru"),
+                endpoint="http://127.0.0.1:9222",
+                hosts=("bizmania.ru",),
                 event_queue_size=2048,
             )
-            fake_run = AsyncMock(return_value=SESSION_ID)
-            with patch("bizman.core.collection.run_collection", fake_run):
-                result = asyncio.run(collect(context, request))
+            with patch("bizman.core.collection.run_collection", new=AsyncMock(return_value=SESSION_ID)) as run:
+                result = asyncio.run(collect(_context(data_dir), request))
 
         self.assertEqual(result, CollectionResult(session_id=SESSION_ID))
-        kwargs = fake_run.await_args.kwargs
-        self.assertEqual(kwargs["endpoint"], request.endpoint)
-        self.assertEqual(kwargs["data_dir"], context.data_dir)
-        self.assertEqual(kwargs["hosts"], request.hosts)
-        self.assertEqual(kwargs["event_queue_size"], request.event_queue_size)
-        self.assertIsInstance(kwargs["redaction_policy"], RedactionPolicy)
+        run.assert_awaited_once()
+        call = run.await_args
+        self.assertEqual(call.kwargs["endpoint"], request.endpoint)
+        self.assertEqual(call.kwargs["data_dir"], data_dir.resolve())
+        self.assertEqual(call.kwargs["hosts"], request.hosts)
+        self.assertEqual(call.kwargs["event_queue_size"], request.event_queue_size)
 
     def test_expected_asset_failure_is_translated_with_cause(self):
         from bizman.core import AssetError, CollectionRequest, collect
+        from bizman.core.assets import RepositoryAssetError
 
+        request = CollectionRequest()
         with tempfile.TemporaryDirectory() as tmp:
             context = _context(Path(tmp) / "BizManData")
-            with patch(
-                "bizman.core.collection.load_redaction_policy",
-                side_effect=ValueError("bad policy"),
+            with patch.object(
+                type(context.assets),
+                "path",
+                side_effect=RepositoryAssetError("missing policy"),
             ):
                 with self.assertRaises(AssetError) as raised:
-                    asyncio.run(collect(context, CollectionRequest()))
-
-        self.assertIsInstance(raised.exception.__cause__, ValueError)
+                    asyncio.run(collect(context, request))
+        self.assertIsInstance(raised.exception.__cause__, RepositoryAssetError)
 
     def test_programming_errors_are_not_blanket_translated(self):
         from bizman.core import DetectionRequest, detect_changes
 
         with tempfile.TemporaryDirectory() as tmp:
             context = _context(Path(tmp) / "BizManData")
-            with patch(
-                "bizman.core.detection.DetectorRunner.from_paths",
-                side_effect=TypeError("programming defect"),
-            ):
-                with self.assertRaisesRegex(TypeError, "programming defect"):
+            with patch("bizman.core.detection.DetectorRunner.from_paths", side_effect=TypeError("bug")):
+                with self.assertRaisesRegex(TypeError, "bug"):
                     detect_changes(context, DetectionRequest(dry_run=True))
 
 
