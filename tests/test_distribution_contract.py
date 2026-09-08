@@ -1,11 +1,44 @@
 from __future__ import annotations
 
-from pathlib import Path
+import os
+from pathlib import Path, PurePosixPath
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
 import tomllib
 import unittest
+import zipfile
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _relative_archive_name(name: str) -> PurePosixPath:
+    path = PurePosixPath(name)
+    parts = path.parts
+    if parts and parts[0].startswith("bizman-"):
+        parts = parts[1:]
+    return PurePosixPath(*parts)
+
+
+def _forbidden_distribution_entry(name: str) -> bool:
+    path = _relative_archive_name(name)
+    if not path.parts:
+        return False
+    lowered = tuple(part.casefold() for part in path.parts)
+    if lowered[0] in {"tests", "tools"}:
+        return True
+    if any(part in {"browser-profile", "chrome-profile", "cas"} for part in lowered):
+        return True
+    filename = lowered[-1]
+    if filename == ".env" or filename.startswith(".env."):
+        return True
+    return any(
+        filename.endswith(suffix)
+        for suffix in (".db", ".sqlite", ".sqlite3", ".parquet", ".har")
+    )
 
 
 class DistributionContractTests(unittest.TestCase):
@@ -60,6 +93,106 @@ class DistributionContractTests(unittest.TestCase):
                 self.assertEqual(source, {"editable": "."})
             else:
                 self.assertEqual(source.get("registry"), "https://pypi.org/simple")
+
+    def test_built_wheel_and_sdist_are_hygienic_and_assets_stay_external(self):
+        uv = shutil.which("uv")
+        self.assertIsNotNone(uv, "distribution verification requires uv on PATH")
+        with tempfile.TemporaryDirectory() as tmp:
+            dist = Path(tmp) / "dist"
+            subprocess.run(
+                [uv, "build", "--no-sources", "--out-dir", str(dist)],
+                cwd=REPO_ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            wheels = sorted(dist.glob("*.whl"))
+            sdists = sorted(dist.glob("*.tar.gz"))
+            self.assertEqual(len(wheels), 1)
+            self.assertEqual(len(sdists), 1)
+
+            with zipfile.ZipFile(wheels[0]) as archive:
+                wheel_names = archive.namelist()
+            with tarfile.open(sdists[0], mode="r:gz") as archive:
+                sdist_names = archive.getnames()
+
+            for kind, names in (("wheel", wheel_names), ("sdist", sdist_names)):
+                forbidden = sorted(name for name in names if _forbidden_distribution_entry(name))
+                self.assertEqual(forbidden, [], f"{kind} contains forbidden runtime/dev payloads")
+
+            wheel_relative = {_relative_archive_name(name) for name in wheel_names}
+            for external_root in ("config", "schemas", "knowledge"):
+                self.assertFalse(
+                    any(path.parts and path.parts[0] == external_root for path in wheel_relative),
+                    f"wheel must not duplicate repository asset root {external_root!r}",
+                )
+
+    def test_wheel_installs_and_cli_runs_outside_repository_checkout(self):
+        uv = shutil.which("uv")
+        self.assertIsNotNone(uv, "distribution verification requires uv on PATH")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dist = root / "dist"
+            subprocess.run(
+                [uv, "build", "--no-sources", "--out-dir", str(dist)],
+                cwd=REPO_ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            wheel = next(dist.glob("*.whl"))
+            venv = root / "venv"
+            subprocess.run(
+                [uv, "venv", str(venv), "--python", sys.executable],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            console = venv / ("Scripts/bizman.exe" if os.name == "nt" else "bin/bizman")
+            subprocess.run(
+                [uv, "pip", "install", "--python", str(python), str(wheel)],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            env = os.environ.copy()
+            for name in ("PYTHONPATH", "VIRTUAL_ENV", "UV_PROJECT_ENVIRONMENT"):
+                env.pop(name, None)
+            env["PYTHONNOUSERSITE"] = "1"
+            probe = subprocess.run(
+                [
+                    str(python),
+                    "-c",
+                    (
+                        "import pathlib, bizman, bizman.foundation, bizman.sessions, "
+                        "bizman.collector, bizman.changes, bizman.core; "
+                        "print(pathlib.Path(bizman.__file__).resolve())"
+                    ),
+                ],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            installed_path = Path(probe.stdout.strip())
+            self.assertNotIn(REPO_ROOT.resolve(), installed_path.parents)
+
+            help_result = subprocess.run(
+                [str(console), "--help"],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("collect", help_result.stdout)
+            self.assertIn("detect", help_result.stdout)
+            self.assertIn("validate", help_result.stdout)
 
 
 if __name__ == "__main__":
