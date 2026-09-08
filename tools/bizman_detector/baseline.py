@@ -519,13 +519,29 @@ def _known_endpoint(
         ) from exc
     if not match.matched or match.path_pattern is None:
         raise BaselineConsistencyError(
-            f"{source}: path {path!r} is not represented by endpoint census"
+            f"{source}: path {path!r} is not represented by Runtime Contract endpoints"
         )
     if method not in methods_by_pattern[match.path_pattern]:
         raise BaselineConsistencyError(
-            f"{source}: {method} {path} is not observed in application events"
+            f"{source}: {method} {path} is not represented by Runtime Contract endpoints"
         )
     return match.path_pattern
+
+
+def _operation_path(raw_path: object, *, source: str, matcher: PathMatcher) -> str:
+    try:
+        path = normalize_origin_relative_path(raw_path)
+    except ValueError as exc:
+        raise BaselineFormatError(f"{source}: invalid operation path") from exc
+    try:
+        match = matcher.match(path)
+    except AmbiguousPathError as exc:
+        raise BaselineConsistencyError(
+            f"{source}: operation path {path!r} is ambiguous in endpoint census"
+        ) from exc
+    if match.matched and match.path_pattern is not None:
+        return match.path_pattern
+    return path
 
 
 def _operations(
@@ -534,7 +550,6 @@ def _operations(
     source: str,
     redaction: RedactionPolicy,
     matcher: PathMatcher,
-    methods_by_pattern: Mapping[str, frozenset[str]],
 ) -> tuple[OperationSignature, ...]:
     if not isinstance(value, Mapping) or not isinstance(value.get("operations"), list):
         raise BaselineFormatError(f"{source}: operations must be an array")
@@ -579,12 +594,10 @@ def _operations(
         signatures.add(
             OperationSignature(
                 method="POST",
-                path_pattern=_known_endpoint(
+                path_pattern=_operation_path(
                     item.get("path"),
-                    method="POST",
                     source=item_source,
                     matcher=matcher,
-                    methods_by_pattern=methods_by_pattern,
                 ),
                 query_keys=normalize_key_set(query_keys, redaction),
                 body_keys=normalize_key_set(body_keys, redaction),
@@ -600,6 +613,39 @@ def _operations(
                 f"{source}: post_count {post_count} != operation observations {observed_total}"
             )
     return tuple(sorted(signatures))
+
+
+def _merge_operation_endpoints(
+    endpoints: tuple[EndpointFamily, ...],
+    operations: tuple[OperationSignature, ...],
+) -> tuple[EndpointFamily, ...]:
+    variants_by_path: dict[str, dict[str, set[EndpointVariant]]] = {
+        endpoint.path_pattern: {
+            method.method: set(method.variants) for method in endpoint.methods
+        }
+        for endpoint in endpoints
+    }
+    for operation in operations:
+        methods = variants_by_path.setdefault(operation.path_pattern, {})
+        variants = methods.setdefault(operation.method, set())
+        variants.update(
+            EndpointVariant(query_keys=operation.query_keys, status=status)
+            for status in operation.statuses
+        )
+
+    return tuple(
+        EndpointFamily(
+            path_pattern=path_pattern,
+            methods=tuple(
+                EndpointMethodContract(
+                    method=method,
+                    variants=tuple(sorted(variants)),
+                )
+                for method, variants in sorted(methods.items())
+            ),
+        )
+        for path_pattern, methods in sorted(variants_by_path.items())
+    )
 
 
 def _actions(
@@ -898,10 +944,6 @@ class BaselineCompiler:
         aggregates = _endpoint_aggregates(endpoint_records, redaction)
         endpoints = _endpoint_families(aggregates, application_events, redaction)
         matcher = PathMatcher(endpoint.path_pattern for endpoint in endpoints)
-        methods_by_pattern = {
-            endpoint.path_pattern: frozenset(method.method for method in endpoint.methods)
-            for endpoint in endpoints
-        }
         forms = _forms(form_records, redaction, matcher)
 
         operation_path = root / "knowledge/http/operation-index.json"
@@ -910,8 +952,14 @@ class BaselineCompiler:
             source=_source_label(root, operation_path),
             redaction=redaction,
             matcher=matcher,
-            methods_by_pattern=methods_by_pattern,
         )
+        endpoints = _merge_operation_endpoints(endpoints, operations)
+        matcher = PathMatcher(endpoint.path_pattern for endpoint in endpoints)
+        methods_by_pattern = {
+            endpoint.path_pattern: frozenset(method.method for method in endpoint.methods)
+            for endpoint in endpoints
+        }
+
         action_path = root / "knowledge/actions/catalog.json"
         actions = _actions(
             _load_json(action_path, repo_root=root),
