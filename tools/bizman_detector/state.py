@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
@@ -130,6 +131,51 @@ def _require_text(value: object, *, name: str) -> str:
     return value
 
 
+def _parse_instant(value: object, *, name: str) -> datetime:
+    text = _require_text(value, name=name)
+    try:
+        instant = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise StateIntegrityError(f"{name} must be an RFC3339 date-time") from exc
+    if instant.tzinfo is None or instant.utcoffset() is None:
+        raise StateIntegrityError(f"{name} must include a timezone offset")
+    return instant.astimezone(timezone.utc)
+
+
+def _user_tables(connection: sqlite3.Connection) -> set[str]:
+    return {
+        str(row[0])
+        for row in connection.execute(
+            "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        )
+    }
+
+
+def _preflight_rw_identity(connection: sqlite3.Connection) -> None:
+    application_id = int(connection.execute("PRAGMA application_id").fetchone()[0])
+    user_version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+    tables = _user_tables(connection)
+
+    if application_id == 0:
+        if user_version == 0 and not tables:
+            return
+        raise StateCompatibilityError(
+            "unidentified non-empty SQLite database cannot be adopted as detector state"
+        )
+    if application_id != APPLICATION_ID:
+        raise StateCompatibilityError(
+            f"foreign detector database application_id={application_id}"
+        )
+    if user_version > USER_VERSION:
+        raise StateCompatibilityError(
+            f"detector database schema {user_version} is newer than supported {USER_VERSION}"
+        )
+    if user_version < USER_VERSION:
+        raise StateCompatibilityError(
+            f"detector database schema {user_version} requires an explicit migration"
+        )
+
+
 def _connect_rw(path: Path) -> sqlite3.Connection:
     if sqlite3.sqlite_version_info < _MIN_SQLITE_VERSION:
         raise StateCompatibilityError(
@@ -140,15 +186,19 @@ def _connect_rw(path: Path) -> sqlite3.Connection:
         connection = sqlite3.connect(path, timeout=5.0, autocommit=True)
     else:  # Python 3.11 compatibility.
         connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
-    connection.execute("PRAGMA trusted_schema = OFF")
-    connection.execute("PRAGMA foreign_keys = ON")
-    connection.execute("PRAGMA busy_timeout = 5000")
-    mode = str(connection.execute("PRAGMA journal_mode = WAL").fetchone()[0]).casefold()
-    if mode != "wal":
+    try:
+        connection.execute("PRAGMA trusted_schema = OFF")
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA busy_timeout = 5000")
+        _preflight_rw_identity(connection)
+        mode = str(connection.execute("PRAGMA journal_mode = WAL").fetchone()[0]).casefold()
+        if mode != "wal":
+            raise StateCompatibilityError("detector state requires SQLite WAL journal mode")
+        connection.execute("PRAGMA synchronous = NORMAL")
+        return connection
+    except BaseException:
         connection.close()
-        raise StateCompatibilityError("detector state requires SQLite WAL journal mode")
-    connection.execute("PRAGMA synchronous = NORMAL")
-    return connection
+        raise
 
 
 def _connect_ro(path: Path) -> sqlite3.Connection:
@@ -225,12 +275,7 @@ class DetectorState:
         self.close()
 
     def _user_tables(self) -> set[str]:
-        return {
-            str(row[0])
-            for row in self._connection.execute(
-                "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-            )
-        }
+        return _user_tables(self._connection)
 
     def _bootstrap_or_validate(self) -> None:
         application_id = int(self._connection.execute("PRAGMA application_id").fetchone()[0])
@@ -388,10 +433,11 @@ class DetectorState:
         _require_sha256(identity.evidence_sha256, name="evidence_sha256")
         _require_sha256(profile.sha256, name="analysis_profile_sha256")
         _require_sha256(profile.baseline_sha256, name="baseline_sha256")
+        incoming_seen_at = _parse_instant(identity.ended_at, name="identity.ended_at")
 
         ordered_findings = tuple(sorted(findings, key=lambda item: item.change_id))
         seen_change_ids: set[str] = set()
-        prepared: list[tuple[Finding, str, bool]] = []
+        prepared: list[tuple[Finding, str, bool, bool]] = []
 
         with self._immediate_transaction():
             evidence_rows = self._connection.execute(
@@ -444,13 +490,15 @@ class DetectorState:
                 identity_json = self._finding_identity_json(finding)
                 existing = self._connection.execute(
                     """
-                    SELECT rule_id, rule_version, kind, novelty_class, identity_json
+                    SELECT rule_id, rule_version, kind, novelty_class, identity_json,
+                           last_seen_at
                     FROM changes
                     WHERE analysis_profile_sha256 = ? AND change_id = ?
                     """,
                     (profile.sha256, finding.change_id),
                 ).fetchone()
                 is_first = existing is None
+                advance_last_seen = False
                 if existing is not None:
                     expected = (
                         finding.rule_id,
@@ -459,13 +507,18 @@ class DetectorState:
                         finding.novelty_class,
                         identity_json,
                     )
-                    if tuple(existing) != expected:
+                    if tuple(existing[:5]) != expected:
                         raise StateIntegrityError(
                             f"change identity conflict for {finding.change_id}"
                         )
+                    stored_seen_at = _parse_instant(
+                        existing[5],
+                        name=f"changes[{finding.change_id}].last_seen_at",
+                    )
+                    advance_last_seen = incoming_seen_at > stored_seen_at
                 else:
                     first_seen.append(finding)
-                prepared.append((finding, identity_json, is_first))
+                prepared.append((finding, identity_json, is_first, advance_last_seen))
 
             first_seen_tuple = tuple(first_seen)
             payload = (
@@ -476,7 +529,7 @@ class DetectorState:
             if payload is not None:
                 payload = self._validate_outbox_payload(payload)
 
-            for finding, identity_json, is_first in prepared:
+            for finding, identity_json, is_first, advance_last_seen in prepared:
                 if is_first:
                     self._connection.execute(
                         """
@@ -500,7 +553,7 @@ class DetectorState:
                             identity.ended_at,
                         ),
                     )
-                else:
+                elif advance_last_seen:
                     self._connection.execute(
                         """
                         UPDATE changes
@@ -514,6 +567,15 @@ class DetectorState:
                             profile.sha256,
                             finding.change_id,
                         ),
+                    )
+                else:
+                    self._connection.execute(
+                        """
+                        UPDATE changes
+                        SET occurrence_count = occurrence_count + 1
+                        WHERE analysis_profile_sha256 = ? AND change_id = ?
+                        """,
+                        (profile.sha256, finding.change_id),
                     )
 
             self._connection.execute(
