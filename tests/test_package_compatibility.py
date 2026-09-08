@@ -28,5 +28,29 @@ class FoundationPackageCompatibilityTests(unittest.TestCase):
         self.assertIs(result_old, result_new)
 
 
+class SessionsPackageCompatibilityTests(unittest.TestCase):
+    def test_legacy_evidence_exports_are_canonical_sessions_objects(self):
+        from bizman.sessions.evidence import (
+            EvidenceError as error_new,
+            EvidenceIdentity as identity_new,
+            EvidenceIntegrityError as integrity_new,
+            EvidenceReader as reader_new,
+        )
+        from bizman.sessions.status import EvidenceSessionStatus as status_new
+        from tools.bizman_detector.evidence import (
+            EvidenceError as error_old,
+            EvidenceIdentity as identity_old,
+            EvidenceIntegrityError as integrity_old,
+            EvidenceReader as reader_old,
+        )
+        from tools.bizman_detector.session_status import EvidenceSessionStatus as status_old
+
+        self.assertIs(error_old, error_new)
+        self.assertIs(identity_old, identity_new)
+        self.assertIs(integrity_old, integrity_new)
+        self.assertIs(reader_old, reader_new)
+        self.assertIs(status_old, status_new)
+
+
 if __name__ == "__main__":
     unittest.main()
