@@ -60,8 +60,48 @@ jobs:
       - name: Validate structured knowledge
         run: uv run python tools/validate_repo.py
 
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.10"
+          enable-cache: true
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Compile installable package
+        run: uv run python -m compileall -q src
+      - name: Run Python floor contract smoke
+        run: |
+          uv run python -m unittest discover -s tests -p "test_core_*.py" -v
+          uv run python -m unittest discover -s tests -p "test_package_migration_contract.py" -v
+          uv run python -m unittest discover -s tests -p "test_cli_parity.py" -v
+      - name: Import and CLI smoke
+        run: |
+          uv run python - <<'PY'
+          import bizman
+          import bizman.changes
+          import bizman.collector
+          import bizman.core
+          import bizman.foundation
+          import bizman.sessions
+          print(bizman.__file__)
+          PY
+          uv run bizman --help
+
   collector-e2e:
-    needs: validate
+    needs: [validate, compatibility]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -157,7 +197,7 @@ jobs:
           retention-days: 3
 
   benchmark:
-    needs: validate
+    needs: [validate, compatibility]
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
