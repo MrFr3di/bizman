@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/promotion-bundle.schema.json",
+  "title": "BizMan deterministic promotion bundle",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "analysis_profile_sha256",
+    "baseline_sha256",
+    "redaction_policy_sha256",
+    "session_id",
+    "evidence_sha256",
+    "manifest_sha256",
+    "created_at",
+    "detector",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "bundle_id": {
+      "type": "string",
+      "pattern": "^promotion\\.[0-9a-f]{64}$"
+    },
+    "analysis_profile_sha256": {"$ref": "#/$defs/sha256"},
+    "baseline_sha256": {"$ref": "#/$defs/sha256"},
+    "redaction_policy_sha256": {"$ref": "#/$defs/sha256"},
+    "session_id": {"$ref": "#/$defs/uuid7"},
+    "evidence_sha256": {"$ref": "#/$defs/sha256"},
+    "manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "detector": {
+      "type": "object",
+      "required": ["normalization_version", "extraction_version"],
+      "properties": {
+        "normalization_version": {"type": "integer", "minimum": 1},
+        "extraction_version": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {"$ref": "#/$defs/finding"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "semanticValue": {
+      "oneOf": [
+        {"type": "string", "maxLength": 2048},
+        {"type": "integer"},
+        {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 256}
+        },
+        {"type": "null"}
+      ]
+    },
+    "semanticObject": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+      },
+      "additionalProperties": {"$ref": "#/$defs/semanticValue"}
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "change_id",
+        "rule_id",
+        "rule_version",
+        "kind",
+        "novelty_class",
+        "evidence_confidence",
+        "subject",
+        "delta",
+        "evidence_event_ids"
+      ],
+      "properties": {
+        "change_id": {
+          "type": "string",
+          "pattern": "^chg\\.[0-9a-f]{64}$"
+        },
+        "rule_id": {
+          "enum": [
+            "BM-HTTP-001", "BM-HTTP-002", "BM-HTTP-003", "BM-HTTP-004",
+            "BM-FORM-001", "BM-FORM-002",
+            "BM-OP-001", "BM-OP-002", "BM-OP-003",
+            "BM-REL-001", "BM-REL-002"
+          ]
+        },
+        "rule_version": {"type": "integer", "minimum": 1},
+        "kind": {
+          "enum": [
+            "endpoint.new",
+            "endpoint.method_added",
+            "endpoint.query_key_added",
+            "endpoint.status_added",
+            "form.signature_new",
+            "form.field_added",
+            "operation.new_signature",
+            "operation.query_key_added",
+            "operation.body_key_added",
+            "action_http.request_family_new",
+            "action_http.path_conflict"
+          ]
+        },
+        "novelty_class": {"enum": ["novel", "conflict"]},
+        "evidence_confidence": {"const": "observed"},
+        "subject": {
+          "$ref": "#/$defs/semanticObject",
+          "minProperties": 1,
+          "maxProperties": 8
+        },
+        "delta": {
+          "$ref": "#/$defs/semanticObject",
+          "maxProperties": 8
+        },
+        "evidence_event_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/uuid7"}
+        }
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "endpoint.new"}}}, "then": {"properties": {"rule_id": {"const": "BM-HTTP-001"}}}},
+        {"if": {"properties": {"kind": {"const": "endpoint.method_added"}}}, "then": {"properties": {"rule_id": {"const": "BM-HTTP-002"}}}},
+        {"if": {"properties": {"kind": {"const": "endpoint.query_key_added"}}}, "then": {"properties": {"rule_id": {"const": "BM-HTTP-003"}}}},
+        {"if": {"properties": {"kind": {"const": "endpoint.status_added"}}}, "then": {"properties": {"rule_id": {"const": "BM-HTTP-004"}}}},
+        {"if": {"properties": {"kind": {"const": "form.signature_new"}}}, "then": {"properties": {"rule_id": {"const": "BM-FORM-001"}}}},
+        {"if": {"properties": {"kind": {"const": "form.field_added"}}}, "then": {"properties": {"rule_id": {"const": "BM-FORM-002"}}}},
+        {"if": {"properties": {"kind": {"const": "operation.new_signature"}}}, "then": {"properties": {"rule_id": {"const": "BM-OP-001"}}}},
+        {"if": {"properties": {"kind": {"const": "operation.query_key_added"}}}, "then": {"properties": {"rule_id": {"const": "BM-OP-002"}}}},
+        {"if": {"properties": {"kind": {"const": "operation.body_key_added"}}}, "then": {"properties": {"rule_id": {"const": "BM-OP-003"}}}},
+        {"if": {"properties": {"kind": {"const": "action_http.request_family_new"}}}, "then": {"properties": {"rule_id": {"const": "BM-REL-001"}}}},
+        {"if": {"properties": {"kind": {"const": "action_http.path_conflict"}}}, "then": {"properties": {"rule_id": {"const": "BM-REL-002"}, "novelty_class": {"const": "conflict"}}}, "else": {"properties": {"novelty_class": {"const": "novel"}}}}
+      ],
+      "additionalProperties": false
+    }
+  }
+}

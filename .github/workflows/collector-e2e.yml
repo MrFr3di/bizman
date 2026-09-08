@@ -148,7 +148,7 @@ jobs:
   benchmark:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -159,13 +159,15 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
+      - name: Install detector benchmark dependencies
+        run: python -m pip install --disable-pip-version-check -r tools/requirements.txt
       - name: Run A/B/C storage benchmark
         shell: bash
         run: |
           set -euo pipefail
           python tools/benchmarks/storage_flush.py --events 50000 --repeats 5 \
             | tee "$RUNNER_TEMP/storage-benchmark.json"
-      - name: Publish benchmark summary
+      - name: Publish storage benchmark summary
         shell: bash
         run: |
           python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
@@ -182,4 +184,53 @@ jobs:
                   f"{item['median_seconds']:.4f} | {item['events_per_second']:.0f} | "
                   f"{item['speedup_vs_A']:.2f}x |"
               )
+          PY
+      - name: Run detector matching and streaming benchmark
+        id: detector-benchmark
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/benchmarks/detector_stream.py \
+            --events 100000 \
+            --match-requests 100000 \
+            --repeats 3 \
+            | tee "$RUNNER_TEMP/detector-benchmark.json"
+      - name: Publish detector benchmark summary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ["RUNNER_TEMP"]) / "detector-benchmark.json"
+          print("## Detector benchmark (non-gating)")
+          if not path.exists():
+              print("Detector benchmark did not produce a result file.")
+              raise SystemExit(0)
+          try:
+              data = json.loads(path.read_text())
+          except (OSError, json.JSONDecodeError) as exc:
+              print(f"Detector benchmark result was unreadable: {exc}")
+              raise SystemExit(0)
+          matching = data["matching"]
+          print(
+              f"Matcher recommendation: `{matching['recommendation']}` "
+              f"(C threshold {matching['trie_consider_threshold']:.2f}x vs B)"
+          )
+          print("| Variant | Median s | requests/s | Speedup vs B |")
+          print("|---|---:|---:|---:|")
+          for name, item in matching["variants"].items():
+              print(
+                  f"| {name} | {item['median_seconds']:.4f} | "
+                  f"{item['requests_per_second']:.0f} | {item['speedup_vs_B']:.2f}x |"
+              )
+          streaming = data["streaming"]
+          print("")
+          print(
+              f"Validated streaming: {streaming['source_events']} source events, "
+              f"{streaming['source_events_per_second']:.0f} source events/s, "
+              f"{streaming['validation_events_per_second']:.0f} validation events/s, "
+              f"peak tracemalloc {streaming['peak_tracemalloc_bytes'] / (1024 * 1024):.2f} MiB."
+          )
           PY
