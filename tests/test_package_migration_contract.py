@@ -37,7 +37,7 @@ def _semantic_fingerprint() -> dict[str, object]:
             "normalization": profile.normalization_version,
         },
         "rules": [
-            {"rule_id": item.rule_id, "rule_version": item.rule_version}
+            {"rule_id": item.rule_id, "rule_version": item.version}
             for item in RULE_DESCRIPTORS
         ],
     }
