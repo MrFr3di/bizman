@@ -566,6 +566,8 @@ class EvidenceReader:
 
 
 __all__ = [
+    "MAX_ARTIFACT_BYTES",
+    "MAX_EVENT_LINE_BYTES",
     "EvidenceError",
     "EvidenceFormatError",
     "EvidenceIdentity",
@@ -573,6 +575,4 @@ __all__ = [
     "EvidenceReader",
     "EvidenceSessionStatus",
     "EvidenceStatusError",
-    "MAX_ARTIFACT_BYTES",
-    "MAX_EVENT_LINE_BYTES",
 ]
