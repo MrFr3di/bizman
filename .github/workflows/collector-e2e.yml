@@ -49,6 +49,10 @@ jobs:
         run: |
           uv lock --check
           uv sync --locked
+      - name: Lint Python sources
+        run: uv run ruff check src tests tools
+      - name: Enforce package architecture
+        run: uv run lint-imports
       - name: Compile Python sources
         run: uv run python -m compileall -q src tools tests
       - name: Run unit and contract tests
