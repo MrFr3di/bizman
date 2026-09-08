@@ -6,18 +6,18 @@ from pathlib import Path
 
 
 class AssetId(StrEnum):
-    REDACTION_POLICY = "redaction_policy"
-    EVENT_SCHEMA = "event_schema"
-    SESSION_MANIFEST_SCHEMA = "session_manifest_schema"
-    PROMOTION_SCHEMA = "promotion_schema"
-    KNOWLEDGE_ROOT = "knowledge_root"
+    REDACTION_POLICY = "redaction-policy"
+    EVENT_SCHEMA = "event-schema"
+    SESSION_MANIFEST_SCHEMA = "session-manifest-schema"
+    PROMOTION_BUNDLE_SCHEMA = "promotion-bundle-schema"
+    KNOWLEDGE_ROOT = "knowledge-root"
 
 
 _ASSET_PATHS: dict[AssetId, Path] = {
     AssetId.REDACTION_POLICY: Path("config/redaction-policy.json"),
     AssetId.EVENT_SCHEMA: Path("schemas/event.schema.json"),
     AssetId.SESSION_MANIFEST_SCHEMA: Path("schemas/session-manifest.schema.json"),
-    AssetId.PROMOTION_SCHEMA: Path("schemas/promotion-bundle.schema.json"),
+    AssetId.PROMOTION_BUNDLE_SCHEMA: Path("schemas/promotion-bundle.schema.json"),
     AssetId.KNOWLEDGE_ROOT: Path("knowledge"),
 }
 
