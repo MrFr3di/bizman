@@ -1,12 +1,10 @@
 # BizMan unified roadmap
 
-Status: architecture roadmap reviewed and consolidated on 2026-09-07.
+Status: stable delivery-stage roadmap, updated 2026-09-09.
 
-This document combines the existing BizMan plan with a critical review of the proposed Agent Toolchain/MCP direction. It is intentionally sequenced around the code that already exists: passive capture and action-to-HTTP correlation are in `main`, while PR #4 is already implementing the deterministic Change Detector + Promotion Bundle pipeline. We do **not** restart the project or renumber the current work to fit a hypothetical greenfield plan.
+BizMan evolves from deterministic evidence collection into a read-optimized agent platform and only later into guarded automation. Delivery stages use stable identifiers (`D1`, `P1`, `P2`, ...) rather than GitHub pull-request numbers. PR numbers are implementation history, not architecture.
 
-## 1. Executive direction
-
-BizMan should evolve into a deterministic evidence/state platform with a small read-optimized agent surface on top:
+## 1. North-star architecture
 
 ```text
 Chrome / user activity
@@ -40,317 +38,125 @@ Promotion Bundles          SQLite current + Parquet history
                   Codex          ChatGPT       other MCP hosts
 ```
 
-The central rule is unchanged: **immutable sanitized evidence is the source of truth; every DB/index is rebuildable; no LLM decides what was observed.**
+The central rule is non-negotiable: **immutable sanitized evidence is the source of truth; databases/indexes are rebuildable derivations; no LLM decides what was observed.**
 
-The main architectural addition is a compact **BizMan Core API** and an **agent read model** so agents stop opening JSON/JSONL directly for ordinary tasks.
+## 2. Non-negotiable engineering invariants
 
-## 2. Decisions from the external proposal
+1. Raw HAR, cookies/auth, browser profiles and operational state stay outside Git.
+2. Collector, normalization, correlation, change detection, state projection and deterministic analytics do not depend on an LLM.
+3. Unknown evidence is not treated as empty or known evidence.
+4. Corrupted evidence, invalid paths, schema mismatches and incompatible state fail closed.
+5. Every promoted change retains deterministic identity, reason, policy/version and provenance.
+6. Derived SQLite/index/history stores remain rebuildable from immutable inputs.
+7. Core services remain transport-neutral; CLI/MCP are adapters, not business-logic owners.
+8. Read and future write capabilities remain physically separated.
+9. Arbitrary filesystem paths and generic SQL are not public agent interfaces.
+10. Write automation stays disabled by default until state, experiments, recommendations and safety/evals are mature.
 
-### Adopt
+## 3. Completed foundation stages
 
-The following proposals fit the existing architecture and should become target design:
+### F1 — Curated knowledge and provenance
 
-1. Separate domain/core services from MCP handlers.
-2. Migrate production Python code to a normal package under `src/` after PR #4 is complete.
-3. Adopt `pyproject.toml` + `uv.lock` for deterministic environments.
-4. Use the official MCP Python SDK 2.x rather than building a custom protocol layer.
-5. Start MCP with **stdio only**; defer HTTP/OAuth/remote deployment.
-6. Build a read-optimized agent index instead of letting agents scan `knowledge/**/*.json*` and session JSONL.
-7. Use exact stable IDs/aliases first, then SQLite FTS5/BM25; add embeddings only after retrieval eval proves a gap.
-8. Use a resolve -> stable ref -> query workflow similar to Context7.
-9. Keep the MCP tool surface small and profile-specific.
-10. Enforce output budgets, pagination and progressive disclosure in code.
-11. Return references/provenance by default rather than full documents.
-12. Use MCP resources for large read objects, with tool fallbacks for clients with weak resource support.
-13. Prefer high-level evidence/session operations such as `evidence.trace` over primitive file-style tools.
-14. Build deterministic session summaries/anomaly indexes so models do not sit on raw logs.
-15. Finish Change Detection before the State projector.
-16. Make the State projector fully replayable/versioned.
-17. Use SQLite for current/read state, Parquet for history, DuckDB for analytical queries.
-18. Keep the common path tool-first; specialist agents are optional escalation, not the default architecture.
-19. Keep read and future write MCP processes physically separate.
-20. Do not build v1 around MCP Tasks; the Python SDK roadmap still lists the 2026 Tasks extension as not implemented.
-21. Use stderr for stdio logs; consider OpenTelemetry later for structured metrics.
-22. Create an explicit agent/retrieval benchmark instead of assuming MCP reduces tokens.
+Completed capabilities:
 
-### Adopt with changes
+- structured corpus and authoritative catalog counts;
+- normalized HTTP/routes/forms/actions/domain/Wiki datasets;
+- stable source identities and aliases;
+- JSON Schema validation and repository privacy guards;
+- provenance/fingerprint primitives.
 
-#### Package migration timing
+### F2 — Passive CDP Collector
 
-Do **not** stop or rewrite current PR #4 to move everything into `src/`. PR #4 has already established and begun testing a versioned Change Detector contract. A cross-cutting package migration now would make detector correctness and import migration fail in the same diff.
+Completed capabilities:
 
-Target order:
+- version-aware Chrome/CDP discovery;
+- passive command allowlist;
+- first-party HTTP/WebSocket normalization;
+- capture-time redaction;
+- immutable JSONL + SHA-256 CAS storage;
+- session lifecycle and UUIDv7 identities;
+- real Chrome for Testing E2E;
+- storage A/B/C benchmark.
 
-```text
-PR #4  Change Detector + Promotion Bundle
-        ↓
-PR #5  Python package/Core foundation migration
-```
+### F3 — Action context and correlation
 
-#### Python support
+Completed capabilities:
 
-Do not set `requires-python = ">=3.14"` yet.
+- metadata-only DOM action observation;
+- isolated-world binding/origin safety;
+- no input/form values or page text collection;
+- deterministic bounded action-to-HTTP correlation;
+- explicit confidence semantics;
+- lifecycle/replay/security hardening.
 
-Current code deliberately supports pre-3.14 environments (for example the UUIDv7 fallback), and `asyncio.TaskGroup`/`StrEnum` make Python 3.11 a natural floor. The official MCP Python SDK 2.0 itself supports Python >=3.10.
+### D1 — Deterministic Change Detector + Promotion Bundle
 
-Target:
+Completed capabilities:
 
-```toml
-requires-python = ">=3.11"
-```
+- semantic normalization and path matching;
+- compiled Runtime Contract IR;
+- replay-scoped analysis profile identity;
+- cryptographically verified streaming evidence reader;
+- value-free Observation IR;
+- separated SemanticDiff and versioned rules;
+- explicit `KNOWN / NOVEL / INDETERMINATE / CONFLICT` semantics;
+- SQLite STRICT detector state, checkpoints and explicit `BEGIN IMMEDIATE`;
+- transactional outbox and crash recovery;
+- deterministic Draft 2020-12 Promotion Bundles;
+- synthetic privacy/integration tests;
+- large-stream detector benchmark.
 
-CI policy after packaging:
+D1 remains the correctness foundation for every downstream projection. Future parsers must not silently reinterpret incompatible evidence.
 
-- Python 3.14: primary/full validation.
-- Python 3.11: lightweight compatibility/import/unit lane where practical.
+## 4. Current stage: P1 — Python package + Core boundary
 
-Python 3.14 remains preferred for production/dev, but compatibility should not be removed without evidence that it materially simplifies the system.
+Goal: turn the verified production implementation into an installable package and establish a small stable application boundary without changing Collector/Detector semantics.
 
-#### Dependency strategy
+Implemented in P1:
 
-`pyproject.toml` should contain compatibility ranges; `uv.lock` is the exact reproducibility boundary.
+- `pyproject.toml` + exact `uv.lock`;
+- Python `>=3.11`, Python 3.14 preferred/full validation;
+- canonical `src/bizman` package;
+- production `foundation`, `sessions`, `collector` and `changes` namespaces;
+- thin compatibility re-exports/delegates for legacy `tools/bizman_*` imports/scripts;
+- typed `RepositoryAssets` / `AssetId` boundary;
+- injected timezone-aware UTC application clock;
+- stable Core error hierarchy;
+- immutable path-free Core request/result DTOs;
+- Core collection/detection/validation use cases;
+- unified `bizman collect|detect|validate` CLI;
+- machine-enforced Import Linter dependency directions;
+- Ruff package gate;
+- isolated wheel/sdist build and clean-wheel installation proof;
+- Python 3.11 compatibility lane plus Python 3.14 full lane.
 
-Do **not** add all future dependencies in the packaging PR.
+P1 explicitly does **not** introduce MCP, Agent Index, Current State, DuckDB, recommendations or write automation.
 
-Initial package dependencies should remain close to what production already needs:
+P1 exit gate:
 
-```text
-websockets 17.x
-jsonschema 4.x
-```
+- package migration preserves semantic migration fingerprints;
+- no `src/bizman -> tools.*` production dependency;
+- Core API/export/error/clock/assets contracts are stable and tested;
+- legacy supported entry points delegate to canonical package code;
+- wheel/sdist contain no runtime/private/dev payloads;
+- installed wheel imports and CLI work outside the checkout;
+- Python 3.11 compatibility gate passes;
+- Python 3.14 full validation passes;
+- real Chrome E2E passes on the reviewed final head;
+- no unresolved blocker review threads or security/runtime artifacts;
+- branch is current with target branch before merge.
 
-Add only when the corresponding feature ships:
+## 5. P2 — Agent Index + Session Intelligence
 
-- `mcp 2.x` -> MCP PR.
-- DuckDB -> history/analytics PR.
-- Pydantic -> only if the MCP/domain boundary actually benefits from direct project models; the official MCP SDK already uses Pydantic internally, so adding Pydantic to BizMan core before a concrete use is unnecessary.
+Goal: stop agents from scanning raw repository files/session JSONL for ordinary read tasks.
 
-Ruff belongs in a development dependency group, not runtime.
-
-#### MCP version pinning
-
-Use the official MCP Python SDK v2 line, but do not hardcode architectural assumptions to exactly `2.0.0`. v2 is current stable and implements MCP `2026-07-28`, but there are active SDK issues and subsequent 2.x releases.
-
-Policy:
-
-```text
-pyproject: mcp >=2,<3
-uv.lock: exact tested release
-CI: MCP contract/in-memory/stdio smoke tests
-upgrade: explicit, reviewed lock update
-```
-
-#### One DB vs multiple DBs
-
-Reject one monolithic `BizManData/database/bizman.sqlite` as the first implementation.
-
-The detector, search index and current-state projector have different rebuild/version lifecycles. Physical separation reduces migration coupling and blast radius:
-
-```text
-BizManData/
-  detector/state.sqlite3       detector checkpoints/findings/outbox
-  index/agent-index.sqlite3    refs/search/session summaries/read index
-  state/current.sqlite3        replayable current domain state
-  history/...                  Parquet history
-```
-
-BizMan Core can aggregate these stores behind repositories/services. A later benchmark can justify consolidation if cross-DB cost becomes material.
-
-#### Tool count and profiles
-
-Do not encode “16 total tools” or “<10 per namespace” as a protocol law. OpenAI Tool Search exists specifically to defer large tool surfaces, but not every MCP host supports the same mechanism.
-
-Host-neutral rule:
-
-- default profile: <= 8-10 exposed tools;
-- total catalog can be larger if profiles keep the active surface small;
-- tool count is finalized by agent benchmark, not aesthetics.
-
-#### OpenAI Tool Search
-
-Tool Search/deferred loading is an optional host optimization, not a BizMan architectural dependency. BizMan must remain efficient in Codex/ChatGPT/other MCP clients that expose the entire active profile.
-
-#### MCP annotations
-
-Use `readOnlyHint=true` and, for local derived-data tools, normally `openWorldHint=false`. Treat annotations strictly as metadata/hints; authorization and safety remain implementation invariants.
-
-### Reject or defer
-
-Do not add now:
-
-- FastAPI/REST server;
-- Streamable HTTP deployment;
-- OAuth;
-- Docker as a runtime requirement;
-- FastMCP as a separate dependency layer;
-- LangChain/LlamaIndex/CrewAI/AutoGen;
-- Qdrant/Chroma/Milvus/pgvector;
-- Redis/Postgres/Kafka/EventStoreDB;
-- Polars/PyArrow unless the history implementation proves they are needed;
-- `orjson`/`msgspec` without event-shape benchmarks;
-- MCP Tasks;
-- automatic multi-agent orchestration.
-
-## 3. Security and trust model
-
-The Agent Toolchain must not weaken the existing collector/privacy design.
-
-### Files and databases
-
-MCP tools never receive arbitrary filesystem paths or database paths. Clients use typed references only.
-
-Read-side SQLite connections should be opened read-only when the service does not own writes. SQL is parameterized. There is no generic `execute_sql` MCP tool.
-
-Raw HAR, cookies/auth, browser profiles, `.env`, operational SQLite/Parquet and raw session data remain outside Git.
-
-### Untrusted content
-
-Wiki/page/evidence text originates from an external site and must be treated as **untrusted data**, even when stored locally. Tool results should preserve provenance/trust metadata and never present observed page text as instructions for the agent.
-
-High-level tools should prefer structural summaries and evidence refs over embedding full site text in `structuredContent`.
-
-### Read/write separation
-
-Future write automation is a separate process/entry point/server with a separate command allowlist and explicit enablement. The read MCP server must never import or expose write executors merely because a profile hides their tools.
-
-## 4. Long-term package architecture
-
-After PR #4, target structure:
+Primary store:
 
 ```text
-pyproject.toml
-uv.lock
-
-src/
-  bizman/
-    foundation/
-    collector/
-    changes/
-    knowledge/
-    sessions/
-    index/
-    projection/
-    state/
-    analytics/
-    experiments/
-    agent/
-    cli.py
-
-  bizman_mcp/
-    server.py
-    profiles.py
-    resources.py
-    tools/
-      evidence.py
-      sessions.py
-      changes.py
-      state.py
-      analytics.py
-
-tests/
-evals/
-tools/
-  ci/
-  benchmarks/
-  migrations/
+BizManData/index/agent-index.sqlite3
 ```
 
-`tools/` becomes development/CI/migration infrastructure. Production implementations live under `src/`.
-
-Migration must use compatibility imports/wrappers temporarily so existing commands/tests do not break in one giant rename.
-
-## 5. Core API boundary
-
-MCP must be an adapter over ordinary Python services.
-
-Target logical interfaces:
-
-```text
-EvidenceStore
-SessionStore
-ChangeStore
-IndexStore
-StateStore
-HistoryStore
-AnalyticsService
-ExperimentStore
-ResolverService
-```
-
-Examples:
-
-```text
-core.evidence.trace(ref)
-core.sessions.summary(session_ref)
-core.changes.list(...)
-core.resolve(query)
-core.state.get(ref)
-core.analytics.supply(ref)
-```
-
-The MCP layer only:
-
-1. validates MCP input;
-2. applies QueryBudget/profile permissions;
-3. calls Core;
-4. serializes the bounded structured result.
-
-No business logic lives in MCP handlers.
-
-## 6. Agent refs and retrieval
-
-### Stable refs
-
-Existing stable curated IDs such as `bm.action.units.vendor.select` remain canonical.
-
-For entities without stable public IDs, define a versioned deterministic ref registry in the Agent Index. Do not invent model-generated IDs at query time.
-
-Resolution flow:
-
-```text
-human query/name
-      ↓
-exact ref?
-      ↓ no
-alias / normalized exact lookup
-      ↓ no
-FTS5 ranked search
-      ↓
-canonical ref
-```
-
-Subsequent tools consume the canonical ref directly.
-
-### Retrieval v1
-
-Order:
-
-1. canonical stable ref;
-2. exact alias;
-3. normalized structured fields;
-4. SQLite FTS5/BM25;
-5. prefix/trigram/fuzzy only if eval proves necessary.
-
-No embeddings in v1.
-
-FTS queries must go through a safe query builder; raw user MATCH/SQL syntax is not exposed directly.
-
-### Retrieval acceptance gate
-
-Create a deterministic retrieval corpus before MCP:
-
-- exact ID queries;
-- RU/EN aliases;
-- action intent queries;
-- endpoint/path queries;
-- product/wiki queries;
-- ambiguous names.
-
-Measure Recall@1/5, MRR and evidence correctness. Embeddings are allowed only if lexical/structured retrieval fails the agreed threshold on real tasks.
-
-## 7. Agent read model
-
-`agent-index.sqlite3` is a derived read model, not a new source of truth.
+The DB is a derived read model, not a source of truth.
 
 Initial logical tables:
 
@@ -360,7 +166,6 @@ alias
 knowledge_item
 knowledge_evidence
 knowledge_fts
-
 session_summary
 session_anomaly
 change_index
@@ -368,24 +173,25 @@ index_meta
 projection_checkpoint
 ```
 
-Do not place full current-state economics tables here until the state projector exists.
+### Stable refs and resolution
 
-Every index projection has:
+Existing curated IDs such as `bm.action.*` remain canonical. Other indexed objects receive deterministic versioned refs from the indexer, never model-generated IDs at query time.
+
+Resolution order:
 
 ```text
-projection_name
-projection_version
-input_fingerprint
-last_completed_at
+canonical ref
+  -> exact alias
+  -> normalized structured fields
+  -> SQLite FTS5/BM25
+  -> optional fuzzy fallback only if eval proves needed
 ```
 
-The whole DB must be reproducibly rebuildable from curated Git knowledge + sanitized sessions + detector outputs.
+No embeddings in P2 by default.
 
-## 8. Session intelligence
+### Deterministic session summaries
 
-Session summarization should be deterministic derivation, not an LLM reading JSONL.
-
-Minimum summary:
+Minimum summary fields:
 
 ```text
 event_count
@@ -399,23 +205,31 @@ indeterminate evidence count
 conflicts/warnings
 ```
 
-`session.anomalies` should index unresolved correlations, failed/indeterminate interpretations, protocol changes and new findings.
+Session anomalies should index unresolved correlations, integrity/interpretation failures, protocol changes and detector findings.
 
-Raw JSONL is an internal evidence source, not a normal agent retrieval surface.
+### P2 acceptance gate
 
-## 9. MCP read-only v1
+- index is fully rebuildable from curated knowledge + sanitized evidence + detector outputs;
+- common lookup/session questions require zero raw JSONL reads by the agent;
+- deterministic retrieval corpus measures Recall@1/5, MRR and evidence correctness;
+- lexical/structured retrieval meets the agreed target or produces evidence for a later embedding experiment;
+- projection metadata includes version, input fingerprint and completion time.
 
-### SDK and protocol
+## 6. P3 — Read-only MCP v1
 
-Target official `modelcontextprotocol/python-sdk` 2.x with MCP `2026-07-28` support.
+Goal: expose the P2/Core read surface through a small bounded MCP adapter.
 
-Initial transport: stdio only.
+Policy:
 
-No Tasks dependency. The MCP Python SDK roadmap still lists the `io.modelcontextprotocol/tasks` extension as not implemented in the stable v2 line.
+- official MCP Python SDK current tested `2.x` at implementation time;
+- stdio first;
+- no HTTP/OAuth/remote deployment in P3;
+- no MCP Tasks dependency;
+- handlers contain adapter logic only;
+- stderr for logs; stdout reserved for protocol;
+- read-only process cannot import/execute future write automation.
 
-### Profiles
-
-Initial profiles should be capability-oriented rather than one giant catalog.
+Initial capability profiles should remain small, for example:
 
 `research`:
 
@@ -440,84 +254,40 @@ changes.get
 evidence.trace
 ```
 
-`state` (only after State projector):
+Tool count is finalized by evaluation, not aesthetics. Default active profile target is roughly 8–10 tools or fewer.
 
-```text
-state.get
-state.query
-state.diff
-state.stale
-evidence.get
-```
-
-`analytics` (only after analytics exists):
-
-```text
-analytics.supply
-analytics.pricing
-analytics.profitability
-analytics.compare
-state.get
-```
-
-`full` exists for diagnostics/evals, not as the default agent configuration.
-
-### Standard result envelope
-
-Use one bounded object shape where practical:
-
-```json
-{
-  "summary": "...",
-  "items": [],
-  "refs": [],
-  "evidence": [],
-  "next_cursor": null,
-  "truncated": false
-}
-```
-
-Each MCP tool declares an output schema and returns `structuredContent` conforming to it.
-
-### Query budgets
-
-Enforced server-side:
-
-```text
-detail = compact | standard | full
-limit
-cursor
-fields
-```
+### Result budgets
 
 Initial targets:
 
 ```text
-compact default result: <= 8 KiB
-standard hard target:   <= 16 KiB
-items default:          <= 20
+compact default result <= 8 KiB
+standard hard target   <= 16 KiB
+default items          <= 20
 bounded evidence refs
 bounded nesting depth
 ```
 
-`full` remains bounded; it is not permission to stream an entire session.
+Large immutable objects can additionally be resources, while bounded tool fallbacks remain available for hosts with weaker resource support.
 
-### Resources
+### P3 acceptance gate
 
-Large immutable objects can be exposed as resources, for example:
+- no arbitrary path/SQL tools;
+- output schemas are explicit and bounded;
+- common evidence/session tasks require <=3 median calls in evaluation;
+- known action trace typically completes in <=1–2 calls;
+- stdout is protocol-clean;
+- evidence correctness is not lower than the pre-MCP baseline.
+
+## 7. P4 — Replayable Current State
+
+Goal: project trustworthy current game state from immutable evidence.
+
+Store:
 
 ```text
-bizman://evidence/<ref>
-bizman://wiki/<ref>
-bizman://session/<session-ref>/manifest
-bizman://schema/event
+BizManData/state/current.sqlite3
 ```
-
-Keep `evidence.get` as a bounded fallback because MCP host support for resources varies.
-
-## 10. Current-state projector
-
-The current-state DB is a materialized projection from immutable evidence, never authoritative input.
 
 Target properties:
 
@@ -529,14 +299,6 @@ last session
 last sequence
 ```
 
-A parser/projector change must support:
-
-```text
-delete current.sqlite3
-replay known evidence
-=> deterministic equivalent current state
-```
-
 Initial domain priority:
 
 1. companies/units;
@@ -545,21 +307,29 @@ Initial domain priority:
 4. supply links/orders;
 5. retail/prices;
 6. production;
-7. finance only when evidence is trustworthy enough.
+7. finance only when evidence is sufficiently trustworthy.
 
-A projection must refuse or mark stale when the Change Detector reports an incompatible/unknown structural change affecting its parser assumptions.
+A projection must refuse or explicitly mark itself stale when D1 reports an incompatible/unknown structural change affecting parser assumptions.
 
-## 11. History and analytics
+Acceptance requirement:
+
+```text
+delete current.sqlite3
+replay identical evidence/profile
+=> deterministic equivalent current state
+```
+
+## 8. P5 — History + deterministic analytics
 
 Storage roles remain separate:
 
 ```text
-SQLite -> current operational/read state
+SQLite  -> current operational/read state
 Parquet -> immutable analytical history
-DuckDB -> local analytical query engine
+DuckDB  -> local analytical query engine
 ```
 
-Do not introduce DuckDB before history/analytics work actually starts.
+DuckDB is added only when P5 ships; it is not a base dependency.
 
 Initial deterministic metrics:
 
@@ -573,99 +343,53 @@ production throughput
 profitability inputs
 ```
 
-LLMs explain or compare deterministic calculations; they do not calculate core economic metrics from prose/raw events.
+LLMs may explain or compare these calculations but do not compute authoritative economics from prose/raw logs.
 
-## 12. Experiment framework
+P5 acceptance gate: analytical outputs are reproducible from versioned history and retain state/evidence references.
 
-The external proposal underemphasized the previously planned experiment layer. It remains necessary before autonomous write behavior because many game mechanics cannot be proven from passive observations alone.
+## 9. P6 — Experiment framework
+
+Goal: verify uncertain game mechanics before automation depends on them.
 
 Target flow:
 
 ```text
 before-state snapshot
-      ↓
-explicitly authorized action / user action / BAS adapter
-      ↓
-network + DOM evidence
-      ↓
-after-state snapshot
-      ↓
-deterministic delta
-      ↓
-experiment result + evidence refs
+      -> explicitly authorized user/BAS action
+      -> network + DOM evidence
+      -> after-state snapshot
+      -> deterministic delta
+      -> experiment result + evidence refs
 ```
 
-Phase 1 experiments can correlate **user-executed** actions without BizMan generating writes itself.
+Early experiments correlate user-executed actions; BizMan does not need to generate writes itself.
 
-Later controlled write experiments require the separate guarded executor and explicit approval.
+Each experiment records hypothesis, inputs, exact evidence/state refs, deterministic delta and confidence/outcome.
 
-Every experiment is replayable/auditable and distinguishes observed delta from hypothesis.
+## 10. P7 — Retrieval/agent evaluation and model optimization
 
-## 13. Model/agent routing
-
-LLMs remain downstream of deterministic evidence.
-
-Recommended eventual escalation:
-
-```text
-deterministic detector/index/state
-        ↓
-known/simple -> no LLM
-        ↓ unknown promotion bundle
-local Ornith 1.5 9B triage
-        ↓ low confidence / complex
-Luna high/xhigh
-        ↓ architecture/mechanic ambiguity
-Sol high
-```
-
-This routing is not implemented until a labelled evaluation set exists. Ornith/Luna/Sol are candidates to benchmark on the **same promotion/session tasks**, not hard-coded roles.
-
-Specialist agents are also conditional:
-
-- Log Analyst only for difficult session/change investigations;
-- Evidence/Protocol Agent for evidence interpretation;
-- Economics Agent only after State + deterministic analytics.
-
-Common tasks should call Core/MCP tools directly.
-
-## 14. Agent/retrieval benchmark
-
-Create two distinct benchmarks.
+Two benchmarks are required.
 
 ### Deterministic retrieval benchmark
 
-Tests the Agent Index without an LLM:
+Measure:
 
 ```text
 Recall@1 / Recall@5
 MRR
 precision/evidence correctness
-query latency p50/p95
+query p50/p95
 bytes read
-DB rows scanned where measurable
+rows scanned where measurable
 ```
 
 ### Agent A/B/C benchmark
 
-Use a frozen corpus snapshot and identical task set.
-
-A — current repository/raw-file workflow.
+A — repository/raw-file workflow.
 
 B — deliberately naive MCP with many primitive tools.
 
-C — proposed Agent Index + high-level MCP + profiles + budgets.
-
-Task families:
-
-- find endpoint/action/form;
-- trace a write action;
-- explain evidence for an endpoint;
-- identify novelty;
-- compare sessions;
-- locate unresolved correlations;
-- retrieve state after State projector exists;
-- supply/profitability questions after analytics exists.
+C — Agent Index + high-level MCP + profiles + budgets.
 
 Record:
 
@@ -680,274 +404,183 @@ wall clock
 p50/p95 tool latency
 bytes returned
 raw-file reads
+model/version/reasoning effort
+prompt/corpus/profile fingerprints
 ```
 
-Also record model/version/reasoning effort, prompt version, corpus fingerprint and active profile/tool-surface fingerprint. Run repeated trials for nondeterministic agent evaluations.
-
-Initial acceptance targets for common read tasks:
+Initial common-path targets:
 
 ```text
 median tool calls <= 3
-active tools/profile <= 8-10
+default active tools <= 8-10
 default result <= 8 KiB
-simple local query p95 <= 100 ms on reference CI/dev machine
-session summary = 1 tool call
-known action trace <= 1-2 calls
+simple local query p95 <= 100 ms on reference environment
+session summary = 1 call
 raw JSONL reads by agent = 0
 evidence correctness >= baseline
 ```
 
-Targets are gates to validate/refine, not marketing guarantees.
+Embeddings and model routing are allowed only when labelled evaluation demonstrates value.
 
-## 15. PR roadmap
+Candidate model escalation can later be benchmarked on identical tasks, e.g. deterministic/no-LLM -> local model -> hosted model, but model names are not architectural dependencies.
 
-### Completed
+## 11. P8 — Recommendation layer
 
-#### PR #1 — curated corpus/foundation
+Recommendations consume deterministic Current State/history/analytics rather than reconstructing facts from raw logs.
 
-Structured knowledge, provenance, source identity, schemas and validation foundations.
+Requirements:
 
-#### PR #2 — passive CDP collector
+- recommendation inputs and metrics are explicit;
+- observed state is separated from strategy/ranking policy;
+- uncertainty and staleness are surfaced;
+- model explanation is optional;
+- recommendations never become automatic writes merely because they score highly.
 
-Version-aware passive Chrome/CDP capture, sanitized immutable JSONL/CAS, real Chrome E2E and storage benchmark.
+## 12. P9+ — Guarded write automation
 
-#### PR #3 — action context + correlation
+This is intentionally last.
 
-Privacy-safe DOM action observation, isolated-world binding, deterministic action-to-HTTP correlation and security hardening.
+Required properties:
 
-### Current
-
-#### PR #4 — deterministic Change Detector + Promotion Bundle
-
-Keep current scope. Do **not** insert package/MCP migration into this PR.
-
-Deliverables:
-
-- semantic normalization/path matcher;
-- compiled Runtime Contract IR;
-- analysis profile versioning;
-- streaming cryptographic evidence reader;
-- Observation IR;
-- SemanticDiff;
-- stable versioned rules;
-- `KNOWN/NOVEL/INDETERMINATE/CONFLICT` semantics;
-- SQLite STRICT/WAL detector state;
-- explicit `BEGIN IMMEDIATE` transaction control;
-- transactional outbox;
-- schema-valid value-free Promotion Bundle;
-- synthetic integration/privacy tests and detector benchmarks.
-
-Exit gate:
-
-- all detector/foundation/collector tests green;
-- full real-corpus baseline compile succeeds;
-- corrupted evidence/CAS/path traversal tests fail closed;
-- replay/idempotence/outbox crash cases covered;
-- memory remains bounded on a large synthetic session;
-- no sensitive values in bundles/state identity payloads;
-- final PR review + CI green.
-
-### Next
-
-#### PR #5 — Python packaging + Core boundary
-
-- add `pyproject.toml` and `uv.lock`;
-- `requires-python >=3.11`;
-- migrate production code from `tools/bizman_*` to `src/bizman/*`;
-- compatibility shims for old imports/commands;
-- introduce stable Core service/repository interfaces without MCP;
-- add Ruff as dev-only dependency;
-- switch CI installation to locked uv workflow;
-- primary Python 3.14 validation + lightweight 3.11 compatibility lane;
-- no Pydantic/MCP/DuckDB dependency unless required by code in this PR.
-
-Exit gate: behavior-equivalent migration, no collector/detector regression, old entry points either work through shims or have documented replacement.
-
-#### PR #6 — Agent Index + Session Intelligence
-
-- `agent-index.sqlite3` read model;
-- stable refs + alias registry;
-- safe FTS5/BM25 retrieval;
-- knowledge/evidence index;
-- session summaries/anomalies;
-- change index projection;
-- `EvidenceStore`, `SessionStore`, `ChangeStore`, `ResolverService` concrete implementations;
-- deterministic retrieval eval suite.
-
-Exit gate: index fully rebuildable; no raw JSONL needed for common lookup tasks; lexical/structured retrieval meets acceptance target or produces evidence justifying a later embedding experiment.
-
-#### PR #7 — read-only MCP v1
-
-- official MCP Python SDK current tested 2.x;
-- stdio transport only;
-- `research` and `logs` profiles first;
-- small bounded tool surface;
-- strict input/output schemas and structured content;
-- stable refs/progressive disclosure;
-- large-object resources + bounded tool fallback;
-- read-only annotations;
-- stderr logging;
-- no Tasks/HTTP/OAuth/write tools;
-- MCP in-memory + stdio contract tests.
-
-Exit gate: common evidence/session tasks require <=3 median calls in eval; no arbitrary paths/SQL; server stdout contains MCP protocol only.
-
-#### PR #8 — replayable Current State Projector
-
-- `current.sqlite3`;
-- versioned projection checkpoints;
-- company/unit/product/inventory/supply/price state;
-- stale/incompatible projection handling tied to Change Detector findings;
-- state diff/staleness services;
-- add `state` MCP profile/tools after Core API is stable.
-
-Exit gate: delete/replay produces equivalent current state from the same evidence/profile; projection refuses silently incompatible protocol changes.
-
-#### PR #9 — Parquet history + DuckDB analytics
-
-- history event/state snapshots to Parquet;
-- DuckDB current stable 1.x dependency added only here;
-- deterministic analytical views/services;
-- supply/pricing/profitability metrics;
-- `analytics` MCP profile.
-
-No Polars/PyArrow unless benchmark/use case requires them.
-
-Exit gate: analytical metrics are reproducible from history; MCP returns bounded metric results with evidence/state refs.
-
-#### PR #10 — Experiment Framework
-
-- experiment manifests;
-- before/action/after evidence model;
-- deterministic state deltas;
-- user-action/BAS correlation adapter;
-- experiment reproducibility and confidence semantics;
-- no autonomous writes yet.
-
-Exit gate: an experiment can prove/contradict a mechanic with explicit evidence refs and without an LLM deciding the delta.
-
-#### PR #11 — Agent eval + retrieval/model optimization
-
-- frozen 50-100+ task benchmark;
-- A/B/C raw repo vs naive MCP vs optimized MCP;
-- retrieval metrics;
-- schema/result/token budget measurements;
-- optional embedding experiment only if lexical retrieval misses targets;
-- benchmark Ornith/Luna/Sol routing on labelled promotion/session cases.
-
-Exit gate: optimized surface preserves/improves evidence correctness while reducing tool calls/context materially.
-
-#### PR #12 — Recommendation layer
-
-- deterministic recommendation inputs/metrics;
-- strategy/ranking policy separated from observed state;
-- uncertainty/staleness surfaced;
-- model explanation layer optional;
-- recommendations never become writes automatically.
-
-#### PR #13+ — guarded write automation
-
-Build only after State, experiments, recommendations and safety/eval layers are mature.
-
-- separate write process/server;
-- explicit allowlisted actions;
-- preconditions and fresh-state checks;
-- dry-run/planned request representation;
+- physically separate write process/server;
+- explicit action allowlist;
+- fresh-state and precondition checks;
+- dry-run/planned-request representation;
 - explicit approval policy;
 - idempotence where possible;
 - post-action verification;
 - audit trail;
-- no cookies/auth leakage;
+- no auth/cookie leakage;
 - read server remains incapable of writes.
 
-## 16. CI strategy
+Write automation is introduced incrementally from proven protocol contracts and experiment evidence, not from guessed browser scripting.
 
-The repository is public and currently has a PR quality gate. Keep CI focused rather than running every expensive integration on every unrelated change.
+## 13. Package/dependency policy
 
-Target split after packaging:
-
-```text
-validate
-  compile/lint/unit/schema/repo validation
-
-detector-integration
-  only detector/evidence/index relevant changes
-
-collector-chrome-e2e
-  collector/CDP/action/correlation relevant changes
-
-benchmarks
-  non-gating by default; explicit/PR when relevant
-
-agent-evals
-  non-gating initially; scheduled only if a future need justifies it
-```
-
-No routine `push` workflow and no schedule without a concrete monitoring requirement.
-
-## 17. Dependency roadmap
-
-### Base after PR #5
+Base after P1:
 
 ```text
 Python >=3.11; 3.14 preferred
 uv + pyproject.toml + uv.lock
 websockets 17.x
 jsonschema 4.x
-Ruff dev-only
 stdlib sqlite3
+Ruff + Import Linter as dev dependencies
 ```
 
-### Add at feature boundary
+Add dependencies only at their feature boundary:
 
 ```text
-MCP PR:       official mcp 2.x
-Analytics PR: DuckDB 1.x
+P3 MCP:       official mcp 2.x
+P5 analytics: DuckDB current reviewed 1.x line
 ```
 
-Pydantic is not a BizMan core requirement by default. If MCP contracts or another boundary clearly benefit from BizMan-owned Pydantic models, add it deliberately then.
+Do not pre-add FastAPI, Pydantic, vector databases, Redis/Postgres/Kafka, LangChain/LlamaIndex/CrewAI/AutoGen, PyArrow/Polars or other infrastructure without a concrete workload/evidence-backed need.
 
-## 18. External design references verified 2026-09-07
+`pyproject.toml` contains compatibility ranges; `uv.lock` is the exact reproducibility boundary.
 
-- MCP 2026-07-28 release: https://blog.modelcontextprotocol.io/posts/2026-07-28/
-- MCP Python SDK v2 / PyPI: https://pypi.org/project/mcp/2.0.0/
-- MCP Python SDK roadmap: https://github.com/modelcontextprotocol/python-sdk/blob/main/ROADMAP.md
-- MCP tool annotations discussion: https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/
-- uv dependency management: https://docs.astral.sh/uv/concepts/projects/dependencies/
-- uv lock/sync: https://docs.astral.sh/uv/concepts/projects/sync/
-- SQLite FTS5/BM25: https://www.sqlite.org/fts5.html
-- DuckDB current stable installation/release: https://duckdb.org/install/
-- Context7 resolve/query workflow: https://context7.com/docs/clients/cli
-- Serena contexts/modes and reduced host-specific tool surfaces: https://oraios.github.io/serena/02-usage/050_configuration.html
-- MotherDuck MCP bounded query outputs/security warning: https://github.com/motherduckdb/mcp-server-motherduck
-- OpenAI Tool Search/deferred tools: https://openai.com/index/introducing-gpt-5-4/
+## 14. Database separation
 
-## 19. North-star acceptance criteria
+Do not collapse all derived state into one monolithic database by default.
 
-BizMan reaches the intended Agent Toolchain milestone when all of the following are true:
+Target operational layout:
 
-1. A user can play normally while the collector records sanitized immutable evidence.
+```text
+BizManData/
+  detector/state.sqlite3
+  index/agent-index.sqlite3
+  state/current.sqlite3
+  history/...
+```
+
+These stores have different projection/version/migration lifecycles. `bizman.core` aggregates them behind typed services. Consolidation requires evidence that cross-database cost is material enough to outweigh lifecycle isolation.
+
+## 15. Security and trust model for agent layers
+
+- external page/Wiki/evidence text is untrusted data, never instructions;
+- tools prefer structural summaries + provenance refs over dumping page contents;
+- read-side SQLite uses read-only connections where the service does not own writes;
+- SQL is parameterized and not exposed as a generic public tool;
+- clients operate on typed refs, not arbitrary filesystem/database paths;
+- raw JSONL remains an internal evidence surface, not a normal agent interface;
+- future write capability is a separate executable/process and permission domain.
+
+## 16. CI evolution
+
+Current P1 CI:
+
+```text
+validate (Python 3.14)
+  lock + Ruff + Import Linter + compile + full tests + repository validation
+
+compatibility (Python 3.11)
+  compile + Core/migration/CLI contracts + public import/CLI smoke
+
+collector-e2e
+  real Chrome/CDP fixture after correctness lanes
+
+benchmark
+  storage evidence + non-gating detector performance
+```
+
+Later split by ownership when P2/P3 grow:
+
+```text
+package/core validation
+collector Chrome E2E
+detector integration
+index/retrieval evals
+MCP contract/stdio smoke
+benchmarks (normally non-gating)
+```
+
+No routine push workflow and no schedule without a concrete monitoring need.
+
+## 17. Stable delivery map
+
+```text
+F1  curated knowledge/provenance          completed
+F2  passive CDP collector                 completed
+F3  action context/correlation            completed
+D1  deterministic Change Detector         completed
+P1  Python package + Core boundary        current
+P2  Agent Index + Session Intelligence    next
+P3  read-only MCP v1
+P4  replayable Current State
+P5  Parquet history + analytics
+P6  experiment framework
+P7  retrieval/agent eval + optimization
+P8  recommendation layer
+P9+ guarded write automation
+```
+
+A GitHub PR or issue may implement one stage or a focused sub-slice, but stage identity never depends on that PR/issue number.
+
+## 18. North-star acceptance criteria
+
+BizMan reaches the intended agent-toolchain milestone when:
+
+1. A user can play normally while sanitized immutable evidence is collected.
 2. New/changed protocol structure is detected deterministically and reviewably.
-3. Common evidence/session questions never require an agent to read raw JSONL.
-4. All current state is replayable from immutable evidence.
-5. History and deterministic metrics are queryable without turning a DB into the source of truth.
-6. MCP exposes a small bounded read-only surface with stable refs and evidence provenance.
-7. Agent benchmarks show token/tool-call savings without lowering evidence correctness.
+3. Common evidence/session questions require no raw JSONL reads by an agent.
+4. Current state is replayable from immutable evidence.
+5. History and deterministic metrics are queryable without becoming source-of-truth inputs.
+6. MCP exposes a small bounded read-only surface with stable refs/provenance.
+7. Agent evaluations demonstrate tool/context savings without lower evidence correctness.
 8. LLMs explain/triage evidence but do not manufacture observations or core metrics.
 9. Experiments can verify uncertain mechanics before automation depends on them.
-10. Any future write capability is physically separated, allowlisted, guarded, auditable and disabled by default.
+10. Any write capability is physically separated, allowlisted, guarded, auditable and disabled by default.
 
-The shortest path to this north star is therefore:
+The shortest path from the current stage is therefore:
 
 ```text
-PR4 Change Detector
-  -> PR5 package/Core foundation
-  -> PR6 Agent Index + Session Intelligence
-  -> PR7 read-only MCP
-  -> PR8 Current State
-  -> PR9 History/Analytics
-  -> PR10 Experiments
-  -> PR11 Agent Evals/Optimization
-  -> PR12 Recommendations
-  -> PR13+ Guarded Writes
+P1 package/Core
+  -> P2 Agent Index + Session Intelligence
+  -> P3 read-only MCP
+  -> P4 Current State
+  -> P5 History/Analytics
+  -> P6 Experiments
+  -> P7 Agent Evals/Optimization
+  -> P8 Recommendations
+  -> P9+ Guarded Writes
 ```
