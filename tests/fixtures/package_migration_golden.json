@@ -1,0 +1,30 @@
+{
+  "analysis_profile_sha256": "7fd51e98f5be9c5a141c8fb39e1f8402844ce6263486ee8c2f4d838e6f1c8158",
+  "baseline_sha256": "cfede9a05c70d4598c969d0e158fa2468389eab2e87e6ba914d41f415494bc0c",
+  "contract_sha256": "cfede9a05c70d4598c969d0e158fa2468389eab2e87e6ba914d41f415494bc0c",
+  "counts": {
+    "actions": 11,
+    "endpoints": 71,
+    "forms": 45,
+    "operations": 15
+  },
+  "redaction_policy_sha256": "9a9165b1d3b47fc9a68262329c9641ef5e9a95ee200e64241d557ee2c63a006a",
+  "rules": [
+    {"rule_id": "BM-FORM-001", "rule_version": 1},
+    {"rule_id": "BM-FORM-002", "rule_version": 1},
+    {"rule_id": "BM-HTTP-001", "rule_version": 1},
+    {"rule_id": "BM-HTTP-002", "rule_version": 1},
+    {"rule_id": "BM-HTTP-003", "rule_version": 1},
+    {"rule_id": "BM-HTTP-004", "rule_version": 1},
+    {"rule_id": "BM-OP-001", "rule_version": 1},
+    {"rule_id": "BM-OP-002", "rule_version": 1},
+    {"rule_id": "BM-OP-003", "rule_version": 1},
+    {"rule_id": "BM-REL-001", "rule_version": 1},
+    {"rule_id": "BM-REL-002", "rule_version": 1}
+  ],
+  "versions": {
+    "contract_schema": 1,
+    "extraction": 1,
+    "normalization": 1
+  }
+}
