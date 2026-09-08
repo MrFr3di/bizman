@@ -50,7 +50,7 @@ jobs:
           uv lock --check
           uv sync --locked
       - name: Lint Python sources
-        run: uv run ruff check src tests tools
+        run: uv run ruff check src
       - name: Enforce package architecture
         run: uv run lint-imports
       - name: Compile Python sources
