@@ -57,7 +57,7 @@ BizManData/
 3. атомарно materializes файл;
 4. помечает outbox row как `materialized`.
 
-Если процесс падает между пунктами 2–4, следующий normal run сначала восстанавливает pending outbox. Существующий файл принимается только при точном совпадении bytes. Это исключает неатомарный DB/file dual write.
+SQLite commit и filesystem publication не являются одной атомарной транзакцией. Если процесс падает между пунктами 2–4, следующий normal run сначала восстанавливает pending outbox. Существующий файл принимается только при точном совпадении bytes. Transactional outbox поэтому делает этот неатомарный DB/file boundary восстанавливаемым и предотвращает невосстановимое расхождение между committed detector state и materialized bundle.
 
 ## Evidence integrity boundary
 
@@ -78,7 +78,7 @@ Detector читает только finalized `completed`/`cancelled` sessions д
 
 ## Семантика событий и связей
 
-`dom.action` и `http.request` являются независимыми наблюдениями. Детерминированный correlator не добавляет ссылку задним числом внутрь этих событий: он выпускает отдельное `correlation.action_http` с `action_event_id`, `network_event_id`, score/status и явным набором сигналов. Это сохраняет append-only provenance и позволяет позже пересчитать или заменить алгоритм корреляции, не меняя исходные evidence-события.
+`dom.action` и `http.request` являются независимыми наблюдениями. Детерминированный correlator не добавляет ссылку задним числом внутрь этих событий: он выпускает отдельный `correlation.action_http` с `action_event_id`, `network_event_id`, score/status и явным набором сигналов. Это сохраняет append-only provenance и позволяет позже пересчитать или заменить алгоритм корреляции, не меняя исходные evidence-события.
 
 Эвристическая корреляция имеет `confidence=inferred`; статус `exact` для неё не используется. Значения полей формы, текст/HTML элементов, cookies/storage/clipboard не являются частью action event model и не допускаются в Promotion Bundle.
 
