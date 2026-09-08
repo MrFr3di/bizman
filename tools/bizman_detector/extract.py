@@ -215,8 +215,12 @@ class ObservationExtractor:
     ) -> None:
         redirect_from = event.get("redirect_from_path")
         redirect_status = event.get("redirect_status_code")
-        if redirect_from is None:
+        if redirect_from is None and redirect_status is None:
             return
+        if redirect_from is None or redirect_status is None:
+            raise ExtractionIntegrityError(
+                f"{source}: redirect metadata must include both path and status"
+            )
         if not isinstance(redirect_from, str):
             raise ExtractionIntegrityError(f"{source}: redirect_from_path must be a string")
         status = _status_code(redirect_status, source=source, label="redirect")
