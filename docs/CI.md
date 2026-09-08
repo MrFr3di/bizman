@@ -1,28 +1,48 @@
 # CI policy
 
-The repository is public. GitHub-hosted CI is used as a pull-request quality gate where it materially improves confidence, especially for deterministic detector integration and real Chrome/CDP regression tests.
+The repository is public. GitHub-hosted CI is used as a pull-request quality gate where it materially improves confidence, especially for deterministic package/Core contracts, detector integration and real Chrome/CDP regression tests.
 
 ## Default triggers
 
-- `pull_request` for relevant code, schema, test, workflow and knowledge changes.
+- `pull_request` for relevant package, tool, schema, test, workflow, documentation and knowledge changes.
 - `workflow_dispatch` for explicit re-runs and diagnostics.
 - No routine `push` workflow.
 - No scheduled workflow unless a future monitoring use case justifies it.
 
+The environment is reproducible from `pyproject.toml` plus the committed `uv.lock`. CI uses `uv 0.12.10`; the project requires Python >=3.11, with Python 3.14 as the primary/full lane.
+
 ## Quality gate
 
-The `collector-quality-gate` workflow currently performs three jobs.
+The `collector-quality-gate` workflow currently performs four jobs.
 
-### 1. `validate` — gating
+### 1. `validate` — primary gating lane, Python 3.14
 
-Python 3.14 runs:
+The full lane runs:
 
-1. `python -m compileall -q tools tests`.
-2. Full `unittest` discovery, including foundation/collector/correlation and detector deep-regression tests.
-3. `python tools/validate_repo.py`, which validates committed structured knowledge and schemas.
+1. `uv lock --check` and `uv sync --locked`.
+2. Ruff against the installable `src/bizman` package.
+3. Import Linter contracts for the package dependency directions.
+4. `python -m compileall -q src tools tests`.
+5. Full `unittest` discovery.
+6. `tools/validate_repo.py` for committed structured knowledge and schemas.
 
-The detector portion of this gate covers, among other invariants:
+The package architecture gate enforces these dependency directions:
 
+- `foundation` is a dependency leaf;
+- `sessions` does not depend on higher layers;
+- `collector` is independent from detector/application layers;
+- `changes` does not depend on collector/application layers;
+- `core` does not depend on CLI;
+- CLI directly consumes Core rather than lower implementation packages.
+
+A source scan also prevents the installable `src/bizman` package from importing the legacy `tools.*` namespace.
+
+The full test suite covers, among other invariants:
+
+- exact public Core exports, typed repository assets and injected UTC clock;
+- frozen/slotted, path-free Core request/result DTOs;
+- unified CLI parity with the supported legacy entry points;
+- package migration semantic fingerprint equivalence;
 - deterministic RuntimeContract/baseline/profile identity;
 - Draft 2020-12 manifest/event/Promotion Bundle contracts;
 - traversal and symlink-escape rejection for evidence roots;
@@ -32,20 +52,46 @@ The detector portion of this gate covers, among other invariants:
 - SQLite STRICT/WAL compatibility, `BEGIN IMMEDIATE`, checkpoints and change identity;
 - transactional outbox rollback/recovery;
 - value-free canonical Promotion Bundles and privacy rejection;
-- synthetic filesystem → evidence → extraction → diff → rules → SQLite/outbox → bundle E2E;
+- synthetic filesystem -> evidence -> extraction -> diff -> rules -> SQLite/outbox -> bundle E2E;
 - rerun/idempotence and downstream synthetic-secret byte scans.
 
-### 2. `collector-e2e` — gating
+### Distribution isolation in the full lane
 
-After `validate`, a real Chrome for Testing end-to-end CDP run executes against a local fixture server. The fixture exercises first-party HTTP/WebSocket capture plus a real DOM form submit and verifies the resulting immutable action-to-HTTP correlation.
+`tests/test_distribution_contract.py` builds both wheel and sdist with `uv build --no-sources`, scans their archive entries, and installs the wheel into a fresh temporary virtual environment outside the repository checkout.
+
+The proof requires:
+
+- exactly one wheel and one sdist;
+- no tests/tools payload, operational DB/Parquet/HAR files, `.env`, CAS or browser-profile payloads in the distributions;
+- repository `config/`, `schemas/` and `knowledge/` assets are not silently duplicated into the wheel;
+- public `bizman` packages import from the installed wheel rather than the checkout;
+- the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`.
+
+Repository assets remain explicit external configuration through `RepositoryAssets`; packaging does not turn them into hidden package data.
+
+### 2. `compatibility` — gating Python 3.11 floor
+
+Python 3.11 is intentionally a lightweight compatibility lane rather than a duplicate of the full Chrome/benchmark workload. It runs:
+
+- locked `uv sync`;
+- compile of the installable `src` package;
+- Core API/use-case contract tests;
+- package-migration semantic contract;
+- unified CLI parity tests;
+- imports of all current public package layers;
+- `bizman --help` smoke.
+
+The heavy jobs depend on both `validate` and `compatibility`, so a Python-floor regression fails early and avoids unnecessary Chrome/benchmark execution.
+
+### 3. `collector-e2e` — gating
+
+After both correctness lanes pass, a real Chrome for Testing end-to-end CDP run executes against a local fixture server. The fixture exercises first-party HTTP/WebSocket capture plus a real DOM form submit and verifies the resulting immutable action-to-HTTP correlation.
 
 The E2E fixture deliberately uses only loopback services and synthetic secrets. Its form contains both a safe field and a synthetic secret field; the verifier requires the DOM action metadata to retain only the safe field name, the persisted URL-encoded request body to retain only the safe value, and every synthetic secret value to be absent from normalized events and all persisted CAS artifacts. It does not connect to BizMania, export browser state, or perform game writes.
 
 The collector is terminated by SIGINT after the bounded E2E observation window, so `cancelled` is an accepted and schema-valid terminal session status for this test. The verifier still requires contiguous event sequencing and complete evidence for the expected fixture traffic before accepting the run.
 
-This job is the final shared collector/foundation regression gate for detector changes. It should be rerun on the final reviewed head and again only when subsequent changes touch shared collector/foundation behavior or the E2E/workflow itself.
-
-### 3. `benchmark` — storage gating, detector performance non-gating
+### 4. `benchmark` — storage gating, detector performance non-gating
 
 The benchmark job publishes two families of measurements:
 
@@ -62,28 +108,35 @@ A/B/C matcher outputs must be semantically equivalent before timing is reported.
 
 Detector performance is intentionally `continue-on-error`/non-gating initially because shared GitHub runners are noisy. Correctness remains gating through the unit/integration suite; benchmark results are evidence for future optimization, not a reason to weaken validation.
 
-## Local detector commands
+## Local commands
 
-Install the committed runtime/test dependencies and run the same deterministic validation surface with:
-
-```bash
-python3 -m pip install -r tools/requirements.txt
-python3 -m compileall -q tools tests
-python3 -m unittest discover -s tests -v
-python3 tools/validate_repo.py
-```
-
-Run the detector itself with:
+Install/sync the exact committed environment and run the same primary deterministic validation surface with:
 
 ```bash
-python3 tools/detect_changes.py --data-dir "$HOME/BizManData"
-python3 tools/detect_changes.py --data-dir "$HOME/BizManData" --dry-run
+uv lock --check
+uv sync --locked
+uv run ruff check src
+uv run lint-imports
+uv run python -m compileall -q src tools tests
+uv run python -m unittest discover -s tests -v
+uv run python tools/validate_repo.py
 ```
+
+Canonical application commands use the installed unified CLI:
+
+```bash
+uv run bizman collect --endpoint http://127.0.0.1:9222 --data-dir "$HOME/BizManData"
+uv run bizman detect --data-dir "$HOME/BizManData"
+uv run bizman detect --data-dir "$HOME/BizManData" --dry-run
+uv run bizman validate
+```
+
+The existing `tools/collect_live.py`, `tools/detect_changes.py` and `tools/validate_repo.py` commands remain thin compatibility delegates during the migration window.
 
 Detector state and bundles remain local/rebuildable under `BizManData` and are never CI artifacts intended for commit.
 
 ## Reproducibility
 
-GitHub Actions are SHA-pinned. Chrome for Testing is downloaded from the official Google Chrome for Testing manifest for the current Stable channel, and the exact runtime CDP protocol is still discovered and fingerprinted by the collector itself. Runtime/Page instrumentation parameters are capability-detected from that discovered protocol rather than assumed from a fixed tip-of-tree schema.
+GitHub Actions are SHA-pinned. Package builds use the standards-oriented `uv build --no-sources` path so local source overrides cannot silently make a publishable build succeed. Chrome for Testing is downloaded from the official Google Chrome for Testing manifest for the current Stable channel, and the exact runtime CDP protocol is still discovered and fingerprinted by the collector itself.
 
-Detector interpretation is separately replay-scoped through `analysis_profile_sha256`, which includes baseline/redaction and versioned normalization/extraction/rule semantics. A performance result therefore does not replace the semantic/profile identity required for reproducible detector outputs.
+Detector interpretation is separately replay-scoped through `analysis_profile_sha256`, which includes baseline/redaction and versioned normalization/extraction/rule semantics. Packaging, CI or performance changes therefore do not replace the semantic/profile identity required for reproducible detector outputs.
