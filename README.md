@@ -1,8 +1,24 @@
-# BizMan knowledge base
+# BizMan
 
-Research repository for structured BizMania browser-game observations, protocol evidence, Wiki mechanics and automation-oriented indexes.
+BizMan is a deterministic evidence/state platform for BizMania. It combines a structured public knowledge base with a privacy-safe passive Chrome/CDP collector, deterministic action-to-HTTP correlation, a replayable Change Detector, value-free Promotion Bundles, and a small installable application Core/CLI boundary.
 
-The repository intentionally stores **derived, searchable knowledge instead of raw HAR files**. Raw captures and browser/session state remain private and external; committed source manifests retain SHA-256/provenance so derived observations can be traced back to the supplied captures.
+The central invariant is: **immutable sanitized evidence is the source of truth; databases and indexes are rebuildable derivations; no LLM decides what was observed.**
+
+Raw HAR captures, browser/session state and operational databases remain private and external. Committed source manifests retain SHA-256/provenance so derived observations can be traced back to supplied captures without publishing sensitive runtime material.
+
+## Current stage
+
+Completed foundations include:
+
+- structured corpus/provenance/schema validation;
+- passive version-aware Chrome/CDP collection;
+- privacy-safe DOM action context and deterministic action-to-HTTP correlation;
+- deterministic Change Detector with versioned rules, analysis profiles, SQLite checkpoints/outbox and Promotion Bundles;
+- installable `src/bizman` package and stable `bizman.core` application boundary;
+- unified `bizman` CLI;
+- locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
+
+Current delivery stage is **P1 — Python package + Core boundary**. The next stage is **P2 — Agent Index + Session Intelligence**, followed by **P3 — read-only MCP**. See `docs/ROADMAP.md`.
 
 ## Current corpus
 
@@ -30,93 +46,153 @@ Derived from 3 supplied HAR captures:
 
 1. `knowledge/catalog.json` — machine-readable master catalog and authoritative dataset counts.
 2. `docs/INDEX.md` — human navigation.
-3. `AGENTS.md` — rules for Codex/other agents.
-4. `knowledge/http/operation-index.json` — high-value protocol/action index.
-5. `knowledge/actions/catalog.json` — observed write actions.
+3. `docs/ROADMAP.md` — stable delivery stages and architecture direction.
+4. `AGENTS.md` — rules for Codex/other agents.
+5. `knowledge/http/operation-index.json` — high-value protocol/action index.
+6. `knowledge/actions/catalog.json` — observed write actions.
 
 ## Layout
 
 ```text
-config/                       capture-time policies
+pyproject.toml                  package/dependency/tooling contract
+uv.lock                         exact reproducible dependency lock
+src/bizman/
+  foundation/                   deterministic shared primitives
+  sessions/                     immutable evidence/session boundary
+  collector/                    passive CDP collector
+  changes/                      detector/diff/rules/state/promotion
+  core/                         stable application use-case boundary
+  cli/                          thin command-line adapter over Core
+config/                         capture/runtime policies
 knowledge/
-  sources/                    capture provenance and hashes
-  actions/                    normalized observed write actions
-  domain/                     products and observed game entities
-  forms/                      cross-action parameter index
-  http/
-    application-events/       555 significant first-party events
-    endpoints/                68 endpoint signatures
-    routes/                   761 discovered internal routes
-    forms/                    87 HTML form signatures
-    json-responses/           36 JSON responses
-    assets/                   914 resource-census records
-  javascript/                 script hashes and relevant snippets
-  pages/                      180 normalized game HTML pages
-  wiki/topics/                87 full Wiki topic texts
-schemas/                      structured-data contracts
-tests/                        deterministic foundation/collector tests
-docs/                         architecture, provenance and research notes
-tools/                        validation, collection, CI fixtures and benchmarks
+  sources/                      capture provenance and hashes
+  actions/                      normalized observed write actions
+  domain/                       products and observed game entities
+  forms/                        cross-action parameter index
+  http/                         events/endpoints/routes/forms/JSON/assets
+  javascript/                   script hashes and relevant snippets
+  pages/                        normalized game pages
+  wiki/topics/                  captured Wiki topic texts
+schemas/                        structured-data contracts
+tests/                          deterministic unit/contract/integration tests
+docs/                           architecture, CI, provenance and plans
+tools/                          compatibility delegates, CI helpers, benchmarks
 ```
 
-Large corpora are partitioned behind `index.json` manifests. Each manifest records total counts, part names and offsets/counts where applicable, allowing agents to read only the required slice instead of loading the whole corpus.
+`tools/` is no longer the canonical production namespace. Production implementations live under `src/bizman`; supported legacy scripts remain thin compatibility delegates during P1.
+
+Large corpora are partitioned behind `index.json` manifests. Each manifest records counts, part names and offsets where applicable so tooling can read the required slice rather than loading an entire corpus.
 
 ## Evidence and confidence
 
-Do not promote assumptions into facts. Knowledge distinguishes:
+Knowledge distinguishes:
 
 - `observed` — directly present in captured traffic/HTML/JavaScript;
 - `documented` — stated by the captured BizMania Wiki;
 - `discovered-reference` — referenced by captured HTML/JavaScript but not observed executing;
-- `inferred` — derived from observations;
+- `inferred` — deterministically derived from observations;
 - `hypothesis` — not yet experimentally verified;
 - `verified` — reproduced/confirmed;
 - `contradicted` / `deprecated` — retained for history when applicable.
 
-Evidence references use stable capture IDs and entry numbers where possible. Canonical source IDs use the `src.*` namespace; superseded source names remain explicit aliases rather than competing canonical identifiers.
+Canonical source IDs use the `src.*` namespace. Unknown evidence is never silently treated as empty/known evidence.
 
-## Passive CDP collector and action context
+## Install and use
 
-The live-ingestion implementation now includes:
-
-- UUIDv7 runtime/session identifiers and deterministic fingerprints;
-- version-aware Chrome/CDP discovery from `/json/version` and `/json/protocol`;
-- passive flattened CDP transport with an explicit command allowlist;
-- first-party HTTP/WebSocket normalization with capture-time redaction;
-- metadata-only DOM observation for `click`, `change` and `submit` through `Runtime.addBinding` plus `Page.addScriptToEvaluateOnNewDocument`, gated both in the injected script and again by the CDP execution-context origin against configured first-party hosts;
-- strict action privacy: no form/input values, element text, HTML, cookies, Web Storage or clipboard content are collected;
-- deterministic, bounded action-to-HTTP correlation emitted as separate immutable `correlation.action_http` events;
-- no LLM or probabilistic model in the collector/correlator hot path; heuristic links remain `inferred` and never become `exact`;
-- append-only JSONL event storage plus SHA-256 content-addressed artifacts;
-- target/child-target auto-attach and explicit session lifecycle states;
-- real Chrome for Testing E2E fixtures and A/B/C storage benchmarks.
-
-Run the collector against a dedicated Chrome profile exposing a local DevTools endpoint:
+Python 3.14 is the preferred development/runtime version. Python 3.11 is the supported compatibility floor.
 
 ```bash
-python3 -m pip install -r tools/requirements.txt
-python3 tools/collect_live.py --endpoint http://127.0.0.1:9222 --data-dir ~/BizManData
+uv sync --locked
 ```
 
-Operational session/event files, browser profiles and future SQLite/Parquet stores stay outside Git.
+Canonical CLI commands:
+
+```bash
+uv run bizman validate
+
+uv run bizman collect \
+  --endpoint http://127.0.0.1:9222 \
+  --data-dir "$HOME/BizManData"
+
+uv run bizman detect --data-dir "$HOME/BizManData"
+uv run bizman detect --data-dir "$HOME/BizManData" --dry-run
+```
+
+The collector should run against a dedicated Chrome profile exposing a local DevTools endpoint. Collection is passive: the CDP command allowlist permits observation/instrumentation required for capture but not game writes.
+
+Legacy commands `tools/collect_live.py`, `tools/detect_changes.py` and `tools/validate_repo.py` remain available as compatibility delegates in P1. New integrations should use the installed `bizman` CLI or `bizman.core` rather than importing `tools.*`.
+
+Operational sessions/events/CAS, browser profiles, detector SQLite state and Promotion Bundles stay under the external `BizManData` root and are never package assets or intended Git content.
+
+## Application Core boundary
+
+`bizman.core` is the supported adapter boundary for application use cases. It currently exposes typed repository assets/configuration, UTC clock injection, stable Core errors, immutable request/result DTOs, and three use cases:
+
+- collection;
+- change detection;
+- repository validation.
+
+CLI code consumes Core rather than lower implementation packages. Future MCP adapters must follow the same rule; P1 intentionally does not add MCP, Agent Index, Current State, analytics or write automation.
+
+## Change detection
+
+The detector replays finalized sanitized evidence through a versioned semantic pipeline:
+
+```text
+EvidenceReader
+  -> Observation extraction
+  -> SemanticDiff
+  -> stable/versioned RuleEngine
+  -> SQLite checkpoint/change state + transactional outbox
+  -> schema-valid value-free Promotion Bundle
+```
+
+Important safety properties include cryptographic evidence/CAS verification, `UNKNOWN != EMPTY`, fail-closed corruption/path checks, stable change identities, explicit reason/provenance/versioning, rerun idempotence, and privacy scanning of derived outputs.
 
 ## Security
 
-This repository is public, so committed content must be safe for public disclosure. Never commit raw HAR/CDP captures, cookies, authorization/session data, browser profiles, `.env`, SQLite/DuckDB databases, Parquet files or other private runtime state. See `SECURITY.md`, `.gitignore` and `config/redaction-policy.json`.
+This repository is public. Never commit raw HAR/CDP captures, cookies, authorization/session data, browser profiles, `.env` files, operational SQLite/DuckDB databases, Parquet files or private runtime state. See `SECURITY.md`, `.gitignore` and `config/redaction-policy.json`.
 
 ## Validation and CI
 
-Run the local quality gate with:
+Run the primary local quality surface with:
 
 ```bash
-python3 -m pip install -r tools/requirements.txt
-python3 -m compileall -q tools tests
-python3 -m unittest discover -s tests -v
-python3 tools/validate_repo.py
+uv lock --check
+uv sync --locked
+uv run ruff check src
+uv run lint-imports
+uv run python -m compileall -q src tools tests
+uv run python -m unittest discover -s tests -v
+uv run python tools/validate_repo.py
 ```
 
-Because the repository is public, relevant pull requests also run GitHub-hosted CI: compilation/unit/contract validation, a real Chrome for Testing CDP E2E test against loopback fixtures, and a non-gating A/B/C storage benchmark. The Chrome E2E includes a real DOM submit, sanitized form request-body persistence, immutable action-to-HTTP correlation and synthetic-secret non-leakage checks. There is no routine `push` or scheduled CI. See `docs/CI.md`.
+Relevant pull requests run:
 
-## Next development stage
+- Python 3.14 full locked validation;
+- Python 3.11 compatibility/import/Core/CLI smoke;
+- machine-enforced package dependency contracts;
+- wheel/sdist build and isolated wheel-install proof;
+- real Chrome for Testing CDP E2E against loopback fixtures;
+- storage benchmark plus non-gating detector performance evidence.
 
-With passive capture and action-context correlation verified, the next layers are automatic change detection and promotion bundles, SQLite current-state projections, Parquet/DuckDB history, reproducible experiments, recommendations and only then guarded write automation.
+See `docs/CI.md` for the exact policy.
+
+## Delivery direction
+
+The stable sequence is:
+
+```text
+D1  deterministic Change Detector        completed
+P1  Python package + Core boundary       current
+P2  Agent Index + Session Intelligence   next
+P3  read-only MCP
+P4  replayable Current State
+P5  Parquet history + deterministic analytics
+P6  experiment framework
+P7  agent/retrieval evaluation and optimization
+P8  recommendation layer
+P9+ guarded write automation
+```
+
+Write automation remains deliberately last and physically separated from the read/evidence stack.
