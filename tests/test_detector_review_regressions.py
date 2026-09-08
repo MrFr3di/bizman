@@ -183,7 +183,7 @@ class DetectorReviewRegressionTests(unittest.TestCase):
             finally:
                 connection.close()
 
-    def test_repeated_change_never_moves_last_seen_backwards(self):
+    def test_repeated_change_never_moves_last_seen_backwards_across_offsets(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = DetectorState.open_rw(Path(tmp) / "state.sqlite3")
             self.addCleanup(state.close)
@@ -191,14 +191,14 @@ class DetectorReviewRegressionTests(unittest.TestCase):
             profile = _profile()
             newer = _identity(
                 SESSION_A,
-                started_at="2026-09-07T11:00:00Z",
-                ended_at="2026-09-07T13:00:00Z",
+                started_at="2026-09-07T08:00:00-04:00",
+                ended_at="2026-09-07T09:00:00-04:00",
                 evidence_sha256="3" * 64,
             )
             older = _identity(
                 SESSION_B,
-                started_at="2026-09-07T12:00:00Z",
-                ended_at="2026-09-07T12:30:00Z",
+                started_at="2026-09-07T13:00:00+02:00",
+                ended_at="2026-09-07T14:30:00+02:00",
                 evidence_sha256="4" * 64,
             )
 
@@ -222,7 +222,7 @@ class DetectorReviewRegressionTests(unittest.TestCase):
                 "FROM changes WHERE analysis_profile_sha256=? AND change_id=?",
                 (profile.sha256, finding.change_id),
             ).fetchone()
-            self.assertEqual(tuple(row), (2, SESSION_A, "2026-09-07T13:00:00Z"))
+            self.assertEqual(tuple(row), (2, SESSION_A, "2026-09-07T09:00:00-04:00"))
 
 
 if __name__ == "__main__":
