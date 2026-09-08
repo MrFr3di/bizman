@@ -226,10 +226,10 @@ class DetectorRunner:
             finding_ids = tuple(sorted({finding.change_id for finding in findings}))
 
             if self.dry_run:
-                existing = self._existing_change_ids(finding_ids)
-                repeated.update(existing)
+                seen = self._existing_change_ids(finding_ids).union(first_seen)
+                repeated.update(change_id for change_id in finding_ids if change_id in seen)
                 unseen = tuple(
-                    finding for finding in findings if finding.change_id not in existing
+                    finding for finding in findings if finding.change_id not in seen
                 )
                 first_seen.update(finding.change_id for finding in unseen)
                 if unseen:
