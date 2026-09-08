@@ -6,13 +6,13 @@ from typing import Protocol, runtime_checkable
 
 @runtime_checkable
 class UtcClock(Protocol):
-    def now(self) -> datetime: ...
+    def now_utc(self) -> datetime: ...
 
 
 class SystemUtcClock:
     __slots__ = ()
 
-    def now(self) -> datetime:
+    def now_utc(self) -> datetime:
         return datetime.now(UTC)
 
 
