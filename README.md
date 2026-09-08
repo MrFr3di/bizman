@@ -105,18 +105,21 @@ Python 3.14 is the preferred development/runtime version. Python 3.11 is the sup
 uv sync --locked
 ```
 
-Canonical CLI commands:
+Canonical CLI commands require an explicit repository asset root:
 
 ```bash
-uv run bizman validate
+uv run bizman validate --repo-root "$PWD"
 
 uv run bizman collect \
+  --repo-root "$PWD" \
   --endpoint http://127.0.0.1:9222 \
   --data-dir "$HOME/BizManData"
 
-uv run bizman detect --data-dir "$HOME/BizManData"
-uv run bizman detect --data-dir "$HOME/BizManData" --dry-run
+uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData"
+uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData" --dry-run
 ```
+
+`--repo-root` is an explicit configuration boundary for curated repository assets; operational use-case DTOs do not accept arbitrary filesystem paths.
 
 The collector should run against a dedicated Chrome profile exposing a local DevTools endpoint. Collection is passive: the CDP command allowlist permits observation/instrumentation required for capture but not game writes.
 
