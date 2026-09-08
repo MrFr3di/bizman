@@ -13,9 +13,9 @@ Derived from 3 supplied HAR captures:
 - 555 significant first-party application events
 - 17 observed POST requests
 - 68 network endpoint signatures
-- 732 internal HTML/JavaScript route patterns
+- 761 internal HTML/JavaScript route patterns
 - 87 unique HTML form signatures
-- 62 observed form parameters
+- 74 observed form parameters
 - 36 unique JSON responses
 - 180 normalized non-Wiki game HTML pages
 - 914 static-resource census entries
@@ -23,8 +23,8 @@ Derived from 3 supplied HAR captures:
 - 14 protocol-relevant JavaScript snippets
 - 87 captured Wiki topics / 89 Wiki navigation topics
 - 303 products
-- 18 observed domain entities
-- 8 normalized state-changing action families
+- 19 observed domain entities
+- 11 normalized state-changing action families
 
 ## Start here
 
@@ -46,7 +46,7 @@ knowledge/
   http/
     application-events/       555 significant first-party events
     endpoints/                68 endpoint signatures
-    routes/                   732 discovered internal routes
+    routes/                   761 discovered internal routes
     forms/                    87 HTML form signatures
     json-responses/           36 JSON responses
     assets/                   914 resource-census records

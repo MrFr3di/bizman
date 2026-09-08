@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "post_count": 17,
+  "post_count": 24,
   "operations": [
     {
       "path": "/units/customise/headquarterretailsettings/",
@@ -77,6 +77,26 @@
       "path":"/units/vendor/fastretailprices/","query_keys":["id"],"body_keys":["$post","oper"],
       "observations":[{"capture":"bizmania1.ru.har","entry":1103,"status":200,"query":{"id":"13548"}}],
       "id":"op-008","count":1
+    },
+    {
+      "path":"/units/produce/calculator/","query_keys":[],"body_keys":["oper","city","product","oldCurrency","dressingModifier","techLabourModifier","p","d","sort","$post"],
+      "observations":[{"session":"live-cdp-2026-09-07","seq":25730,"status":200,"query":{}}],
+      "id":"op-012","count":1
+    },
+    {
+      "path":"/units/level/","query_keys":["id","division"],"body_keys":["divisionId","licenceId","p","$scene","sort","$post"],
+      "observations":[{"session":"live-cdp-2026-09-07","seq":28821,"status":200,"query":{"id":"33676","division":"33677"}},{"session":"live-cdp-2026-09-07","seq":31476,"status":200,"query":{"id":"33670","division":"33671"}}],
+      "id":"op-013","count":2
+    },
+    {
+      "path":"/units/level/","query_keys":["id"],"body_keys":["division","levelnumber","hireStaff","p","$scene","sort","$post"],
+      "observations":[{"session":"live-cdp-2026-09-07","seq":28931,"status":200,"query":{"id":"33676"}},{"session":"live-cdp-2026-09-07","seq":31566,"status":200,"query":{"id":"33670"}}],
+      "id":"op-014","count":2
+    },
+    {
+      "path":"/units/vendor/magicpurchase/","query_keys":["id"],"body_keys":["oper","selected[n]","selectAllCheckbox","p","sort","$post"],
+      "observations":[{"session":"live-cdp-2026-09-07","seq":29258,"status":200,"query":{"id":"33676"}},{"session":"live-cdp-2026-09-07","seq":31885,"status":200,"query":{"id":"33670"}}],
+      "id":"op-015","count":2
     }
   ]
 }

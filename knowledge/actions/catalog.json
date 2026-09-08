@@ -1,5 +1,5 @@
 {
-  "count": 8,
+  "count": 11,
   "items": [
     {
       "id": "bm.action.units.customise.headquarterretailsettings",
@@ -130,6 +130,80 @@
         "src.har.bizmania.2026-09-06.02#entry-761"
       ],
       "confidence":"observed"
+    },
+    {
+      "id": "bm.action.units.produce.calculator",
+      "method": "POST",
+      "path": "/units/produce/calculator/",
+      "observed_count": 1,
+      "statuses": {"200": 1},
+      "form_fields": [
+        {"name":"oper","seen_in":1},
+        {"name":"city","seen_in":1},
+        {"name":"product","seen_in":1},
+        {"name":"oldCurrency","seen_in":1},
+        {"name":"dressingModifier","seen_in":1},
+        {"name":"techLabourModifier","seen_in":1},
+        {"name":"p","seen_in":1},
+        {"name":"d","seen_in":1},
+        {"name":"sort","seen_in":1},
+        {"name":"$post","seen_in":1}
+      ],
+      "query_key_sets":[[]],
+      "evidence": [
+        "live-cdp-2026-09-07#seq-25730"
+      ],
+      "confidence": "observed"
+    },
+    {
+      "id": "bm.action.units.level",
+      "method": "POST",
+      "path": "/units/level/",
+      "observed_count": 4,
+      "statuses": {"200": 4},
+      "form_fields": [
+        {"name":"divisionId","seen_in":2},
+        {"name":"licenceId","seen_in":2},
+        {"name":"division","seen_in":2},
+        {"name":"levelnumber","seen_in":2},
+        {"name":"hireStaff","seen_in":2},
+        {"name":"p","seen_in":4},
+        {"name":"$scene","seen_in":4},
+        {"name":"sort","seen_in":4},
+        {"name":"$post","seen_in":4}
+      ],
+      "query_key_sets":[["id","division"],["id"]],
+      "evidence": [
+        "live-cdp-2026-09-07#seq-28821",
+        "live-cdp-2026-09-07#seq-28931",
+        "live-cdp-2026-09-07#seq-31476",
+        "live-cdp-2026-09-07#seq-31566"
+      ],
+      "confidence": "observed"
+    },
+    {
+      "id": "bm.action.units.vendor.magicpurchase",
+      "method": "POST",
+      "path": "/units/vendor/magicpurchase/",
+      "observed_count": 2,
+      "statuses": {"200": 2},
+      "form_fields": [
+        {"name":"oper","seen_in":2},
+        {"name":"selected[339]","seen_in":1},
+        {"name":"selected[340]","seen_in":1},
+        {"name":"selected[426]","seen_in":1},
+        {"name":"selected[429]","seen_in":1},
+        {"name":"selectAllCheckbox","seen_in":2},
+        {"name":"p","seen_in":2},
+        {"name":"sort","seen_in":2},
+        {"name":"$post","seen_in":2}
+      ],
+      "query_key_sets":[["id"]],
+      "evidence": [
+        "live-cdp-2026-09-07#seq-29258",
+        "live-cdp-2026-09-07#seq-31885"
+      ],
+      "confidence": "observed"
     }
   ]
 }
