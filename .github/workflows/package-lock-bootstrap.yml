@@ -30,6 +30,7 @@ jobs:
       - name: Generate and verify exact lock
         run: |
           set -euo pipefail
+          rm -f uv.lock
           uv lock
           uv lock --check
           python - <<'PY'
