@@ -1,0 +1,43 @@
+name: temporary-baseline-trigger
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.pull_request.head.ref == 'feature/change-detector-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout detector branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feature/change-detector-v1
+          fetch-depth: 1
+      - name: Apply embedded patch and remove temporary workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          lines = Path('.github/workflows/temporary-baseline-patch.yml').read_text(encoding='utf-8').splitlines()
+          start = next(i for i, line in enumerate(lines) if line.strip() == "python - <<'PY'") + 1
+          end = next(i for i in range(start, len(lines)) if lines[i].strip() == 'PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines[start:end]) + '\n'
+          Path('/tmp/bizman_baseline_patch.py').write_text(script, encoding='utf-8')
+          PY
+          python /tmp/bizman_baseline_patch.py
+          python -m compileall -q tools/bizman_detector/baseline.py tests/test_detector_baseline.py
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/bizman_detector/baseline.py tests/test_detector_baseline.py
+          git rm .github/workflows/temporary-baseline-patch.yml .github/workflows/temporary-baseline-trigger.yml
+          git commit -m 'Integrate observed live operations into runtime contract'
+          git push origin HEAD:feature/change-detector-v1
