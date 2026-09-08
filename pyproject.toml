@@ -31,3 +31,68 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B", "RUF"]
+
+[tool.importlinter]
+root_package = "bizman"
+
+[[tool.importlinter.contracts]]
+name = "Foundation is a dependency leaf"
+type = "forbidden"
+source_modules = ["bizman.foundation"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "Sessions do not depend on higher layers"
+type = "forbidden"
+source_modules = ["bizman.sessions"]
+forbidden_modules = [
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "Collector is independent from detector and application layers"
+type = "forbidden"
+source_modules = ["bizman.collector"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "Changes do not depend on collector or application layers"
+type = "forbidden"
+source_modules = ["bizman.changes"]
+forbidden_modules = [
+    "bizman.collector",
+    "bizman.core",
+    "bizman.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "Core does not depend on CLI"
+type = "forbidden"
+source_modules = ["bizman.core"]
+forbidden_modules = ["bizman.cli"]
+
+[[tool.importlinter.contracts]]
+name = "CLI directly consumes Core only"
+type = "forbidden"
+source_modules = ["bizman.cli"]
+forbidden_modules = [
+    "bizman.foundation",
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+]
+allow_indirect_imports = true
