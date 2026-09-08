@@ -1,13 +1,22 @@
-"""Deterministic offline change detection for sanitized BizMan evidence."""
+"""Compatibility shim for canonical bizman.changes."""
 
-CONTRACT_SCHEMA_VERSION = 1
-NORMALIZATION_VERSION = 1
-EXTRACTION_VERSION = 1
-PROMOTION_SCHEMA_VERSION = 1
+from importlib import import_module as _import_module
 
-__all__ = [
-    "CONTRACT_SCHEMA_VERSION",
-    "NORMALIZATION_VERSION",
-    "EXTRACTION_VERSION",
-    "PROMOTION_SCHEMA_VERSION",
-]
+from bizman.changes import *  # noqa: F401,F403
+
+_canonical = _import_module("bizman.changes")
+
+
+def __getattr__(name: str):
+    return getattr(_canonical, name)
+
+
+def __dir__():
+    return sorted(set(globals()) | set(dir(_canonical)))
+
+
+__all__ = getattr(
+    _canonical,
+    "__all__",
+    tuple(name for name in dir(_canonical) if not name.startswith("_")),
+)
