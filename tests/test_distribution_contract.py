@@ -35,7 +35,9 @@ class DistributionContractTests(unittest.TestCase):
             ["ruff==0.16.3", "import-linter==2.15"],
         )
         self.assertEqual(value["tool"]["uv"]["required-version"], "==0.12.10")
-        self.assertEqual(value["tool"]["ruff"]["target-version"], "py311")
+        ruff = value["tool"]["ruff"]
+        self.assertEqual(ruff["target-version"], "py311")
+        self.assertEqual(ruff["lint"]["select"], ["E4", "E7", "E9", "F", "I", "B", "RUF"])
 
     def test_src_package_root_exists(self):
         package = REPO_ROOT / "src" / "bizman" / "__init__.py"
