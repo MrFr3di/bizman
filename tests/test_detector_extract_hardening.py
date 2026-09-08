@@ -194,6 +194,20 @@ class ExtractionHardeningTests(unittest.TestCase):
             ).extract(identity)
             self.assertEqual([item.status for item in observations.http], [302, None])
 
+    def test_partial_redirect_metadata_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = _Fixture(Path(tmp))
+            first = _request(0, path="/units/42/save", redirect_index=0)
+            second = _request(1, path="/units/43/save", redirect_index=1)
+            second["redirect_status_code"] = 302
+            fixture.write([first, second])
+            reader = fixture.reader()
+            identity = reader.inspect(SESSION_ID)
+            with self.assertRaisesRegex(ExtractionIntegrityError, "redirect metadata"):
+                ObservationExtractor(
+                    _contract(), reader, RedactionPolicy.default()
+                ).extract(identity)
+
     def test_correlation_action_refs_must_agree_with_action_event_id(self):
         with tempfile.TemporaryDirectory() as tmp:
             fixture = _Fixture(Path(tmp))
