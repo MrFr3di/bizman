@@ -63,7 +63,7 @@ The proof requires:
 
 - exactly one wheel and one sdist;
 - no tests/tools payload, operational DB/Parquet/HAR files, `.env`, CAS or browser-profile payloads in the distributions;
-- repository `config/`, `schemas/` and `knowledge/` assets are not silently duplicated into the wheel;
+- repository `config/`, `schemas` and `knowledge` assets are not silently duplicated into the wheel;
 - public `bizman` packages import from the installed wheel rather than the checkout;
 - the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`.
 
@@ -122,14 +122,19 @@ uv run python -m unittest discover -s tests -v
 uv run python tools/validate_repo.py
 ```
 
-Canonical application commands use the installed unified CLI:
+Canonical application commands use the installed unified CLI and an explicit repository asset root:
 
 ```bash
-uv run bizman collect --endpoint http://127.0.0.1:9222 --data-dir "$HOME/BizManData"
-uv run bizman detect --data-dir "$HOME/BizManData"
-uv run bizman detect --data-dir "$HOME/BizManData" --dry-run
-uv run bizman validate
+uv run bizman collect \
+  --repo-root "$PWD" \
+  --endpoint http://127.0.0.1:9222 \
+  --data-dir "$HOME/BizManData"
+uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData"
+uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData" --dry-run
+uv run bizman validate --repo-root "$PWD"
 ```
+
+The explicit `--repo-root` is the configuration boundary for curated repository assets. Core operation DTOs remain path-free.
 
 The existing `tools/collect_live.py`, `tools/detect_changes.py` and `tools/validate_repo.py` commands remain thin compatibility delegates during the migration window.
 
