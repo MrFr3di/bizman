@@ -107,8 +107,10 @@ class CoreUseCaseTests(unittest.TestCase):
                 _context(data_dir),
                 DetectionRequest(dry_run=True),
             )
+
             self.assertIsInstance(summary, DetectorRunSummary)
             self.assertTrue(summary.dry_run)
+            self.assertEqual(summary.sessions_discovered, 0)
             self.assertFalse((data_dir / "detector").exists())
             self.assertFalse((data_dir / "promotions").exists())
 
@@ -117,53 +119,57 @@ class CoreUseCaseTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             result = validate_repository(_context(Path(tmp) / "BizManData"))
+
         self.assertIsInstance(result, ValidationResult)
-        self.assertEqual(result.errors, ())
+        self.assertTrue(result.ok, result.errors)
 
     def test_collection_uses_context_data_root_and_typed_request(self):
         from bizman.core import CollectionRequest, CollectionResult, collect
+        from bizman.foundation.redaction import RedactionPolicy
 
         with tempfile.TemporaryDirectory() as tmp:
-            data_dir = Path(tmp) / "BizManData"
+            context = _context(Path(tmp) / "BizManData")
             request = CollectionRequest(
-                endpoint="http://127.0.0.1:9222",
-                hosts=("bizmania.ru",),
+                endpoint="http://127.0.0.1:9333",
+                hosts=("bizmania.ru", "www.bizmania.ru"),
                 event_queue_size=2048,
             )
-            with patch("bizman.core.collection.run_collection", new=AsyncMock(return_value=SESSION_ID)) as run:
-                result = asyncio.run(collect(_context(data_dir), request))
+            fake_run = AsyncMock(return_value=SESSION_ID)
+            with patch("bizman.core.collection.run_collection", fake_run):
+                result = asyncio.run(collect(context, request))
 
         self.assertEqual(result, CollectionResult(session_id=SESSION_ID))
-        run.assert_awaited_once()
-        call = run.await_args
-        self.assertEqual(call.kwargs["endpoint"], request.endpoint)
-        self.assertEqual(call.kwargs["data_dir"], data_dir.resolve())
-        self.assertEqual(call.kwargs["hosts"], request.hosts)
-        self.assertEqual(call.kwargs["event_queue_size"], request.event_queue_size)
+        kwargs = fake_run.await_args.kwargs
+        self.assertEqual(kwargs["endpoint"], request.endpoint)
+        self.assertEqual(kwargs["data_dir"], context.data_dir)
+        self.assertEqual(kwargs["hosts"], request.hosts)
+        self.assertEqual(kwargs["event_queue_size"], request.event_queue_size)
+        self.assertIsInstance(kwargs["redaction_policy"], RedactionPolicy)
 
     def test_expected_asset_failure_is_translated_with_cause(self):
         from bizman.core import AssetError, CollectionRequest, collect
-        from bizman.core.assets import RepositoryAssetError
 
-        request = CollectionRequest()
         with tempfile.TemporaryDirectory() as tmp:
             context = _context(Path(tmp) / "BizManData")
-            with patch.object(
-                type(context.assets),
-                "path",
-                side_effect=RepositoryAssetError("missing policy"),
+            with patch(
+                "bizman.core.collection.load_redaction_policy",
+                side_effect=ValueError("bad policy"),
             ):
                 with self.assertRaises(AssetError) as raised:
-                    asyncio.run(collect(context, request))
-        self.assertIsInstance(raised.exception.__cause__, RepositoryAssetError)
+                    asyncio.run(collect(context, CollectionRequest()))
+
+        self.assertIsInstance(raised.exception.__cause__, ValueError)
 
     def test_programming_errors_are_not_blanket_translated(self):
         from bizman.core import DetectionRequest, detect_changes
 
         with tempfile.TemporaryDirectory() as tmp:
             context = _context(Path(tmp) / "BizManData")
-            with patch("bizman.core.detection.DetectorRunner.from_paths", side_effect=TypeError("bug")):
-                with self.assertRaisesRegex(TypeError, "bug"):
+            with patch(
+                "bizman.core.detection.DetectorRunner.from_paths",
+                side_effect=TypeError("programming defect"),
+            ):
+                with self.assertRaisesRegex(TypeError, "programming defect"):
                     detect_changes(context, DetectionRequest(dry_run=True))
 
 
