@@ -11,7 +11,7 @@ import unittest
 class FixedClock:
     value: datetime
 
-    def now(self) -> datetime:
+    def now_utc(self) -> datetime:
         return self.value
 
 
@@ -33,7 +33,7 @@ class CoreTimeTests(unittest.TestCase):
     def test_system_clock_returns_timezone_aware_utc(self):
         from bizman.core.time import SystemUtcClock
 
-        value = SystemUtcClock().now()
+        value = SystemUtcClock().now_utc()
         self.assertIs(value.tzinfo, UTC)
         self.assertEqual(value.utcoffset().total_seconds(), 0)
 
@@ -53,7 +53,7 @@ class CoreTimeTests(unittest.TestCase):
 
             self.assertEqual(context.assets, assets)
             self.assertEqual(context.data_dir, (base / "BizManData").resolve())
-            self.assertEqual(context.clock.now(), fixed.value)
+            self.assertEqual(context.clock.now_utc(), fixed.value)
 
 
 if __name__ == "__main__":
