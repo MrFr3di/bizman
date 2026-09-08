@@ -31,7 +31,8 @@ line-length = 100
 exclude = ["tests", "tools"]
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "B"]
+select = ["E4", "E7", "E9", "F", "I", "B", "RUF"]
+ignore = ["I", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/bizman/changes/diff.py" = ["F401"]
