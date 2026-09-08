@@ -1,1 +1,1 @@
-"""Foundation primitives for BizMan ingestion tooling."""
+"""Compatibility namespace for the canonical :mod:`bizman.foundation` package."""
