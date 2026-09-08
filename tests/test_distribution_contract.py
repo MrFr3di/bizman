@@ -41,6 +41,24 @@ class DistributionContractTests(unittest.TestCase):
         package = REPO_ROOT / "src" / "bizman" / "__init__.py"
         self.assertTrue(package.is_file(), "src/bizman package root must exist")
 
+    def test_uv_lock_is_committed_and_matches_project_floor(self):
+        lock_path = REPO_ROOT / "uv.lock"
+        self.assertTrue(lock_path.is_file(), "uv.lock must be committed")
+        lock = tomllib.loads(lock_path.read_text(encoding="utf-8"))
+        self.assertEqual(lock["version"], 1)
+        self.assertEqual(lock["requires-python"], ">=3.11")
+        packages = {item["name"]: item for item in lock["package"]}
+        self.assertEqual(packages["jsonschema"]["version"], "4.26.0")
+        self.assertEqual(packages["websockets"]["version"], "17.1")
+        self.assertEqual(packages["ruff"]["version"], "0.16.3")
+        self.assertEqual(packages["import-linter"]["version"], "2.15")
+        for name, package in packages.items():
+            source = package.get("source", {})
+            if name == "bizman":
+                self.assertEqual(source, {"editable": "."})
+            else:
+                self.assertEqual(source.get("registry"), "https://pypi.org/simple")
+
 
 if __name__ == "__main__":
     unittest.main()
