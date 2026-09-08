@@ -8,7 +8,7 @@ The repository is public and uses GitHub-hosted CI as a focused pull-request qua
 - `permissions: contents: read` is the default workflow posture.
 - Validation starts with compilation, unit/contract tests and repository/schema validation.
 - Real Chrome for Testing E2E is used for collector/CDP/action-correlation changes and should be path-scoped as the CI is split further.
-- Benchmarks are non-gating unless a future performance regression budget is deliberately adopted.
+- Detector performance benchmarks are non-gating by default; the existing storage flush regression benchmark remains gating in the current PR workflow until the CI split is implemented.
 - Large raw HAR captures are never reprocessed in CI and remain outside Git.
 
 The target CI split in `docs/ROADMAP.md` is:
