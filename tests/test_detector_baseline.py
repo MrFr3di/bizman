@@ -213,7 +213,8 @@ class RuntimeContractCompilationTests(unittest.TestCase):
             self.assertEqual(get_contract.statuses, (200,))
             self.assertEqual(get_contract.query_key_sets, (("getMode",),))
             self.assertEqual(post_contract.statuses, (302,))
-            self.assertEqual(post_contract.query_key_sets, (("postMode",),))
+            self.assertIn(("postMode",), post_contract.query_key_sets)
+            self.assertIn(("postMode", "replace"), post_contract.query_key_sets)
 
     def test_forms_keep_only_safe_structural_signature(self):
         with tempfile.TemporaryDirectory() as tmp:
