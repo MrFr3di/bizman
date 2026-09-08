@@ -13,9 +13,9 @@ Derived from 3 supplied HAR captures:
 - 555 significant first-party application events
 - 17 observed POST requests
 - 68 network endpoint signatures
-- 732 internal HTML/JavaScript route patterns
+- 761 internal HTML/JavaScript route patterns
 - 87 unique HTML form signatures
-- 62 observed form parameters
+- 74 observed form parameters
 - 36 unique JSON responses
 - 180 normalized non-Wiki game HTML pages
 - 914 static-resource census entries
@@ -23,8 +23,8 @@ Derived from 3 supplied HAR captures:
 - 14 protocol-relevant JavaScript snippets
 - 87 captured Wiki topics / 89 Wiki navigation topics
 - 303 products
-- 18 observed domain entities
-- 8 normalized state-changing action families
+- 19 observed domain entities
+- 11 normalized state-changing action families
 
 ## Start here
 
@@ -46,7 +46,7 @@ knowledge/
   http/
     application-events/       555 significant first-party events
     endpoints/                68 endpoint signatures
-    routes/                   732 discovered internal routes
+    routes/                   761 discovered internal routes
     forms/                    87 HTML form signatures
     json-responses/           36 JSON responses
     assets/                   914 resource-census records
@@ -54,9 +54,9 @@ knowledge/
   pages/                      180 normalized game HTML pages
   wiki/topics/                87 full Wiki topic texts
 schemas/                      structured-data contracts
-tests/                        deterministic foundation/collector/detector tests
+tests/                        deterministic foundation/collector tests
 docs/                         architecture, provenance and research notes
-tools/                        validation, collection, detector, CI fixtures and benchmarks
+tools/                        validation, collection, CI fixtures and benchmarks
 ```
 
 Large corpora are partitioned behind `index.json` manifests. Each manifest records total counts, part names and offsets/counts where applicable, allowing agents to read only the required slice instead of loading the whole corpus.
@@ -77,7 +77,7 @@ Evidence references use stable capture IDs and entry numbers where possible. Can
 
 ## Passive CDP collector and action context
 
-The live-ingestion implementation includes:
+The live-ingestion implementation now includes:
 
 - UUIDv7 runtime/session identifiers and deterministic fingerprints;
 - version-aware Chrome/CDP discovery from `/json/version` and `/json/protocol`;
@@ -98,37 +98,11 @@ python3 -m pip install -r tools/requirements.txt
 python3 tools/collect_live.py --endpoint http://127.0.0.1:9222 --data-dir ~/BizManData
 ```
 
-## Deterministic Change Detector
-
-The offline detector turns finalized sanitized collector evidence into value-free, reviewable change proposals without placing an LLM in the evidence-to-diff path:
-
-```text
-curated knowledge -> BaselineCompiler -> RuntimeContract
-finalized JSONL/CAS -> EvidenceReader -> ObservationExtractor
-RuntimeContract + observations -> SemanticDiff -> versioned RuleEngine
-first-seen findings -> SQLite transactional outbox -> Promotion Bundle
-```
-
-`RuntimeContract` is compiled from the curated corpus rather than source-file byte identity. `analysis_profile_sha256` binds the baseline, contract/normalization/extraction semantics, redaction policy and rule versions so replay checkpoints cannot silently cross interpretation changes.
-
-Evidence reads are fail-closed: manifests/events use Draft 2020-12 validation, event sequence and IDs are checked, JSONL and CAS bytes are hashed from disk, path/symlink escapes are rejected and a referenced request body is cryptographically verified before structural extraction. A missing `request_body_ref` remains unknown (`INDETERMINATE`), never an empty body signature.
-
-Detector SQLite state and materialized Promotion Bundles are **local rebuildable operational data** under `BizManData`; they are not curated source-of-truth data and must never be auto-committed. Publication uses a transactional outbox so a crash between database commit and filesystem materialization can be recovered deterministically. Promotion Bundles are canonical, schema-valid and value-free.
-
-Run the detector after collecting/finalizing sessions:
-
-```bash
-python3 tools/detect_changes.py --data-dir "$HOME/BizManData"
-python3 tools/detect_changes.py --data-dir "$HOME/BizManData" --dry-run
-```
-
-`--dry-run` performs evidence validation, extraction, diff/rule classification and in-memory bundle validation without creating or modifying detector state or promotion files. Use repeated `--session <UUIDv7>` arguments to restrict replay to selected sessions.
-
-Operational session/event files, browser profiles, detector SQLite/outbox state and Promotion Bundles stay outside Git.
+Operational session/event files, browser profiles and future SQLite/Parquet stores stay outside Git.
 
 ## Security
 
-This repository is public, so committed content must be safe for public disclosure. Never commit raw HAR/CDP captures, cookies, authorization/session data, browser profiles, `.env`, SQLite/DuckDB databases, Parquet files, `BizManData` or other private runtime state. See `SECURITY.md`, `.gitignore` and `config/redaction-policy.json`.
+This repository is public, so committed content must be safe for public disclosure. Never commit raw HAR/CDP captures, cookies, authorization/session data, browser profiles, `.env`, SQLite/DuckDB databases, Parquet files or other private runtime state. See `SECURITY.md`, `.gitignore` and `config/redaction-policy.json`.
 
 ## Validation and CI
 
@@ -141,8 +115,8 @@ python3 -m unittest discover -s tests -v
 python3 tools/validate_repo.py
 ```
 
-Relevant pull requests run GitHub-hosted CI with Python 3.14 compilation/tests/repository validation, detector synthetic integration coverage, a real Chrome for Testing collector E2E gate, and non-gating storage plus detector matching/streaming benchmarks. Detector tests cover corrupt-evidence failure, UNKNOWN-vs-empty semantics, stable rule identity, SQLite/outbox recovery, Promotion Bundle schema/privacy and rerun idempotence. There is no routine `push` or scheduled CI. See `docs/CI.md`.
+Because the repository is public, relevant pull requests also run GitHub-hosted CI: compilation/unit/contract validation, a real Chrome for Testing CDP E2E test against loopback fixtures, and a non-gating A/B/C storage benchmark. The Chrome E2E includes a real DOM submit, sanitized form request-body persistence, immutable action-to-HTTP correlation and synthetic-secret non-leakage checks. There is no routine `push` or scheduled CI. See `docs/CI.md`.
 
 ## Next development stage
 
-With passive capture, action-context correlation and the deterministic Change Detector/Promotion pipeline implemented, the next planned boundary is the package/Core API layer. Agent indexes, read-only MCP, current-state projection and Parquet/DuckDB history follow only after the detector PR is merged and its contracts remain stable.
+With passive capture and action-context correlation verified, the next layers are automatic change detection and promotion bundles, SQLite current-state projections, Parquet/DuckDB history, reproducible experiments, recommendations and only then guarded write automation.

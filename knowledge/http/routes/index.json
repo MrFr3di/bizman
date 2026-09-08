@@ -1,7 +1,7 @@
 {
   "schema_version":"1.0",
   "source_file":"knowledge/http/route-patterns.json",
-  "total_records":732,
+  "total_records":761,
   "parts":[
     {"file":"part-000.json","records":104,"offset":0},
     {"file":"part-001.json","records":95,"offset":104},
@@ -13,7 +13,7 @@
     {"file":"part-007.json","records":64,"offset":533},
     {"file":"part-008.json","records":64,"offset":597},
     {"file":"part-009.json","records":68,"offset":661},
-    {"file":"part-010.json","records":3,"offset":729}
+    {"file":"part-010.json","records":32,"offset":729}
   ],
   "original_shape":"dictlist",
   "list_key":"records",
