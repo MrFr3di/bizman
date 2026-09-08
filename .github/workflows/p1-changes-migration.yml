@@ -55,8 +55,8 @@ jobs:
                   "tools.bizman_detector.session_status",
                   "bizman.sessions.status",
               )
-              text = text.replace("tools.bizman_detector.", "bizman.changes.")
-              text = text.replace("tools.bizman_foundation.", "bizman.foundation.")
+              text = text.replace("tools.bizman_detector", "bizman.changes")
+              text = text.replace("tools.bizman_foundation", "bizman.foundation")
               if "from tools." in text or "import tools." in text:
                   raise SystemExit(f"canonical changes still imports tools namespace: {path}")
               path.write_text(text, encoding="utf-8")
