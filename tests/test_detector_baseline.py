@@ -392,10 +392,10 @@ class RepositoryRuntimeContractTests(unittest.TestCase):
         contract = self.compilation.contract
         self.assertEqual(contract.contract_schema_version, 1)
         self.assertEqual(contract.normalization_version, 1)
-        self.assertEqual(len(contract.endpoints), 68)
+        self.assertEqual(len(contract.endpoints), 71)
         self.assertGreater(len(contract.forms), 0)
         self.assertGreater(len(contract.operations), 0)
-        self.assertEqual(len(contract.actions), 8)
+        self.assertEqual(len(contract.actions), 11)
 
     def test_numeric_message_query_keys_compile_to_one_structural_class(self):
         family = next(
