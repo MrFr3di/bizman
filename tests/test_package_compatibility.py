@@ -52,5 +52,29 @@ class SessionsPackageCompatibilityTests(unittest.TestCase):
         self.assertIs(status_old, status_new)
 
 
+class CollectorPackageCompatibilityTests(unittest.TestCase):
+    def test_legacy_collector_exports_are_canonical_package_objects(self):
+        from bizman.collector.cdp import CdpConnection as cdp_new
+        from bizman.collector.network import NetworkNormalizer as network_new
+        from bizman.collector.runtime import (
+            CollectorEventPipeline as pipeline_new,
+            run_collection as run_new,
+        )
+        from bizman.collector.storage import SessionWriter as writer_new
+        from tools.bizman_collector.cdp import CdpConnection as cdp_old
+        from tools.bizman_collector.network import NetworkNormalizer as network_old
+        from tools.bizman_collector.runtime import (
+            CollectorEventPipeline as pipeline_old,
+            run_collection as run_old,
+        )
+        from tools.bizman_collector.storage import SessionWriter as writer_old
+
+        self.assertIs(cdp_old, cdp_new)
+        self.assertIs(network_old, network_new)
+        self.assertIs(pipeline_old, pipeline_new)
+        self.assertIs(run_old, run_new)
+        self.assertIs(writer_old, writer_new)
+
+
 if __name__ == "__main__":
     unittest.main()
