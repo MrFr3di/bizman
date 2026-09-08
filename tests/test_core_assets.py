@@ -30,15 +30,25 @@ class RepositoryAssetsTests(unittest.TestCase):
                 AssetId.REDACTION_POLICY: root / "config/redaction-policy.json",
                 AssetId.EVENT_SCHEMA: root / "schemas/event.schema.json",
                 AssetId.SESSION_MANIFEST_SCHEMA: root / "schemas/session-manifest.schema.json",
-                AssetId.PROMOTION_SCHEMA: root / "schemas/promotion-bundle.schema.json",
+                AssetId.PROMOTION_BUNDLE_SCHEMA: root / "schemas/promotion-bundle.schema.json",
                 AssetId.KNOWLEDGE_ROOT: root / "knowledge",
             }
             self.assertEqual(set(AssetId), set(expected))
+            self.assertEqual(
+                tuple(asset.value for asset in AssetId),
+                (
+                    "redaction-policy",
+                    "event-schema",
+                    "session-manifest-schema",
+                    "promotion-bundle-schema",
+                    "knowledge-root",
+                ),
+            )
             for asset_id, path in expected.items():
                 self.assertEqual(assets.path(asset_id), path.resolve())
 
             with self.assertRaises(TypeError):
-                assets.path("event_schema")  # type: ignore[arg-type]
+                assets.path("event-schema")  # type: ignore[arg-type]
 
     def test_missing_required_asset_fails_closed(self):
         from bizman.core.assets import RepositoryAssets
