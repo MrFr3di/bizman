@@ -25,6 +25,18 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _rfc3339_utc(value: object, *, name: str) -> datetime:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{name} must be a non-empty RFC3339 date-time")
+    try:
+        instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an RFC3339 date-time") from exc
+    if instant.tzinfo is None or instant.utcoffset() is None:
+        raise ValueError(f"{name} must include a timezone offset")
+    return instant.astimezone(timezone.utc)
+
+
 @dataclass(frozen=True, slots=True)
 class DetectorRunSummary:
     analysis_profile_sha256: str
@@ -213,7 +225,12 @@ class DetectorRunner:
                 unfinalized_skipped += 1
 
         identities = [self.reader.inspect(session_id) for session_id in finalized_ids]
-        identities.sort(key=lambda identity: (identity.started_at, identity.session_id))
+        identities.sort(
+            key=lambda identity: (
+                _rfc3339_utc(identity.started_at, name="evidence started_at"),
+                identity.session_id,
+            )
+        )
 
         for identity in identities:
             if not isinstance(identity, EvidenceIdentity):
