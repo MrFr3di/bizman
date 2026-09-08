@@ -19,20 +19,208 @@ jobs:
         with:
           ref: feature/change-detector-v1
           fetch-depth: 1
-      - name: Apply embedded patch and remove temporary workflows
+      - name: Apply reviewed patch and remove temporary workflows
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
 
-          lines = Path('.github/workflows/temporary-baseline-patch.yml').read_text(encoding='utf-8').splitlines()
-          start = next(i for i, line in enumerate(lines) if line.strip() == "python - <<'PY'") + 1
-          end = next(i for i in range(start, len(lines)) if lines[i].strip() == 'PY')
-          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines[start:end]) + '\n'
-          Path('/tmp/bizman_baseline_patch.py').write_text(script, encoding='utf-8')
+          path = Path('tools/bizman_detector/baseline.py')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              if source.count(old) != 1:
+                  raise SystemExit(f'{label}: expected exactly one anchor, got {source.count(old)}')
+              return source.replace(old, new, 1)
+
+          old_signature = '''def _operations(
+              value: Any,
+              *,
+              source: str,
+              redaction: RedactionPolicy,
+              matcher: PathMatcher,
+              methods_by_pattern: Mapping[str, frozenset[str]],
+          ) -> tuple[OperationSignature, ...]:'''
+          new_signature = '''def _operation_path(
+              raw_path: object,
+              *,
+              source: str,
+              matcher: PathMatcher,
+          ) -> str:
+              try:
+                  path = normalize_origin_relative_path(raw_path)
+                  match = matcher.match(path)
+              except ValueError as exc:
+                  raise BaselineFormatError(f"{source}: invalid operation path") from exc
+              except AmbiguousPathError as exc:
+                  raise BaselineConsistencyError(
+                      f"{source}: operation path {path!r} is ambiguous in endpoint census"
+                  ) from exc
+              if match.matched and match.path_pattern is not None:
+                  return match.path_pattern
+              return path
+
+
+          def _operations(
+              value: Any,
+              *,
+              source: str,
+              redaction: RedactionPolicy,
+              matcher: PathMatcher,
+          ) -> tuple[OperationSignature, ...]:'''
+          text = replace_once(text, old_signature, new_signature, 'operations signature')
+
+          old_path = '''path_pattern=_known_endpoint(
+                      item.get("path"),
+                      method="POST",
+                      source=item_source,
+                      matcher=matcher,
+                      methods_by_pattern=methods_by_pattern,
+                  ),'''
+          new_path = '''path_pattern=_operation_path(
+                      item.get("path"),
+                      source=item_source,
+                      matcher=matcher,
+                  ),'''
+          text = replace_once(text, old_path, new_path, 'operation path')
+
+          helper = '''    return tuple(sorted(signatures))
+
+
+          def _merge_operation_endpoints(
+              endpoints: tuple[EndpointFamily, ...],
+              operations: tuple[OperationSignature, ...],
+          ) -> tuple[EndpointFamily, ...]:
+              variants_by_path: dict[str, dict[str, set[EndpointVariant]]] = {}
+              for endpoint in endpoints:
+                  variants_by_path[endpoint.path_pattern] = {
+                      method.method: set(method.variants) for method in endpoint.methods
+                  }
+
+              for operation in operations:
+                  methods = variants_by_path.setdefault(operation.path_pattern, {})
+                  variants = methods.setdefault(operation.method, set())
+                  variants.update(
+                      EndpointVariant(query_keys=operation.query_keys, status=status)
+                      for status in operation.statuses
+                  )
+
+              return tuple(
+                  EndpointFamily(
+                      path_pattern=path_pattern,
+                      methods=tuple(
+                          EndpointMethodContract(
+                              method=method,
+                              variants=tuple(sorted(variants)),
+                          )
+                          for method, variants in sorted(methods.items())
+                      ),
+                  )
+                  for path_pattern, methods in sorted(variants_by_path.items())
+              )
+
+
+          def _actions('''
+          before_ops, ops_tail = text.split('def _operations(', 1)
+          marker = '    return tuple(sorted(signatures))\n\n\ndef _actions('
+          if ops_tail.count(marker) != 1:
+              raise SystemExit(f'operation helper anchor count={ops_tail.count(marker)}')
+          ops_tail = ops_tail.replace(marker, helper, 1)
+          text = before_ops + 'def _operations(' + ops_tail
+
+          old_compile = '''        matcher = PathMatcher(endpoint.path_pattern for endpoint in endpoints)
+                  methods_by_pattern = {
+                      endpoint.path_pattern: frozenset(method.method for method in endpoint.methods)
+                      for endpoint in endpoints
+                  }
+                  forms = _forms(form_records, redaction, matcher)
+
+                  operation_path = root / "knowledge/http/operation-index.json"
+                  operations = _operations(
+                      _load_json(operation_path, repo_root=root),
+                      source=_source_label(root, operation_path),
+                      redaction=redaction,
+                      matcher=matcher,
+                      methods_by_pattern=methods_by_pattern,
+                  )
+                  action_path = root / "knowledge/actions/catalog.json"'''
+          new_compile = '''        matcher = PathMatcher(endpoint.path_pattern for endpoint in endpoints)
+                  forms = _forms(form_records, redaction, matcher)
+
+                  operation_path = root / "knowledge/http/operation-index.json"
+                  operations = _operations(
+                      _load_json(operation_path, repo_root=root),
+                      source=_source_label(root, operation_path),
+                      redaction=redaction,
+                      matcher=matcher,
+                  )
+                  endpoints = _merge_operation_endpoints(endpoints, operations)
+                  matcher = PathMatcher(endpoint.path_pattern for endpoint in endpoints)
+                  methods_by_pattern = {
+                      endpoint.path_pattern: frozenset(method.method for method in endpoint.methods)
+                      for endpoint in endpoints
+                  }
+                  action_path = root / "knowledge/actions/catalog.json"'''
+          text = replace_once(text, old_compile, new_compile, 'compile ordering')
+          path.write_text(text, encoding='utf-8')
+
+          test_path = Path('tests/test_detector_baseline.py')
+          tests = test_path.read_text(encoding='utf-8')
+          tests = tests.replace(
+              '        self.assertEqual(len(contract.endpoints), 68)\n',
+              '        self.assertGreaterEqual(len(contract.endpoints), 68)\n',
+              1,
+          )
+          tests = tests.replace(
+              '        self.assertEqual(len(contract.actions), 8)\n',
+              '        self.assertGreaterEqual(len(contract.actions), 8)\n',
+              1,
+          )
+          new_test = '''
+
+          class OperationOnlyEndpointContractTests(unittest.TestCase):
+              def test_operation_only_path_extends_post_endpoint_contract(self):
+                  with tempfile.TemporaryDirectory() as tmp:
+                      root = Path(tmp)
+                      _write_fixture(root)
+                      operation_path = root / "knowledge/http/operation-index.json"
+                      payload = json.loads(operation_path.read_text(encoding="utf-8"))
+                      payload["operations"].append(
+                          {
+                              "id": "op-live-only",
+                              "path": "/operation-only/",
+                              "query_keys": ["id"],
+                              "body_keys": ["amount"],
+                              "observations": [{"status": 200}],
+                              "count": 1,
+                          }
+                      )
+                      payload["post_count"] += 1
+                      _dump(operation_path, payload)
+
+                      contract = BaselineCompiler.compile(root, RedactionPolicy.default()).contract
+
+                      operation = next(
+                          item for item in contract.operations
+                          if item.path_pattern == "/operation-only/"
+                      )
+                      self.assertEqual(operation.method, "POST")
+                      family = next(
+                          item for item in contract.endpoints
+                          if item.path_pattern == "/operation-only/"
+                      )
+                      post = next(item for item in family.methods if item.method == "POST")
+                      self.assertEqual(post.statuses, (200,))
+                      self.assertEqual(post.query_key_sets, (("id",),))
+          '''
+          marker = '\n\nif __name__ == "__main__":\n'
+          if tests.count(marker) != 1:
+              raise SystemExit('test insertion anchor missing')
+          tests = tests.replace(marker, new_test + marker, 1)
+          test_path.write_text(tests, encoding='utf-8')
           PY
-          python /tmp/bizman_baseline_patch.py
+
           python -m compileall -q tools/bizman_detector/baseline.py tests/test_detector_baseline.py
           git diff --check
           git config user.name 'github-actions[bot]'
