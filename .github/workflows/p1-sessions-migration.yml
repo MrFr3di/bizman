@@ -1,0 +1,120 @@
+name: p1-sessions-migration
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/p1-sessions-migration.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+          fetch-depth: 1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.10"
+          enable-cache: false
+      - name: Migrate sessions implementation mechanically
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p src/bizman/sessions
+          cp tools/bizman_detector/evidence.py src/bizman/sessions/evidence.py
+          cp tools/bizman_detector/session_status.py src/bizman/sessions/status.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("src/bizman/sessions/evidence.py")
+          text = path.read_text(encoding="utf-8")
+          old = text
+          text = text.replace(
+              "from tools.bizman_detector.session_status import EvidenceSessionStatus",
+              "from bizman.sessions.status import EvidenceSessionStatus",
+          )
+          text = text.replace(
+              "from tools.bizman_foundation.fingerprint import canonical_sha256",
+              "from bizman.foundation.fingerprint import canonical_sha256",
+          )
+          if text == old:
+              raise SystemExit("expected evidence import rewrites were not applied")
+          if "tools." in text:
+              raise SystemExit("canonical sessions evidence still imports tools namespace")
+          path.write_text(text, encoding="utf-8")
+          PY
+          cat > src/bizman/sessions/__init__.py <<'PY'
+          """Immutable sanitized session evidence boundary."""
+
+          from bizman.sessions.evidence import (
+              MAX_ARTIFACT_BYTES,
+              MAX_EVENT_LINE_BYTES,
+              EvidenceError,
+              EvidenceFormatError,
+              EvidenceIdentity,
+              EvidenceIntegrityError,
+              EvidenceReader,
+              EvidenceStatusError,
+          )
+          from bizman.sessions.status import EvidenceSessionStatus
+
+          __all__ = [
+              "MAX_ARTIFACT_BYTES",
+              "MAX_EVENT_LINE_BYTES",
+              "EvidenceError",
+              "EvidenceFormatError",
+              "EvidenceIdentity",
+              "EvidenceIntegrityError",
+              "EvidenceReader",
+              "EvidenceSessionStatus",
+              "EvidenceStatusError",
+          ]
+          PY
+          cat > tools/bizman_detector/evidence.py <<'PY'
+          """Compatibility re-export for the canonical sessions evidence boundary."""
+
+          from bizman.sessions.evidence import *  # noqa: F403
+          from bizman.sessions.evidence import __all__
+          PY
+          cat > tools/bizman_detector/session_status.py <<'PY'
+          """Compatibility re-export for canonical session status metadata."""
+
+          from bizman.sessions.status import EvidenceSessionStatus
+
+          __all__ = ["EvidenceSessionStatus"]
+          PY
+          if grep -R -n -E '(^|[[:space:]])(from|import)[[:space:]]+tools([.]|$)' src/bizman/sessions; then
+            echo "canonical sessions package imports tools namespace"
+            exit 1
+          fi
+      - name: Verify migration under locked environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv lock --check
+          uv sync --locked
+          uv run python -m compileall -q src tools tests
+          uv run python -m unittest discover -s tests -v
+          uv run python tools/validate_repo.py
+      - name: Commit verified sessions migration and remove bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/p1-sessions-migration.yml
+          git add src/bizman/sessions tools/bizman_detector/evidence.py tools/bizman_detector/session_status.py
+          git commit -m "refactor: separate sessions evidence boundary"
+          git push origin HEAD:${{ github.head_ref }}
