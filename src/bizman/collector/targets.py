@@ -114,12 +114,14 @@ class TargetOrchestrator:
         )
 
     def _network_enable_params(self) -> dict[str, Any]:
-        if (
-            self.max_post_data_size is not None
-            and self.max_post_data_size >= 0
-            and self._supports_parameter("Network.enable", "maxPostDataSize")
-        ):
+        if self.max_post_data_size is None or self.max_post_data_size < 0:
+            return {}
+        if self._supports_parameter("Network.enable", "maxPostDataSize"):
             return {"maxPostDataSize": self.max_post_data_size}
+        self._warn(
+            "Network.enable maxPostDataSize is unsupported; the configured "
+            "request-body capture limit cannot be applied"
+        )
         return {}
 
     def _is_first_party_target(self, info: dict[str, Any]) -> bool:
