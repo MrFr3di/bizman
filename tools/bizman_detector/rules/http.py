@@ -1,14 +1,22 @@
-from __future__ import annotations
+"""Compatibility shim for canonical bizman.changes.rules.http."""
 
-from tools.bizman_detector.model import RuleDescriptor
+from importlib import import_module as _import_module
+
+from bizman.changes.rules.http import *  # noqa: F401,F403
+
+_canonical = _import_module("bizman.changes.rules.http")
 
 
-HTTP_RULES: tuple[RuleDescriptor, ...] = (
-    RuleDescriptor("BM-HTTP-001", 1, "endpoint.new"),
-    RuleDescriptor("BM-HTTP-002", 1, "endpoint.method_added"),
-    RuleDescriptor("BM-HTTP-003", 1, "endpoint.query_key_added"),
-    RuleDescriptor("BM-HTTP-004", 1, "endpoint.status_added"),
+def __getattr__(name: str):
+    return getattr(_canonical, name)
+
+
+def __dir__():
+    return sorted(set(globals()) | set(dir(_canonical)))
+
+
+__all__ = getattr(
+    _canonical,
+    "__all__",
+    tuple(name for name in dir(_canonical) if not name.startswith("_")),
 )
-
-
-__all__ = ["HTTP_RULES"]
