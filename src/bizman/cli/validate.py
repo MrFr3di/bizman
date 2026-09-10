@@ -42,9 +42,8 @@ def legacy_main(
     *,
     repo_root: Path,
 ) -> int:
-    if argv:
-        parser = argparse.ArgumentParser(description="Validate BizMan repository data.")
-        parser.parse_args(argv)
+    parser = argparse.ArgumentParser(description="Validate BizMan repository data.")
+    parser.parse_args(argv)
 
     from bizman.cli.main import main
 
