@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from bizman.changes.baseline import BaselineConsistencyError, BaselineFormatError
+from bizman.changes.diff import SemanticContractError
 from bizman.changes.promotion import PromotionIntegrityError, PromotionSchemaError
 from bizman.changes.rules import RuleApplicationError, RuleConfigurationError
 from bizman.changes.runner import DetectorRunSummary, DetectorRunner
@@ -70,7 +71,12 @@ def detect_changes(context: CoreContext, request: DetectionRequest) -> DetectorR
             return runner.run()
     except BaselineFormatError as exc:
         raise AssetError("curated baseline assets are invalid") from exc
-    except (BaselineConsistencyError, StateCompatibilityError, PromotionSchemaError) as exc:
+    except (
+        BaselineConsistencyError,
+        SemanticContractError,
+        StateCompatibilityError,
+        PromotionSchemaError,
+    ) as exc:
         raise ContractMismatchError("detector contracts are incompatible") from exc
     except (EvidenceError, StateIntegrityError, PromotionIntegrityError) as exc:
         raise DataIntegrityError("detector evidence or state failed integrity checks") from exc
