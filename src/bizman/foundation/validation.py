@@ -79,6 +79,27 @@ def _count_records(path: Path, result: ValidationResult) -> int | None:
     return None
 
 
+def _contained_path(
+    base: Path,
+    value: str,
+    *,
+    result: ValidationResult,
+    label: str,
+) -> Path | None:
+    base_resolved = base.resolve()
+    raw = Path(value)
+    if raw.is_absolute():
+        result.errors.append(f"{label}: path escapes validation root: {value}")
+        return None
+    candidate = (base_resolved / raw).resolve(strict=False)
+    try:
+        candidate.relative_to(base_resolved)
+    except ValueError:
+        result.errors.append(f"{label}: path escapes validation root: {value}")
+        return None
+    return candidate
+
+
 def _validate_partition_manifest(
     path: Path, expected: int | None, result: ValidationResult
 ) -> None:
@@ -113,7 +134,15 @@ def _validate_partition_manifest(
             )
         expected_offset += declared
         declared_sum += declared
-        actual = _count_records(path.parent / name, result)
+        part_path = _contained_path(
+            path.parent,
+            name,
+            result=result,
+            label=f"{path}: partition {name}",
+        )
+        if part_path is None:
+            continue
+        actual = _count_records(part_path, result)
         if actual is not None and actual != declared:
             result.errors.append(
                 f"{path}: {name} declares {declared}, contains {actual}"
@@ -153,7 +182,14 @@ def _validate_catalog(root: Path, result: ValidationResult) -> None:
         if not isinstance(dataset_path, str):
             result.errors.append(f"{catalog_path}: dataset {dataset_id} missing path")
             continue
-        path = root / dataset_path
+        path = _contained_path(
+            root,
+            dataset_path,
+            result=result,
+            label=f"{catalog_path}: dataset {dataset_id}",
+        )
+        if path is None:
+            continue
         if not path.exists():
             result.errors.append(
                 f"{catalog_path}: dataset path does not exist: {dataset_path}"
