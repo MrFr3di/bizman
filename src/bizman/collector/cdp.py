@@ -214,7 +214,10 @@ class _WebSocketTransport:
     async def _iterate(self) -> AsyncIterator[str]:
         async for message in self._websocket:
             if isinstance(message, bytes):
-                yield message.decode("utf-8")
+                try:
+                    yield message.decode("utf-8")
+                except UnicodeDecodeError as exc:
+                    raise CdpError("non-UTF-8 binary frame received from CDP") from exc
             else:
                 yield str(message)
 
