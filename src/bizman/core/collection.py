@@ -12,6 +12,9 @@ from bizman.core.errors import AssetError, ConfigurationError, OperationError
 from bizman.foundation.redaction import load_redaction_policy
 
 
+_EXPECTED_OPERATION_FAILURES = (CdpError, OSError, WebSocketException)
+
+
 @dataclass(frozen=True, slots=True)
 class CollectionRequest:
     endpoint: str = "http://127.0.0.1:9222"
@@ -63,7 +66,12 @@ async def collect(context: CoreContext, request: CollectionRequest) -> Collectio
         )
     except ValueError as exc:
         raise ConfigurationError("collection request is invalid") from exc
-    except (CdpError, OSError, WebSocketException) as exc:
+    except BaseExceptionGroup as exc:
+        _, unexpected = exc.split(_EXPECTED_OPERATION_FAILURES)
+        if unexpected is not None:
+            raise
+        raise OperationError("collection operation failed") from exc
+    except _EXPECTED_OPERATION_FAILURES as exc:
         raise OperationError("collection operation failed") from exc
 
     return CollectionResult(session_id=session_id)
