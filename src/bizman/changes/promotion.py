@@ -134,10 +134,6 @@ _RULE_SHAPES: Final[dict[str, _RuleShape]] = {
 }
 
 
-def _default_schema_path() -> Path:
-    return Path(__file__).resolve().parents[2] / "schemas" / "promotion-bundle.schema.json"
-
-
 def _require_sha256(value: object, *, name: str) -> str:
     if not isinstance(value, str) or _SHA256_RE.fullmatch(value) is None:
         raise PromotionIntegrityError(f"{name} must be 64 lowercase hexadecimal characters")
@@ -291,8 +287,8 @@ class _PromotionSchemaValidator:
 class PromotionBundleBuilder:
     """Build exact canonical value-free outbox payloads from first-seen Findings."""
 
-    def __init__(self, schema_path: Path | None = None) -> None:
-        self.schema_path = Path(schema_path) if schema_path is not None else _default_schema_path()
+    def __init__(self, schema_path: Path) -> None:
+        self.schema_path = Path(schema_path)
         self._schema = _PromotionSchemaValidator(self.schema_path)
 
     @staticmethod
@@ -411,12 +407,12 @@ class PromotionMaterializer:
         self,
         data_dir: Path,
         state: DetectorState,
-        schema_path: Path | None = None,
+        schema_path: Path,
     ) -> None:
         self.data_dir = Path(data_dir).expanduser().resolve(strict=False)
         self.promotions_dir = self.data_dir / "promotions"
         self.state = state
-        self.schema_path = Path(schema_path) if schema_path is not None else _default_schema_path()
+        self.schema_path = Path(schema_path)
         self._schema = _PromotionSchemaValidator(self.schema_path)
 
     @staticmethod
