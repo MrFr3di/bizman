@@ -337,20 +337,29 @@ class EvidenceReader:
             raise EvidenceIntegrityError(f"{source}: duplicate event_id {event_id}")
         return value
 
-    def _iter_validated_events(
+    def _resolved_event_files(
         self,
         manifest: Mapping[str, Any],
-        *,
-        file_hashes: list[dict[str, Any]] | None = None,
-    ) -> Iterator[dict[str, Any]]:
-        session_id = str(manifest["session_id"])
+    ) -> tuple[tuple[str, Path], ...]:
         event_files = manifest.get("event_files")
         assert isinstance(event_files, list)
+        return tuple(self._resolve_event_file(raw_rel) for raw_rel in event_files)
+
+    def _iter_validated_event_files(
+        self,
+        manifest: Mapping[str, Any],
+        event_files: tuple[tuple[str, Path], ...],
+        *,
+        file_hashes: list[dict[str, Any]] | None = None,
+        snapshot_files: tuple[Path, ...] | None = None,
+    ) -> Iterator[dict[str, Any]]:
+        if snapshot_files is not None and len(snapshot_files) != len(event_files):
+            raise ValueError("snapshot_files must match event_files")
+        session_id = str(manifest["session_id"])
         expected_sequence = 0
 
         with _UniqueEventIds() as ids:
-            for raw_rel in event_files:
-                event_rel, event_path = self._resolve_event_file(raw_rel)
+            for index, (event_rel, event_path) in enumerate(event_files):
                 digest = hashlib.sha256()
                 total_bytes = 0
                 line_number = 0
@@ -360,41 +369,56 @@ class EvidenceReader:
                     raise EvidenceFormatError(
                         f"cannot open event file {event_rel!r}: {exc}"
                     ) from exc
-                with handle:
-                    while True:
-                        raw_line = handle.readline(self.max_event_line_bytes + 1)
-                        if not raw_line:
-                            break
-                        line_number += 1
-                        if len(raw_line) > self.max_event_line_bytes:
-                            raise EvidenceIntegrityError(
-                                f"{event_rel}:{line_number}: event line exceeds "
-                                f"{self.max_event_line_bytes} bytes"
+                snapshot_handle = None
+                if snapshot_files is not None:
+                    try:
+                        snapshot_handle = snapshot_files[index].open("wb")
+                    except OSError as exc:
+                        handle.close()
+                        raise EvidenceFormatError(
+                            f"cannot stage validated evidence snapshot for {event_rel!r}: {exc}"
+                        ) from exc
+                try:
+                    with handle:
+                        while True:
+                            raw_line = handle.readline(self.max_event_line_bytes + 1)
+                            if not raw_line:
+                                break
+                            line_number += 1
+                            if len(raw_line) > self.max_event_line_bytes:
+                                raise EvidenceIntegrityError(
+                                    f"{event_rel}:{line_number}: event line exceeds "
+                                    f"{self.max_event_line_bytes} bytes"
+                                )
+                            digest.update(raw_line)
+                            total_bytes += len(raw_line)
+                            try:
+                                text = raw_line.decode("utf-8")
+                            except UnicodeDecodeError as exc:
+                                raise EvidenceFormatError(
+                                    f"{event_rel}:{line_number}: invalid UTF-8"
+                                ) from exc
+                            try:
+                                value = json.loads(text)
+                            except json.JSONDecodeError as exc:
+                                raise EvidenceFormatError(
+                                    f"{event_rel}:{line_number}: invalid JSON: {exc.msg}"
+                                ) from exc
+                            source = f"{event_rel}:{line_number}"
+                            event = self._validate_event(
+                                value,
+                                session_id=session_id,
+                                source=source,
+                                expected_sequence=expected_sequence,
+                                ids=ids,
                             )
-                        digest.update(raw_line)
-                        total_bytes += len(raw_line)
-                        try:
-                            text = raw_line.decode("utf-8")
-                        except UnicodeDecodeError as exc:
-                            raise EvidenceFormatError(
-                                f"{event_rel}:{line_number}: invalid UTF-8"
-                            ) from exc
-                        try:
-                            value = json.loads(text)
-                        except json.JSONDecodeError as exc:
-                            raise EvidenceFormatError(
-                                f"{event_rel}:{line_number}: invalid JSON: {exc.msg}"
-                            ) from exc
-                        source = f"{event_rel}:{line_number}"
-                        event = self._validate_event(
-                            value,
-                            session_id=session_id,
-                            source=source,
-                            expected_sequence=expected_sequence,
-                            ids=ids,
-                        )
-                        expected_sequence += 1
-                        yield event
+                            expected_sequence += 1
+                            if snapshot_handle is not None:
+                                snapshot_handle.write(raw_line)
+                            yield event
+                finally:
+                    if snapshot_handle is not None:
+                        snapshot_handle.close()
                 if file_hashes is not None:
                     file_hashes.append(
                         {
@@ -403,6 +427,18 @@ class EvidenceReader:
                             "bytes": total_bytes,
                         }
                     )
+
+    def _iter_validated_events(
+        self,
+        manifest: Mapping[str, Any],
+        *,
+        file_hashes: list[dict[str, Any]] | None = None,
+    ) -> Iterator[dict[str, Any]]:
+        yield from self._iter_validated_event_files(
+            manifest,
+            self._resolved_event_files(manifest),
+            file_hashes=file_hashes,
+        )
 
     @staticmethod
     def _identity_from_hashes(
@@ -444,28 +480,49 @@ class EvidenceReader:
         expected_identity: EvidenceIdentity | None = None,
     ) -> Iterator[Mapping[str, Any]]:
         manifest = self._read_manifest(session_id, require_finalized=True)
-        if expected_identity is not None:
-            if not isinstance(expected_identity, EvidenceIdentity):
-                raise TypeError("expected_identity must be EvidenceIdentity or None")
-            if expected_identity.session_id != session_id:
-                raise EvidenceIntegrityError(
-                    f"expected evidence session {expected_identity.session_id!r} "
-                    f"does not match requested session {session_id!r}"
-                )
-            manifest_sha256 = canonical_sha256(manifest)
-            if manifest_sha256 != expected_identity.manifest_sha256:
-                raise EvidenceIntegrityError(
-                    f"session {session_id} manifest no longer matches expected identity"
-                )
+        if expected_identity is None:
+            yield from self._iter_validated_events(manifest)
+            return
 
+        if not isinstance(expected_identity, EvidenceIdentity):
+            raise TypeError("expected_identity must be EvidenceIdentity or None")
+        if expected_identity.session_id != session_id:
+            raise EvidenceIntegrityError(
+                f"expected evidence session {expected_identity.session_id!r} "
+                f"does not match requested session {session_id!r}"
+            )
+        manifest_sha256 = canonical_sha256(manifest)
+        if manifest_sha256 != expected_identity.manifest_sha256:
+            raise EvidenceIntegrityError(
+                f"session {session_id} manifest no longer matches expected identity"
+            )
+
+        resolved_files = self._resolved_event_files(manifest)
         file_hashes: list[dict[str, Any]] = []
-        yield from self._iter_validated_events(manifest, file_hashes=file_hashes)
-        if expected_identity is not None:
+        with tempfile.TemporaryDirectory(prefix="bizman-evidence-snapshot-") as temp_dir:
+            snapshot_root = Path(temp_dir)
+            snapshot_paths = tuple(
+                snapshot_root / f"{index:08d}.jsonl"
+                for index in range(len(resolved_files))
+            )
+            for _ in self._iter_validated_event_files(
+                manifest,
+                resolved_files,
+                file_hashes=file_hashes,
+                snapshot_files=snapshot_paths,
+            ):
+                pass
             actual_identity = self._identity_from_hashes(manifest, file_hashes)
             if actual_identity != expected_identity:
                 raise EvidenceIntegrityError(
                     f"session {session_id} event bytes no longer match expected identity"
                 )
+
+            snapshot_files = tuple(
+                (event_rel, snapshot_paths[index])
+                for index, (event_rel, _) in enumerate(resolved_files)
+            )
+            yield from self._iter_validated_event_files(manifest, snapshot_files)
 
     def read_verified_artifact(self, ref: str) -> bytes:
         if not isinstance(ref, str):
