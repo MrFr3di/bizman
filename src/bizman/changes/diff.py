@@ -23,6 +23,10 @@ _SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
 _PROMOTABLE_CORRELATION = frozenset({"strong", "probable"})
 
 
+class SemanticContractError(ValueError):
+    """Observed semantics cannot be interpreted by the current detector contract."""
+
+
 def _fields(**values: SemanticValue) -> SemanticFields:
     return tuple(sorted(values.items()))
 
@@ -332,7 +336,7 @@ class SemanticDiff:
                 )
             ]
         if observation.correlation_status not in _PROMOTABLE_CORRELATION:
-            raise ValueError(
+            raise SemanticContractError(
                 f"unsupported correlation status for semantic diff: "
                 f"{observation.correlation_status!r}"
             )
@@ -395,4 +399,4 @@ class SemanticDiff:
         return tuple(facts)
 
 
-__all__ = ["SemanticDiff"]
+__all__ = ["SemanticContractError", "SemanticDiff"]
