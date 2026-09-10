@@ -8,6 +8,12 @@ from typing import Sequence
 from bizman.core import CoreContext, DetectionRequest, detect_changes
 
 
+def _session_id(value: str) -> str:
+    if not value:
+        raise argparse.ArgumentTypeError("--session requires a non-empty UUIDv7")
+    return value
+
+
 def configure_parser(parser: argparse.ArgumentParser) -> None:
     parser.description = "Replay sanitized BizMan evidence through the deterministic change detector."
     parser.add_argument(
@@ -26,6 +32,7 @@ def configure_parser(parser: argparse.ArgumentParser) -> None:
         "--session",
         action="append",
         default=[],
+        type=_session_id,
         metavar="UUID",
         help="Process only the selected session UUIDv7; repeat for multiple sessions.",
     )
@@ -67,7 +74,7 @@ def legacy_main(
     )
     parser.add_argument("--data-dir", required=True, type=Path)
     parser.add_argument("--repo-root", type=Path, default=repo_root)
-    parser.add_argument("--session", action="append", default=[], metavar="UUID")
+    parser.add_argument("--session", action="append", default=[], type=_session_id, metavar="UUID")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--redaction-policy", type=Path, default=None)
     args = parser.parse_args(argv)
