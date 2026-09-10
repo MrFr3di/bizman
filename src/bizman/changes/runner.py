@@ -149,7 +149,11 @@ class DetectorRunner:
             materializer = None
         else:
             state = DetectorState.open_rw(state_path)
-            materializer = PromotionMaterializer(data, state, schema_path)
+            try:
+                materializer = PromotionMaterializer(data, state, schema_path)
+            except BaseException:
+                state.close()
+                raise
 
         return cls(
             profile=profile,
