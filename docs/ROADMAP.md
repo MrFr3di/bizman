@@ -158,9 +158,9 @@ BizManData/index/agent-index.sqlite3
 
 The DB is a derived read model, not a source of truth. P2 is delivered as small vertical slices.
 
-### P2-A — Knowledge Retrieval Kernel
+### P2-A — Knowledge Retrieval Kernel — merged
 
-Initial scope is deliberately limited to curated objects that already have stable IDs and explicit provenance:
+PR #10 established the read-model kernel and its first curated corpus. Initial scope:
 
 ```text
 11 actions
@@ -183,7 +183,29 @@ The `bizman.readmodel` package may consume deterministic lower layers but must n
 
 ### P2-B — Curated Corpus Coverage
 
-Extend explicit projectors to the remaining high-value curated corpora, especially operations, endpoints, forms and Wiki. Every projector defines exactly which fields are searchable and which provenance refs are retained.
+Current implementation slice extends the same deterministic projection to:
+
+```text
+68 endpoints
+15 POST operation shapes
+87 observed forms
+87 Wiki topics
+= 257 additional items
+= 590 total curated items
+```
+
+Identity rules:
+
+- endpoints: `bm.endpoint.v1.<sha256(path_pattern)>`;
+- operations: `bm.operation.v1.<sha256(method/path/query_keys/body_keys)>`, while legacy `op-XXX` remains an alias;
+- forms: `bm.form.v1.<form_id>`;
+- Wiki topics: `bm.wiki.v1.<sha256(source_path)>`.
+
+Projection version is raised to 2 because the semantic indexed corpus changes. Existing P2-A databases are therefore rebuilt rather than silently reused.
+
+Searchable fields remain explicitly allowlisted. Form field values and query values are never copied into aliases/body/FTS; only method, origin-relative path, query-key names, field names and field types are searchable. Endpoint/operation observation values are likewise excluded. Wiki article text is intentionally searchable because it is the curated documentation payload.
+
+Evidence refs are normalized through `knowledge/sources/captures.json` to existing canonical source IDs such as `src.har.*#entry-N`; live-session operation observations retain their existing `session#seq-N` evidence identity.
 
 ### P2-C — Session + Change Intelligence
 
