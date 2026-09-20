@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "cases": [
+    {
+      "query": "/analitics/vendors/",
+      "expected_ref": "bm.endpoint.v1.a126c729b29dec6e17ff1a32859ff3fc1c3518ba632189bd2942936af25096db",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-9733"
+    },
+    {
+      "query": "GET /analitics/vendors/",
+      "expected_ref": "bm.endpoint.v1.a126c729b29dec6e17ff1a32859ff3fc1c3518ba632189bd2942936af25096db",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-9733"
+    },
+    {
+      "query": "op-011",
+      "expected_ref": "bm.operation.v1.fc0dc24374c18c42344b5711f01fffa1f0013eef247d70d9ca61c939a0304c0d",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.02#entry-296"
+    },
+    {
+      "query": "149acbb9964adf9f",
+      "expected_ref": "bm.form.v1.149acbb9964adf9f",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-10125"
+    },
+    {
+      "query": "Авторегулирование снабжения",
+      "expected_ref": "bm.wiki.v1.f38b2fe51fce8b49fa0c1845a8b68f9ad09c4f4b4484cfba8c0854938c2b48c6",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-2296"
+    },
+    {
+      "query": "адаптивный алгоритм регулирует количество закупаемого товара",
+      "expected_ref": "bm.wiki.v1.f38b2fe51fce8b49fa0c1845a8b68f9ad09c4f4b4484cfba8c0854938c2b48c6",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-2296"
+    }
+  ]
+}

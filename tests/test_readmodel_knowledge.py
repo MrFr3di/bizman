@@ -48,11 +48,34 @@ class KnowledgeProjectionTests(unittest.TestCase):
             REPO_ROOT / "knowledge/domain/products",
             root / "knowledge/domain/products",
         )
+        (root / "knowledge/http").mkdir(parents=True)
+        shutil.copytree(
+            REPO_ROOT / "knowledge/http/endpoints",
+            root / "knowledge/http/endpoints",
+        )
+        shutil.copytree(
+            REPO_ROOT / "knowledge/http/forms",
+            root / "knowledge/http/forms",
+        )
+        shutil.copy2(
+            REPO_ROOT / "knowledge/http/operation-index.json",
+            root / "knowledge/http/operation-index.json",
+        )
+        (root / "knowledge/wiki").mkdir(parents=True)
+        shutil.copytree(
+            REPO_ROOT / "knowledge/wiki/topics",
+            root / "knowledge/wiki/topics",
+        )
+        (root / "knowledge/sources").mkdir(parents=True)
+        shutil.copy2(
+            REPO_ROOT / "knowledge/sources/captures.json",
+            root / "knowledge/sources/captures.json",
+        )
         return root
 
     def test_projection_has_expected_initial_curated_scope(self):
         projection = project_curated_knowledge(REPO_ROOT)
-        self.assertEqual(len(projection.records), 333)
+        self.assertEqual(len(projection.records), 590)
         counts: dict[str, int] = {}
         for record in projection.records:
             counts[record.kind.value] = counts.get(record.kind.value, 0) + 1
@@ -65,6 +88,10 @@ class KnowledgeProjectionTests(unittest.TestCase):
                 "company": 1,
                 "product": 303,
                 "unit": 16,
+                "endpoint": 68,
+                "operation": 15,
+                "form": 87,
+                "wiki": 87,
             },
         )
         self.assertRegex(projection.source_fingerprint, r"^[0-9a-f]{64}$")
@@ -116,6 +143,47 @@ class KnowledgeProjectionTests(unittest.TestCase):
 
 
 
+    def test_extended_projection_uses_canonical_provenance_and_excludes_form_values(self):
+        projection = project_curated_knowledge(REPO_ROOT)
+        by_ref = {record.ref: record for record in projection.records}
+
+        endpoint = by_ref[
+            "bm.endpoint.v1.a126c729b29dec6e17ff1a32859ff3fc1c3518ba632189bd2942936af25096db"
+        ]
+        self.assertEqual(endpoint.title, "/analitics/vendors/")
+        self.assertEqual(
+            endpoint.evidence_refs,
+            ("src.har.bizmania.2026-09-06.01#entry-9733",),
+        )
+
+        operation = by_ref[
+            "bm.operation.v1.fc0dc24374c18c42344b5711f01fffa1f0013eef247d70d9ca61c939a0304c0d"
+        ]
+        self.assertIn("op-011", operation.aliases)
+        self.assertEqual(
+            operation.evidence_refs[0],
+            "src.har.bizmania.2026-09-06.02#entry-296",
+        )
+
+        form = by_ref["bm.form.v1.149acbb9964adf9f"]
+        self.assertNotIn("25", form.body)
+        self.assertTrue(all("25" not in alias for alias in form.aliases))
+        self.assertEqual(
+            form.evidence_refs,
+            ("src.har.bizmania.2026-09-06.01#entry-10125",),
+        )
+
+        wiki = by_ref[
+            "bm.wiki.v1.f38b2fe51fce8b49fa0c1845a8b68f9ad09c4f4b4484cfba8c0854938c2b48c6"
+        ]
+        self.assertEqual(wiki.title, "Авторегулирование снабжения")
+        self.assertEqual(
+            wiki.evidence_refs,
+            ("src.har.bizmania-faq.2026-09-06.01#entry-2296",),
+        )
+
+
+
 class KnowledgeIndexTests(unittest.TestCase):
     def _build(self, root: Path) -> tuple[Path, str]:
         projection = project_curated_knowledge(REPO_ROOT)
@@ -146,13 +214,13 @@ class KnowledgeIndexTests(unittest.TestCase):
                     )
                     self.assertEqual(
                         connection.execute("SELECT COUNT(*) FROM ref").fetchone()[0],
-                        333,
+                        590,
                     )
 
             with KnowledgeIndex(first_path) as index:
                 meta = index.metadata()
             self.assertEqual(meta["generation"], first_generation)
-            self.assertEqual(meta["item_count"], "333")
+            self.assertEqual(meta["item_count"], "590")
             self.assertEqual(meta["completed_at"], FIXED_COMPLETED_AT)
 
     def test_foreign_database_is_rejected(self):
@@ -250,6 +318,31 @@ class RetrievalEvaluationTests(unittest.TestCase):
         self.assertEqual(metrics.recall_at_5, 1.0)
         self.assertEqual(metrics.mrr, 1.0)
         self.assertEqual(metrics.evidence_correctness, 1.0)
+
+
+    def test_v2_extended_curated_eval_is_perfect_and_evidence_correct(self):
+        document = json.loads(
+            (REPO_ROOT / "tests/fixtures/retrieval_eval_v2.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        cases = tuple(EvaluationCase(**case) for case in document["cases"])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "agent-index.sqlite3"
+            rebuild_knowledge_index(
+                path,
+                project_curated_knowledge(REPO_ROOT),
+                completed_at=FIXED_COMPLETED_AT,
+            )
+            with KnowledgeIndex(path) as index:
+                metrics = evaluate_retrieval(index, cases)
+
+        self.assertEqual(metrics.cases, len(cases))
+        self.assertEqual(metrics.recall_at_1, 1.0)
+        self.assertEqual(metrics.recall_at_5, 1.0)
+        self.assertEqual(metrics.mrr, 1.0)
+        self.assertEqual(metrics.evidence_correctness, 1.0)
+
 
 
 if __name__ == "__main__":
