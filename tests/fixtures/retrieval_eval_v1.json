@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "query": "bm.action.units.vendor.select",
+      "expected_ref": "bm.action.units.vendor.select",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.02#entry-296"
+    },
+    {
+      "query": "/units/vendor/fastretailprices/",
+      "expected_ref": "bm.action.units.vendor.fastretailprices",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.02#entry-1103"
+    },
+    {
+      "query": "vendor select",
+      "expected_ref": "bm.action.units.vendor.select",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.02#entry-296"
+    },
+    {
+      "query": "Автокресло",
+      "expected_ref": "bm.product.carseat",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-442"
+    },
+    {
+      "query": "carseat",
+      "expected_ref": "bm.product.carseat",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-442"
+    },
+    {
+      "query": "product:416",
+      "expected_ref": "bm.product.antiseptic",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-442"
+    },
+    {
+      "query": "Компания Paradise",
+      "expected_ref": "bm.company.13393",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-661"
+    },
+    {
+      "query": "Город Ереван",
+      "expected_ref": "bm.city.25",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-7669"
+    },
+    {
+      "query": "unit:13443",
+      "expected_ref": "bm.unit.13443",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-4082"
+    },
+    {
+      "query": "магазинов электроники",
+      "expected_ref": "bm.unit.13443",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-4082"
+    }
+  ]
+}
