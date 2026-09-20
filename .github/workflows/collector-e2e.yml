@@ -95,6 +95,7 @@ jobs:
           import bizman.collector
           import bizman.core
           import bizman.foundation
+          import bizman.readmodel
           import bizman.sessions
           print(bizman.__file__)
           PY

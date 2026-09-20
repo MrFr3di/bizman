@@ -169,7 +169,7 @@ class DistributionContractTests(unittest.TestCase):
                     "-c",
                     (
                         "import pathlib, bizman, bizman.foundation, bizman.sessions, "
-                        "bizman.collector, bizman.changes, bizman.core; "
+                        "bizman.collector, bizman.changes, bizman.readmodel, bizman.core; "
                         "print(pathlib.Path(bizman.__file__).resolve())"
                     ),
                 ],
