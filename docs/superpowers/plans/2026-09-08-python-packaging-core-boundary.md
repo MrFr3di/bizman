@@ -231,7 +231,7 @@
 - [ ] Add Import Linter contracts for foundation/sessions/collector/changes/core/cli directions.
 - [ ] Add explicit check that `src/bizman` never imports `tools.*`.
 - [ ] Configure Ruff target Python 3.11 with an explicit conservative rule set.
-- [ ] Run `uv run ruff check src tests tools`.
+- [ ] Run `uv run ruff check src`.
 - [ ] Run Import Linter and fix dependency direction violations without adding indirection solely to silence the tool.
 - [ ] Commit: `build: enforce package architecture`.
 

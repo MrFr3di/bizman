@@ -27,6 +27,10 @@ class CdpCommandRejected(CdpError):
     """Raised before sending a command that violates the passive allowlist."""
 
 
+class CdpCommandTimeout(CdpError):
+    """Raised when a CDP command does not receive a bounded response."""
+
+
 class CdpEventQueueOverflow(CdpError):
     """Raised rather than silently dropping protocol evidence."""
 
@@ -57,9 +61,12 @@ class CdpConnection:
         *,
         allowed_methods: frozenset[str] | None = None,
         event_queue_size: int = 4096,
+        command_timeout: float = 10.0,
     ) -> None:
         if event_queue_size <= 0:
             raise ValueError("event_queue_size must be positive")
+        if command_timeout <= 0:
+            raise ValueError("command_timeout must be positive")
         self._transport = transport
         self._allowed_methods = allowed_methods
         self._events: asyncio.Queue[CdpEvent] = asyncio.Queue(
@@ -69,6 +76,7 @@ class CdpConnection:
         self._next_id = 1
         self._send_lock = asyncio.Lock()
         self._closed = False
+        self._command_timeout = float(command_timeout)
 
     @property
     def closed(self) -> bool:
@@ -114,7 +122,15 @@ class CdpConnection:
                 raise
 
         try:
-            return await future
+            async with asyncio.timeout(self._command_timeout):
+                return await future
+        except TimeoutError as exc:
+            self._pending.pop(command_id, None)
+            if not future.done():
+                future.cancel()
+            raise CdpCommandTimeout(
+                f"CDP command timed out after {self._command_timeout:g}s: {method}"
+            ) from exc
         except asyncio.CancelledError:
             self._pending.pop(command_id, None)
             raise

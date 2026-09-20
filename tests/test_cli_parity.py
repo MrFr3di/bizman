@@ -59,7 +59,7 @@ class UnifiedCliParityTests(unittest.TestCase):
         from bizman.cli.main import main as new_main
         from tools.validate_repo import main as legacy_main
 
-        legacy = _capture(legacy_main)
+        legacy = _capture(legacy_main, [])
         modern = _capture(
             new_main,
             ["validate", "--repo-root", str(REPO_ROOT)],

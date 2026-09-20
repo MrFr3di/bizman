@@ -126,15 +126,15 @@ class PathMatcher:
         for raw_pattern in patterns:
             pattern = normalize_origin_relative_path(raw_pattern)
             segments = _segments(pattern)
-            placeholder_count = sum(_is_placeholder(segment) for segment in segments)
-            if placeholder_count == 0:
-                exact.add(pattern)
-                continue
-
             for segment in segments:
                 if segment.startswith("{") or segment.endswith("}"):
                     if not _is_placeholder(segment):
                         raise ValueError(f"invalid path placeholder in {pattern!r}")
+
+            placeholder_count = sum(_is_placeholder(segment) for segment in segments)
+            if placeholder_count == 0:
+                exact.add(pattern)
+                continue
 
             template = _Template(
                 pattern=pattern,
