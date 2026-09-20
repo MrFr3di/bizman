@@ -21,6 +21,7 @@ from bizman.readmodel.model import KnowledgeRecord, RefKind
 
 _FORM_ID_RE = re.compile(r"^[0-9a-f]{16}$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_SOURCE_ID_RE = re.compile(r"^src\.[a-z0-9][a-z0-9.-]*$")
 
 
 
@@ -56,13 +57,35 @@ def _capture_source_map(repo_root: Path) -> dict[str, str]:
         raise ValueError(f"{path}: captures must be an array")
 
     result: dict[str, str] = {}
+    source_ids: set[str] = set()
     for index, raw in enumerate(captures):
         source = f"{path.as_posix()}#capture-{index}"
         capture = _require_mapping(raw, source=source)
-        filename = _require_string(capture.get("file_name"), source=source, field="file_name")
-        source_id = _require_string(capture.get("source_id"), source=source, field="source_id")
+        filename = _require_string(
+            capture.get("file_name"), source=source, field="file_name"
+        )
+        source_id = _require_string(
+            capture.get("source_id"), source=source, field="source_id"
+        )
+        if _SOURCE_ID_RE.fullmatch(source_id) is None:
+            raise ValueError(
+                f"{source}: source_id must be a canonical src.* identifier"
+            )
+        sha256 = _require_string(
+            capture.get("sha256"), source=source, field="sha256"
+        )
+        if _SHA256_RE.fullmatch(sha256) is None:
+            raise ValueError(
+                f"{source}: sha256 must be 64 lowercase hexadecimal characters"
+            )
+        _non_negative_int(capture.get("bytes"), source=source, field="bytes")
+        _non_negative_int(capture.get("entries"), source=source, field="entries")
+
         if filename in result:
             raise ValueError(f"{source}: duplicate capture filename {filename!r}")
+        if source_id in source_ids:
+            raise ValueError(f"{source}: duplicate capture source_id {source_id!r}")
+        source_ids.add(source_id)
         result[filename] = source_id
     return result
 
