@@ -1,5 +1,7 @@
 # Initial HAR corpus finalization
 
+> Historical snapshot: the counts and CI notes below describe the initial corpus-finalization stage. Current build/test/CI instructions live in `AGENTS.md` and `docs/CI.md`.
+
 Status: structured initial corpus prepared for merge.
 
 ## Source scope
