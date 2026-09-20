@@ -26,11 +26,11 @@ New versioned refs:
 - endpoint: `bm.endpoint.v1.<sha256({"path_pattern": ...})>`;
 - operation: `bm.operation.v1.<sha256({"method":"POST","path":...,"query_keys":[...],"body_keys":[...]})>`;
 - form: `bm.form.v1.<existing form_id>`;
-- Wiki: `bm.wiki.v1.<sha256({"path": source.path})>`.
+- Wiki: `bm.wiki.v1.<sha256({"path": source.path, "query": canonical_source_query})>`.
 
 The operation source ID such as `op-011` is an alias, not canonical identity, because sequence-style IDs can be renumbered when a source corpus is regenerated.
 
-Endpoint identity intentionally excludes observed methods/counts so additional observations do not create a new endpoint object. Wiki identity uses the source topic path rather than content hash so editorial changes preserve the topic ref.
+Endpoint identity intentionally excludes observed methods/counts so additional observations do not create a new endpoint object. Wiki identity uses the source path plus canonical source query rather than content hash. This preserves the topic ref across editorial changes while keeping distinct topics that share `/wikihelp/` separated by `query.topic`.
 
 ## Search allowlists
 

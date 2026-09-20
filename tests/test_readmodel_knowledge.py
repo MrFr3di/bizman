@@ -174,7 +174,7 @@ class KnowledgeProjectionTests(unittest.TestCase):
         )
 
         wiki = by_ref[
-            "bm.wiki.v1.f38b2fe51fce8b49fa0c1845a8b68f9ad09c4f4b4484cfba8c0854938c2b48c6"
+            "bm.wiki.v1.9c16ad40d015d0efe5c5b1f6fa5a2790945b9b8b0216fc42d8e582b41afebbbd"
         ]
         self.assertEqual(wiki.title, "Авторегулирование снабжения")
         self.assertEqual(

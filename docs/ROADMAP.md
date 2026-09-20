@@ -199,7 +199,7 @@ Identity rules:
 - endpoints: `bm.endpoint.v1.<sha256(path_pattern)>`;
 - operations: `bm.operation.v1.<sha256(method/path/query_keys/body_keys)>`, while legacy `op-XXX` remains an alias;
 - forms: `bm.form.v1.<form_id>`;
-- Wiki topics: `bm.wiki.v1.<sha256(source_path)>`.
+- Wiki topics: `bm.wiki.v1.<sha256(source_path + canonical_source_query)>`.
 
 Projection version is raised to 2 because the semantic indexed corpus changes. Existing P2-A databases are therefore rebuilt rather than silently reused.
 

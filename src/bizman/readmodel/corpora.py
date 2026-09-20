@@ -415,6 +415,18 @@ def _wiki_records(root: Path, capture_sources: Mapping[str, str]) -> list[Knowle
         source_path = _require_string(
             source_info.get("path"), source=f"{source}.source", field="path"
         )
+        raw_query = source_info.get("query", {})
+        query = _require_mapping(raw_query, source=f"{source}.source.query")
+        query_identity: dict[str, str] = {}
+        for raw_key, raw_value in query.items():
+            key = _require_string(
+                raw_key, source=f"{source}.source.query", field="query key"
+            )
+            if not isinstance(raw_value, str):
+                raise ValueError(
+                    f"{source}.source.query: value for {key!r} must be a string"
+                )
+            query_identity[key] = raw_value
         html_sha256 = _require_string(
             source_info.get("html_sha256"), source=f"{source}.source", field="html_sha256"
         )
@@ -429,7 +441,13 @@ def _wiki_records(root: Path, capture_sources: Mapping[str, str]) -> list[Knowle
         )
         records.append(
             KnowledgeRecord(
-                ref=_versioned_ref(RefKind.WIKI, {"path": source_path}),
+                ref=_versioned_ref(
+                    RefKind.WIKI,
+                    {
+                        "path": source_path,
+                        "query": dict(sorted(query_identity.items())),
+                    },
+                ),
                 kind=RefKind.WIKI,
                 title=topic,
                 aliases=(topic,),
