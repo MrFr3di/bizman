@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import re
+from collections.abc import Callable
 from typing import Any, Mapping
 from urllib.parse import parse_qsl, urlsplit
 
@@ -96,12 +97,12 @@ def _versioned_ref(kind: RefKind, semantic_identity: Mapping[str, object]) -> st
     return f"bm.{kind.value}.v1.{canonical_sha256(dict(semantic_identity))}"
 
 
-def _json_partition_rows(
+def _partition_rows(
     index_path: Path,
     parts_root: Path,
     *,
-    payload_key: str | None,
     require_offsets: bool,
+    load_part: Callable[[Path], list[tuple[Mapping[str, Any], str]]],
 ) -> list[tuple[Mapping[str, Any], str]]:
     index = _require_mapping(_load_json(index_path), source=index_path.as_posix())
     if index.get("schema_version") != "1.0":
@@ -124,28 +125,16 @@ def _json_partition_rows(
             offset = _non_negative_int(part.get("offset"), source=source, field="offset")
             if offset != expected_offset:
                 raise ValueError(f"{source}: offset {offset} != expected {expected_offset}")
+
         path = _safe_part(parts_root, part.get("file"), source=source, field="part file")
         if path in seen:
             raise ValueError(f"{source}: duplicate part file {path.name!r}")
         seen.add(path)
 
-        payload = _load_json(path)
-        if payload_key is None:
-            if not isinstance(payload, list):
-                raise ValueError(f"{path}: part payload must be an array")
-            part_rows = payload
-        else:
-            document = _require_mapping(payload, source=path.as_posix())
-            if document.get("schema_version") != "1.0":
-                raise ValueError(f"{path}: unsupported schema_version")
-            part_rows = document.get(payload_key)
-            if not isinstance(part_rows, list):
-                raise ValueError(f"{path}: {payload_key} must be an array")
+        part_rows = load_part(path)
         if len(part_rows) != declared:
             raise ValueError(f"{path}: declared {declared} records != {len(part_rows)} rows")
-        for row_index, raw_row in enumerate(part_rows):
-            row_source = f"{path.as_posix()}#row-{row_index}"
-            rows.append((_require_mapping(raw_row, source=row_source), row_source))
+        rows.extend(part_rows)
         expected_offset += declared
 
     if len(rows) != total:
@@ -153,38 +142,53 @@ def _json_partition_rows(
     return rows
 
 
+def _json_partition_rows(
+    index_path: Path,
+    parts_root: Path,
+    *,
+    payload_key: str | None,
+    require_offsets: bool,
+) -> list[tuple[Mapping[str, Any], str]]:
+    def load_part(path: Path) -> list[tuple[Mapping[str, Any], str]]:
+        payload = _load_json(path)
+        if payload_key is None:
+            if not isinstance(payload, list):
+                raise ValueError(f"{path}: part payload must be an array")
+            raw_rows = payload
+        else:
+            document = _require_mapping(payload, source=path.as_posix())
+            if document.get("schema_version") != "1.0":
+                raise ValueError(f"{path}: unsupported schema_version")
+            raw_rows = document.get(payload_key)
+            if not isinstance(raw_rows, list):
+                raise ValueError(f"{path}: {payload_key} must be an array")
+
+        return [
+            (
+                _require_mapping(raw_row, source=f"{path.as_posix()}#row-{row_index}"),
+                f"{path.as_posix()}#row-{row_index}",
+            )
+            for row_index, raw_row in enumerate(raw_rows)
+        ]
+
+    return _partition_rows(
+        index_path,
+        parts_root,
+        require_offsets=require_offsets,
+        load_part=load_part,
+    )
+
+
 def _jsonl_partition_rows(
     index_path: Path,
     parts_root: Path,
 ) -> list[tuple[Mapping[str, Any], str]]:
-    index = _require_mapping(_load_json(index_path), source=index_path.as_posix())
-    if index.get("schema_version") != "1.0":
-        raise ValueError(f"{index_path}: unsupported schema_version")
-    total = _non_negative_int(
-        index.get("total_records"), source=index_path.as_posix(), field="total_records"
+    return _partition_rows(
+        index_path,
+        parts_root,
+        require_offsets=False,
+        load_part=_load_jsonl,
     )
-    parts = index.get("parts")
-    if not isinstance(parts, list):
-        raise ValueError(f"{index_path}: parts must be an array")
-
-    rows: list[tuple[Mapping[str, Any], str]] = []
-    seen: set[Path] = set()
-    for part_index, raw_part in enumerate(parts):
-        source = f"{index_path.as_posix()}#part-{part_index}"
-        part = _require_mapping(raw_part, source=source)
-        declared = _non_negative_int(part.get("records"), source=source, field="records")
-        path = _safe_part(parts_root, part.get("file"), source=source, field="part file")
-        if path in seen:
-            raise ValueError(f"{source}: duplicate part file {path.name!r}")
-        seen.add(path)
-        part_rows = _load_jsonl(path)
-        if len(part_rows) != declared:
-            raise ValueError(f"{path}: declared {declared} records != {len(part_rows)} rows")
-        rows.extend(part_rows)
-    if len(rows) != total:
-        raise ValueError(f"{index_path}: total_records {total} != {len(rows)} rows")
-    return rows
-
 
 def _endpoint_records(root: Path, capture_sources: Mapping[str, str]) -> list[KnowledgeRecord]:
     corpus = root / "knowledge" / "http" / "endpoints"
