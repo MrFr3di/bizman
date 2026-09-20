@@ -1,10 +1,9 @@
 """Stable application-facing BizMan core boundary."""
 
-from bizman.changes.runner import DetectorRunSummary
 from bizman.core.assets import AssetId, RepositoryAssets
 from bizman.core.collection import CollectionRequest, CollectionResult, collect
 from bizman.core.context import CoreContext
-from bizman.core.detection import DetectionRequest, detect_changes
+from bizman.core.detection import DetectionRequest, DetectorRunSummary, detect_changes
 from bizman.core.errors import (
     AssetError,
     BizManError,

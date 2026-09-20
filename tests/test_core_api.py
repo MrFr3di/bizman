@@ -61,7 +61,13 @@ class CorePublicApiTests(unittest.TestCase):
         )
 
     def test_request_and_result_dtos_are_frozen_slotted_and_path_free(self):
-        from bizman.core import CollectionRequest, CollectionResult, DetectionRequest
+        from bizman.core import (
+            CollectionRequest,
+            CollectionResult,
+            DetectionRequest,
+            DetectorRunSummary,
+            ValidationResult,
+        )
 
         collection = CollectionRequest(
             endpoint="http://127.0.0.1:9222",
@@ -70,6 +76,23 @@ class CorePublicApiTests(unittest.TestCase):
         )
         detection = DetectionRequest(selected_sessions=(SESSION_ID,), dry_run=True)
         result = CollectionResult(session_id=SESSION_ID)
+        detection_result = DetectorRunSummary(
+            analysis_profile_sha256="a" * 64,
+            baseline_sha256="b" * 64,
+            dry_run=True,
+            sessions_discovered=0,
+            sessions_processed=0,
+            sessions_checkpointed=0,
+            sessions_failed_skipped=0,
+            sessions_unfinalized_skipped=0,
+            evidence_sha256s=(),
+            fact_counts=(("known", 0),),
+            first_seen_change_ids=(),
+            repeated_change_ids=(),
+            materialized_bundle_count=0,
+            pending_bundle_count=0,
+        )
+        validation_result = ValidationResult()
 
         self.assertEqual(
             tuple(field.name for field in fields(CollectionRequest)),
@@ -83,18 +106,29 @@ class CorePublicApiTests(unittest.TestCase):
             tuple(field.name for field in fields(CollectionResult)),
             ("session_id",),
         )
-        for value in (collection, detection, result):
+        for value in (collection, detection, result, detection_result, validation_result):
             self.assertFalse(hasattr(value, "__dict__"))
             first_field = fields(type(value))[0].name
             with self.assertRaises(FrozenInstanceError):
                 setattr(value, first_field, getattr(value, first_field))
             with self.assertRaises((AttributeError, FrozenInstanceError, TypeError)):
                 setattr(value, "_probe", True)
-        for dto in (CollectionRequest, DetectionRequest, CollectionResult):
+        for dto in (
+            CollectionRequest,
+            DetectionRequest,
+            CollectionResult,
+            DetectorRunSummary,
+            ValidationResult,
+        ):
             self.assertTrue(
                 all("Path" not in str(field.type) for field in fields(dto)),
                 f"{dto.__name__} must not expose filesystem paths",
             )
+        self.assertIsInstance(detection_result.fact_counts, tuple)
+        self.assertIsInstance(validation_result.errors, tuple)
+        self.assertIsInstance(validation_result.warnings, tuple)
+        self.assertEqual(DetectorRunSummary.__module__, "bizman.core.detection")
+        self.assertEqual(ValidationResult.__module__, "bizman.core.validation")
 
 
 class CoreUseCaseTests(unittest.TestCase):

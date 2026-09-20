@@ -7,7 +7,8 @@ from bizman.changes.baseline import BaselineConsistencyError, BaselineFormatErro
 from bizman.changes.diff import SemanticContractError
 from bizman.changes.promotion import PromotionIntegrityError, PromotionSchemaError
 from bizman.changes.rules import RuleApplicationError, RuleConfigurationError
-from bizman.changes.runner import DetectorRunSummary, DetectorRunner
+from bizman.changes.runner import DetectorRunSummary as _DetectorRunSummary
+from bizman.changes.runner import DetectorRunner
 from bizman.changes.state import StateCompatibilityError, StateError, StateIntegrityError
 from bizman.core.assets import AssetId
 from bizman.core.context import CoreContext
@@ -20,6 +21,63 @@ from bizman.core.errors import (
 )
 from bizman.foundation.redaction import load_redaction_policy
 from bizman.sessions.evidence import EvidenceError
+
+
+@dataclass(frozen=True, slots=True)
+class DetectorRunSummary:
+    analysis_profile_sha256: str
+    baseline_sha256: str
+    dry_run: bool
+    sessions_discovered: int
+    sessions_processed: int
+    sessions_checkpointed: int
+    sessions_failed_skipped: int
+    sessions_unfinalized_skipped: int
+    evidence_sha256s: tuple[str, ...]
+    fact_counts: tuple[tuple[str, int], ...]
+    first_seen_change_ids: tuple[str, ...]
+    repeated_change_ids: tuple[str, ...]
+    materialized_bundle_count: int
+    pending_bundle_count: int
+
+    @classmethod
+    def from_internal(cls, value: _DetectorRunSummary) -> "DetectorRunSummary":
+        if not isinstance(value, _DetectorRunSummary):
+            raise TypeError("value must be detector run summary")
+        return cls(
+            analysis_profile_sha256=value.analysis_profile_sha256,
+            baseline_sha256=value.baseline_sha256,
+            dry_run=value.dry_run,
+            sessions_discovered=value.sessions_discovered,
+            sessions_processed=value.sessions_processed,
+            sessions_checkpointed=value.sessions_checkpointed,
+            sessions_failed_skipped=value.sessions_failed_skipped,
+            sessions_unfinalized_skipped=value.sessions_unfinalized_skipped,
+            evidence_sha256s=tuple(value.evidence_sha256s),
+            fact_counts=tuple(sorted(value.fact_counts.items())),
+            first_seen_change_ids=tuple(value.first_seen_change_ids),
+            repeated_change_ids=tuple(value.repeated_change_ids),
+            materialized_bundle_count=value.materialized_bundle_count,
+            pending_bundle_count=value.pending_bundle_count,
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "analysis_profile_sha256": self.analysis_profile_sha256,
+            "baseline_sha256": self.baseline_sha256,
+            "dry_run": self.dry_run,
+            "sessions_discovered": self.sessions_discovered,
+            "sessions_processed": self.sessions_processed,
+            "sessions_checkpointed": self.sessions_checkpointed,
+            "sessions_failed_skipped": self.sessions_failed_skipped,
+            "sessions_unfinalized_skipped": self.sessions_unfinalized_skipped,
+            "evidence_sha256s": list(self.evidence_sha256s),
+            "fact_counts": dict(self.fact_counts),
+            "first_seen_change_ids": list(self.first_seen_change_ids),
+            "repeated_change_ids": list(self.repeated_change_ids),
+            "materialized_bundle_count": self.materialized_bundle_count,
+            "pending_bundle_count": self.pending_bundle_count,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,7 +126,7 @@ def detect_changes(context: CoreContext, request: DetectionRequest) -> DetectorR
             dry_run=request.dry_run,
             clock=lambda: _clock_string(context),
         ) as runner:
-            return runner.run()
+            return DetectorRunSummary.from_internal(runner.run())
     except BaselineFormatError as exc:
         raise AssetError("curated baseline assets are invalid") from exc
     except (
