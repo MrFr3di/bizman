@@ -7,18 +7,20 @@ from typing import Any, Mapping
 from urllib.parse import parse_qsl, urlsplit
 
 from bizman.foundation.fingerprint import canonical_sha256
+from bizman.readmodel.curated_io import (
+    load_json as _load_json,
+    non_negative_int as _non_negative_int,
+    require_mapping as _require_mapping,
+    require_string as _require_string,
+    safe_child as _safe_part,
+    string_list as _string_list,
+)
 from bizman.readmodel.model import KnowledgeRecord, RefKind
 
 
 _FORM_ID_RE = re.compile(r"^[0-9a-f]{16}$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
-
-def _load_json(path: Path) -> Any:
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"cannot load curated knowledge file {path}: {exc}") from exc
 
 
 def _load_jsonl(path: Path) -> list[tuple[Mapping[str, Any], str]]:
@@ -41,38 +43,6 @@ def _load_jsonl(path: Path) -> list[tuple[Mapping[str, Any], str]]:
         raise ValueError(f"cannot load curated knowledge file {path}: {exc}") from exc
     return rows
 
-
-def _require_mapping(value: object, *, source: str) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping):
-        raise ValueError(f"{source}: expected JSON object")
-    return value
-
-
-def _require_string(value: object, *, source: str, field: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{source}: {field} must be a non-empty string")
-    return value.strip()
-
-
-def _non_negative_int(value: object, *, source: str, field: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise ValueError(f"{source}: {field} must be a non-negative integer")
-    return value
-
-
-def _string_list(value: object, *, source: str, field: str) -> tuple[str, ...]:
-    if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
-        raise ValueError(f"{source}: {field} must be an array of non-empty strings")
-    return tuple(value)
-
-
-def _safe_part(root: Path, relative: object, *, source: str) -> Path:
-    name = _require_string(relative, source=source, field="part file")
-    candidate = (root / name).resolve(strict=True)
-    resolved_root = root.resolve(strict=True)
-    if not candidate.is_relative_to(resolved_root) or not candidate.is_file():
-        raise ValueError(f"{source}: part path escapes corpus directory")
-    return candidate
 
 
 def _capture_source_map(repo_root: Path) -> dict[str, str]:
@@ -154,7 +124,7 @@ def _json_partition_rows(
             offset = _non_negative_int(part.get("offset"), source=source, field="offset")
             if offset != expected_offset:
                 raise ValueError(f"{source}: offset {offset} != expected {expected_offset}")
-        path = _safe_part(parts_root, part.get("file"), source=source)
+        path = _safe_part(parts_root, part.get("file"), source=source, field="part file")
         if path in seen:
             raise ValueError(f"{source}: duplicate part file {path.name!r}")
         seen.add(path)
@@ -203,7 +173,7 @@ def _jsonl_partition_rows(
         source = f"{index_path.as_posix()}#part-{part_index}"
         part = _require_mapping(raw_part, source=source)
         declared = _non_negative_int(part.get("records"), source=source, field="records")
-        path = _safe_part(parts_root, part.get("file"), source=source)
+        path = _safe_part(parts_root, part.get("file"), source=source, field="part file")
         if path in seen:
             raise ValueError(f"{source}: duplicate part file {path.name!r}")
         seen.add(path)
