@@ -30,10 +30,11 @@ The package architecture gate enforces these dependency directions:
 
 - `foundation` is a dependency leaf;
 - `sessions` does not depend on higher layers;
-- `collector` is independent from detector/application layers;
-- `changes` does not depend on collector/application layers;
+- `collector` is independent from detector/read-model/application layers;
+- `changes` does not depend on collector/read-model/application layers;
+- `readmodel` may consume deterministic lower layers but not collector/Core/CLI;
 - `core` does not depend on CLI;
-- CLI directly consumes Core rather than lower implementation packages.
+- CLI directly consumes Core rather than lower implementation packages, including `readmodel`.
 
 A source scan also prevents the installable `src/bizman` package from importing the legacy `tools.*` namespace.
 
@@ -53,7 +54,9 @@ The full test suite covers, among other invariants:
 - transactional outbox rollback/recovery;
 - value-free canonical Promotion Bundles and privacy rejection;
 - synthetic filesystem -> evidence -> extraction -> diff -> rules -> SQLite/outbox -> bundle E2E;
-- rerun/idempotence and downstream synthetic-secret byte scans.
+- rerun/idempotence and downstream synthetic-secret byte scans;
+- deterministic curated read-model projection, SQLite identity/rebuild and bounded FTS retrieval;
+- versioned retrieval evals with Recall@1/5, MRR and evidence correctness.
 
 ### Distribution isolation in the full lane
 

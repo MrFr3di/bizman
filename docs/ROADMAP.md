@@ -148,7 +148,7 @@ P1 exit gate:
 
 ## 5. P2 — Agent Index + Session Intelligence
 
-Goal: stop agents from scanning raw repository files/session JSONL for ordinary read tasks.
+Goal: stop agents and future adapters from scanning raw repository files/session JSONL for ordinary read tasks.
 
 Primary store:
 
@@ -156,40 +156,38 @@ Primary store:
 BizManData/index/agent-index.sqlite3
 ```
 
-The DB is a derived read model, not a source of truth.
+The DB is a derived read model, not a source of truth. P2 is delivered as small vertical slices.
 
-Initial logical tables:
+### P2-A — Knowledge Retrieval Kernel
 
-```text
-ref
-alias
-knowledge_item
-knowledge_evidence
-knowledge_fts
-session_summary
-session_anomaly
-change_index
-index_meta
-projection_checkpoint
-```
-
-### Stable refs and resolution
-
-Existing curated IDs such as `bm.action.*` remain canonical. Other indexed objects receive deterministic versioned refs from the indexer, never model-generated IDs at query time.
-
-Resolution order:
+Initial scope is deliberately limited to curated objects that already have stable IDs and explicit provenance:
 
 ```text
-canonical ref
-  -> exact alias
-  -> normalized structured fields
-  -> SQLite FTS5/BM25
-  -> optional fuzzy fallback only if eval proves needed
+11 actions
+303 products
+19 entities
+= 333 indexed items
 ```
 
-No embeddings in P2 by default.
+This slice establishes:
 
-### Deterministic session summaries
+- canonical refs while preserving existing `bm.*` IDs;
+- deterministic SQLite application/schema identity and atomic rebuild;
+- explicit allowlisted projections instead of generic JSON flattening;
+- exact ref -> exact alias -> exact title -> FTS5/BM25 resolution;
+- bounded search results and bounded evidence refs;
+- a versioned deterministic retrieval corpus measuring Recall@1/5, MRR and evidence correctness;
+- no embeddings and no fuzzy matching unless later evaluation proves a need.
+
+The `bizman.readmodel` package may consume deterministic lower layers but must not import collector, Core or CLI. Core integration is deferred until a useful read model exists.
+
+### P2-B — Curated Corpus Coverage
+
+Extend explicit projectors to the remaining high-value curated corpora, especially operations, endpoints, forms and Wiki. Every projector defines exactly which fields are searchable and which provenance refs are retained.
+
+### P2-C — Session + Change Intelligence
+
+Add deterministic summaries and anomaly/change indexes from sanitized runtime data. Session data is consumed through `EvidenceReader`; P2 code must not bypass evidence validation with direct JSONL parsing.
 
 Minimum summary fields:
 
@@ -205,15 +203,45 @@ indeterminate evidence count
 conflicts/warnings
 ```
 
-Session anomalies should index unresolved correlations, integrity/interpretation failures, protocol changes and detector findings.
+Detector/change rows remain scoped by `analysis_profile_sha256` so interpretations from different profiles are never silently mixed.
+
+### P2-D — Core Read API
+
+Only after the read model works, expose bounded immutable Core operations for resolve/search/get/session/change queries. Introduce query budgets/cursors with the first real list consumer; do not expose arbitrary paths or SQL.
+
+### P2-E — Evaluation and hardening
+
+Measure:
+
+```text
+Recall@1
+Recall@5
+MRR
+evidence correctness
+query latency
+rebuild time
+database size
+```
+
+Resolution policy remains:
+
+```text
+canonical ref
+  -> exact alias
+  -> exact structured/title match
+  -> SQLite FTS5/BM25
+  -> optional fuzzy/embedding experiment only if eval proves needed
+```
 
 ### P2 acceptance gate
 
 - index is fully rebuildable from curated knowledge + sanitized evidence + detector outputs;
-- common lookup/session questions require zero raw JSONL reads by the agent;
-- deterministic retrieval corpus measures Recall@1/5, MRR and evidence correctness;
+- identical semantic inputs produce the same generation fingerprint;
+- common lookup/session questions require zero raw repository/JSONL scans by the agent;
+- deterministic retrieval corpus reports Recall@1/5, MRR and evidence correctness;
 - lexical/structured retrieval meets the agreed target or produces evidence for a later embedding experiment;
-- projection metadata includes version, input fingerprint and completion time.
+- projection metadata includes schema/projection version, source fingerprint and completion time;
+- no arbitrary SQL/path read API is introduced.
 
 ## 6. P3 — Read-only MCP v1
 
