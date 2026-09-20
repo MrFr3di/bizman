@@ -353,5 +353,37 @@ class CodeRabbitReviewRegressionTests(unittest.TestCase):
                 CdpConnection(transport, command_timeout=value)
 
 
+    def test_verified_snapshot_is_stable_if_source_changes_after_first_yield(self):
+        from bizman.sessions.evidence import EvidenceReader
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            event_path, first = _write_minimal_evidence(data_dir)
+            second = dict(first)
+            second["event_id"] = "01991c7d-a400-7000-8000-000000000012"
+            second["sequence"] = 1
+            second["event_type"] = "fixture.second"
+            event_path.write_text(
+                "".join(
+                    json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n"
+                    for event in (first, second)
+                ),
+                encoding="utf-8",
+            )
+            reader = EvidenceReader(REPO_ROOT, data_dir)
+            identity = reader.inspect(SESSION_ID)
+
+            stream = reader.iter_events(SESSION_ID, expected_identity=identity)
+            yielded_first = next(stream)
+            event_path.write_text("corrupted after verified snapshot\n", encoding="utf-8")
+            yielded_second = next(stream)
+
+            self.assertEqual(yielded_first["sequence"], 0)
+            self.assertEqual(yielded_second["sequence"], 1)
+            with self.assertRaises(StopIteration):
+                next(stream)
+
+
+
 if __name__ == "__main__":
     unittest.main()

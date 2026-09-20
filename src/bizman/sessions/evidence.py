@@ -351,10 +351,7 @@ class EvidenceReader:
         event_files: tuple[tuple[str, Path], ...],
         *,
         file_hashes: list[dict[str, Any]] | None = None,
-        snapshot_files: tuple[Path, ...] | None = None,
     ) -> Iterator[dict[str, Any]]:
-        if snapshot_files is not None and len(snapshot_files) != len(event_files):
-            raise ValueError("snapshot_files must match event_files")
         session_id = str(manifest["session_id"])
         expected_sequence = 0
 
@@ -369,18 +366,8 @@ class EvidenceReader:
                     raise EvidenceFormatError(
                         f"cannot open event file {event_rel!r}: {exc}"
                     ) from exc
-                snapshot_handle = None
-                if snapshot_files is not None:
-                    try:
-                        snapshot_handle = snapshot_files[index].open("wb")
-                    except OSError as exc:
-                        handle.close()
-                        raise EvidenceFormatError(
-                            f"cannot stage validated evidence snapshot for {event_rel!r}: {exc}"
-                        ) from exc
-                try:
-                    with handle:
-                        while True:
+                with handle:
+                    while True:
                             raw_line = handle.readline(self.max_event_line_bytes + 1)
                             if not raw_line:
                                 break
@@ -413,12 +400,7 @@ class EvidenceReader:
                                 ids=ids,
                             )
                             expected_sequence += 1
-                            if snapshot_handle is not None:
-                                snapshot_handle.write(raw_line)
                             yield event
-                finally:
-                    if snapshot_handle is not None:
-                        snapshot_handle.close()
                 if file_hashes is not None:
                     file_hashes.append(
                         {
@@ -439,6 +421,41 @@ class EvidenceReader:
             self._resolved_event_files(manifest),
             file_hashes=file_hashes,
         )
+
+    def _stage_event_snapshot(
+        self,
+        manifest: Mapping[str, Any],
+        event_files: tuple[tuple[str, Path], ...],
+        snapshot_files: tuple[Path, ...],
+    ) -> EvidenceIdentity:
+        if len(snapshot_files) != len(event_files):
+            raise ValueError("snapshot_files must match event_files")
+
+        file_hashes: list[dict[str, Any]] = []
+        for index, (event_rel, event_path) in enumerate(event_files):
+            digest = hashlib.sha256()
+            total_bytes = 0
+            try:
+                with event_path.open("rb") as source, snapshot_files[index].open("wb") as snapshot:
+                    while True:
+                        chunk = source.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        digest.update(chunk)
+                        total_bytes += len(chunk)
+                        snapshot.write(chunk)
+            except OSError as exc:
+                raise EvidenceFormatError(
+                    f"cannot stage evidence snapshot for {event_rel!r}: {exc}"
+                ) from exc
+            file_hashes.append(
+                {
+                    "path": event_rel,
+                    "sha256": digest.hexdigest(),
+                    "bytes": total_bytes,
+                }
+            )
+        return self._identity_from_hashes(manifest, file_hashes)
 
     @staticmethod
     def _identity_from_hashes(
@@ -498,21 +515,17 @@ class EvidenceReader:
             )
 
         resolved_files = self._resolved_event_files(manifest)
-        file_hashes: list[dict[str, Any]] = []
         with tempfile.TemporaryDirectory(prefix="bizman-evidence-snapshot-") as temp_dir:
             snapshot_root = Path(temp_dir)
             snapshot_paths = tuple(
                 snapshot_root / f"{index:08d}.jsonl"
                 for index in range(len(resolved_files))
             )
-            for _ in self._iter_validated_event_files(
+            actual_identity = self._stage_event_snapshot(
                 manifest,
                 resolved_files,
-                file_hashes=file_hashes,
-                snapshot_files=snapshot_paths,
-            ):
-                pass
-            actual_identity = self._identity_from_hashes(manifest, file_hashes)
+                snapshot_paths,
+            )
             if actual_identity != expected_identity:
                 raise EvidenceIntegrityError(
                     f"session {session_id} event bytes no longer match expected identity"

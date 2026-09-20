@@ -6,11 +6,7 @@ import json
 from typing import Any
 from urllib.parse import parse_qs
 
-from bizman.sessions.evidence import (
-    EvidenceIdentity,
-    EvidenceIntegrityError,
-    EvidenceReader,
-)
+from bizman.sessions.evidence import EvidenceIdentity, EvidenceReader
 from bizman.changes.model import (
     FormObservation,
     HttpObservation,
@@ -416,14 +412,6 @@ class ObservationExtractor:
                         request_path_pattern=request.path_pattern,
                     )
                 )
-
-        # The streaming pass above proves that the bytes consumed by extraction
-        # match identity. Re-inspect once to catch mutation after a file was read
-        # but before the ObservationSet is returned.
-        if self.evidence_reader.inspect(identity.session_id) != identity:
-            raise EvidenceIntegrityError(
-                f"session {identity.session_id} changed while observations were extracted"
-            )
 
         return ObservationSet(
             http=tuple(builder.freeze() for builder in builders),
