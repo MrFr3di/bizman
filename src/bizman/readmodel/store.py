@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import closing
 from datetime import datetime
 import os
 from pathlib import Path
@@ -12,7 +11,6 @@ from typing import Iterable
 from bizman.foundation.fingerprint import canonical_sha256
 from bizman.readmodel.knowledge import KnowledgeProjection
 from bizman.readmodel.model import (
-    KnowledgeRecord,
     MatchKind,
     RefKind,
     SearchHit,
