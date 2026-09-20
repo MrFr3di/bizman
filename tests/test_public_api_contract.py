@@ -41,6 +41,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.changes",
                     "bizman.core",
                     "bizman.cli",
+                    "bizman.readmodel",
                 ],
             },
             "Sessions do not depend on higher layers": {
@@ -50,6 +51,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.changes",
                     "bizman.core",
                     "bizman.cli",
+                    "bizman.readmodel",
                 ],
             },
             "Collector is independent from detector and application layers": {
@@ -59,10 +61,20 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.changes",
                     "bizman.core",
                     "bizman.cli",
+                    "bizman.readmodel",
                 ],
             },
             "Changes do not depend on collector or application layers": {
                 "source_modules": ["bizman.changes"],
+                "forbidden_modules": [
+                    "bizman.collector",
+                    "bizman.core",
+                    "bizman.cli",
+                    "bizman.readmodel",
+                ],
+            },
+            "Read model is independent from collector and application layers": {
+                "source_modules": ["bizman.readmodel"],
                 "forbidden_modules": [
                     "bizman.collector",
                     "bizman.core",
@@ -80,6 +92,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.sessions",
                     "bizman.collector",
                     "bizman.changes",
+                    "bizman.readmodel",
                 ],
                 "allow_indirect_imports": True,
             },
@@ -89,7 +102,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
             contract = contracts[name]
             self.assertEqual(contract["type"], "forbidden", name)
             for key, value in contract_expected.items():
-                self.assertEqual(contract[key], value, f"{name}: {key}")
+                self.assertEqual(value, contract[key], f"{name}: {key}")
 
     def test_cli_has_no_direct_internal_package_imports(self):
         forbidden = {
@@ -97,6 +110,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
             "bizman.sessions",
             "bizman.collector",
             "bizman.changes",
+            "bizman.readmodel",
         }
         violations: list[str] = []
         for path in sorted((SRC_ROOT / "cli").rglob("*.py")):
