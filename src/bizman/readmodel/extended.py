@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 from pathlib import Path
 import re
@@ -20,6 +21,79 @@ from bizman.readmodel.projection_support import (
 
 _FORM_ID_RE = re.compile(r"^[0-9a-f]{16}$")
 _OPERATION_ID_RE = re.compile(r"^op-[0-9]{3}$")
+
+
+@dataclass(frozen=True, slots=True)
+class _Partition:
+    path: Path
+    records: int
+    offset: int | None = None
+
+
+def _partition_manifest(
+    dataset_root: Path,
+    *,
+    require_offsets: bool,
+) -> tuple[Path, int, tuple[_Partition, ...]]:
+    index_path = dataset_root / "index.json"
+    index = _mapping(_load_json(index_path), source=index_path.as_posix())
+    if index.get("schema_version") != "1.0":
+        raise ValueError(f"{index_path}: unsupported schema_version")
+    total = _non_negative_int(
+        index.get("total_records"),
+        source=index_path.as_posix(),
+        field="total_records",
+    )
+    raw_parts = index.get("parts")
+    if not isinstance(raw_parts, list):
+        raise ValueError(f"{index_path}: parts must be an array")
+
+    parts: list[_Partition] = []
+    seen_paths: set[Path] = set()
+    expected_offset = 0
+    for part_index, raw_part in enumerate(raw_parts):
+        source = f"{index_path.as_posix()}#part-{part_index}"
+        part = _mapping(raw_part, source=source)
+        records = _non_negative_int(part.get("records"), source=source, field="records")
+        path = _safe_child(
+            dataset_root,
+            part.get("file"),
+            source=source,
+            field="part file",
+        )
+        if path in seen_paths:
+            raise ValueError(f"{source}: duplicate part file {path.name!r}")
+        seen_paths.add(path)
+
+        offset: int | None = None
+        if require_offsets:
+            offset = _non_negative_int(part.get("offset"), source=source, field="offset")
+            if offset != expected_offset:
+                raise ValueError(
+                    f"{source}: offset {offset} != expected {expected_offset}"
+                )
+            expected_offset += records
+        parts.append(_Partition(path=path, records=records, offset=offset))
+    return index_path, total, tuple(parts)
+
+
+def _observation_refs(
+    values: object,
+    *,
+    capture_sources: Mapping[str, str],
+    source: str,
+    field: str,
+) -> tuple[str, ...]:
+    if not isinstance(values, list) or not values:
+        raise ValueError(f"{source}: {field} must be a non-empty array")
+    return tuple(
+        _observation_ref(
+            value,
+            capture_sources=capture_sources,
+            source=f"{source}.{field}[{index}]",
+        )
+        for index, value in enumerate(values)
+    )
 
 
 def _versioned_ref(namespace: str, semantic_identity: Mapping[str, object]) -> str:
@@ -80,38 +154,24 @@ def _endpoint_records(
     capture_sources: Mapping[str, str],
 ) -> list[KnowledgeRecord]:
     dataset_root = root / "knowledge" / "http" / "endpoints"
-    index_path = dataset_root / "index.json"
-    index = _mapping(_load_json(index_path), source=index_path.as_posix())
-    if index.get("schema_version") != "1.0":
-        raise ValueError(f"{index_path}: unsupported schema_version")
-    total = _non_negative_int(
-        index.get("total_records"), source=index_path.as_posix(), field="total_records"
+    index_path, total, parts = _partition_manifest(
+        dataset_root,
+        require_offsets=False,
     )
-    parts = index.get("parts")
-    if not isinstance(parts, list):
-        raise ValueError(f"{index_path}: parts must be an array")
 
     records: list[KnowledgeRecord] = []
-    seen_parts: set[Path] = set()
     seen_paths: set[str] = set()
-    for part_index, raw_part in enumerate(parts):
-        source = f"{index_path.as_posix()}#part-{part_index}"
-        part = _mapping(raw_part, source=source)
-        declared = _non_negative_int(part.get("records"), source=source, field="records")
-        part_path = _safe_child(dataset_root, part.get("file"), source=source, field="part file")
-        if part_path in seen_parts:
-            raise ValueError(f"{source}: duplicate endpoint part {part_path.name!r}")
-        seen_parts.add(part_path)
-
+    for part in parts:
+        part_path = part.path
         document = _mapping(_load_json(part_path), source=part_path.as_posix())
         if document.get("schema_version") != "1.0":
             raise ValueError(f"{part_path}: unsupported schema_version")
         items = document.get("records")
         if not isinstance(items, list):
             raise ValueError(f"{part_path}: records must be an array")
-        if len(items) != declared:
+        if len(items) != part.records:
             raise ValueError(
-                f"{part_path}: declared {declared} records but contains {len(items)}"
+                f"{part_path}: declared {part.records} records but contains {len(items)}"
             )
 
         for item_index, raw in enumerate(items):
@@ -149,16 +209,11 @@ def _endpoint_records(
                     f"{item_source}: mime_types/resource_types must be objects"
                 )
 
-            examples = item.get("examples")
-            if not isinstance(examples, list) or not examples:
-                raise ValueError(f"{item_source}: examples must be a non-empty array")
-            evidence = tuple(
-                _observation_ref(
-                    example,
-                    capture_sources=capture_sources,
-                    source=f"{item_source}.examples[{example_index}]",
-                )
-                for example_index, example in enumerate(examples)
+            evidence = _observation_refs(
+                item.get("examples"),
+                capture_sources=capture_sources,
+                source=item_source,
+                field="examples",
             )
 
             ref = _versioned_ref("endpoint", {"path_pattern": path_pattern})
@@ -239,13 +294,11 @@ def _operation_records(
             raise ValueError(
                 f"{source}: observations must match declared count {declared_count}"
             )
-        evidence = tuple(
-            _observation_ref(
-                observation,
-                capture_sources=capture_sources,
-                source=f"{source}.observations[{obs_index}]",
-            )
-            for obs_index, observation in enumerate(observations)
+        evidence = _observation_refs(
+            observations,
+            capture_sources=capture_sources,
+            source=source,
+            field="observations",
         )
         observed_total += declared_count
 
@@ -296,37 +349,19 @@ def _form_records(
     capture_sources: Mapping[str, str],
 ) -> list[KnowledgeRecord]:
     dataset_root = root / "knowledge" / "http" / "forms"
-    index_path = dataset_root / "index.json"
-    index = _mapping(_load_json(index_path), source=index_path.as_posix())
-    if index.get("schema_version") != "1.0":
-        raise ValueError(f"{index_path}: unsupported schema_version")
-    total = _non_negative_int(
-        index.get("total_records"), source=index_path.as_posix(), field="total_records"
+    index_path, total, parts = _partition_manifest(
+        dataset_root,
+        require_offsets=True,
     )
-    parts = index.get("parts")
-    if not isinstance(parts, list):
-        raise ValueError(f"{index_path}: parts must be an array")
 
     records: list[KnowledgeRecord] = []
     seen_ids: set[str] = set()
-    seen_parts: set[Path] = set()
-    expected_offset = 0
-    for part_index, raw_part in enumerate(parts):
-        source = f"{index_path.as_posix()}#part-{part_index}"
-        part = _mapping(raw_part, source=source)
-        declared = _non_negative_int(part.get("records"), source=source, field="records")
-        offset = _non_negative_int(part.get("offset"), source=source, field="offset")
-        if offset != expected_offset:
-            raise ValueError(f"{source}: offset {offset} != expected {expected_offset}")
-
-        part_path = _safe_child(dataset_root, part.get("file"), source=source, field="part file")
-        if part_path in seen_parts:
-            raise ValueError(f"{source}: duplicate form part {part_path.name!r}")
-        seen_parts.add(part_path)
+    for part in parts:
+        part_path = part.path
         document = _load_json(part_path)
-        if not isinstance(document, list) or len(document) != declared:
+        if not isinstance(document, list) or len(document) != part.records:
             raise ValueError(
-                f"{part_path}: form array must contain declared {declared} records"
+                f"{part_path}: form array must contain declared {part.records} records"
             )
 
         for item_index, raw in enumerate(document):
@@ -362,16 +397,11 @@ def _form_records(
                         _text(field_type, source=field_source, field="type")
                     )
 
-            observed_on = item.get("observed_on")
-            if not isinstance(observed_on, list) or not observed_on:
-                raise ValueError(f"{item_source}: observed_on must be a non-empty array")
-            evidence = tuple(
-                _observation_ref(
-                    observation,
-                    capture_sources=capture_sources,
-                    source=f"{item_source}.observed_on[{obs_index}]",
-                )
-                for obs_index, observation in enumerate(observed_on)
+            evidence = _observation_refs(
+                item.get("observed_on"),
+                capture_sources=capture_sources,
+                source=item_source,
+                field="observed_on",
             )
 
             ref = f"bm.form.v1.{form_id}"
@@ -394,7 +424,6 @@ def _form_records(
                     source_dataset="forms",
                 )
             )
-        expected_offset += declared
 
     if len(records) != total:
         raise ValueError(
@@ -429,33 +458,19 @@ def _wiki_records(
     capture_sources: Mapping[str, str],
 ) -> list[KnowledgeRecord]:
     dataset_root = root / "knowledge" / "wiki" / "topics"
-    index_path = dataset_root / "index.json"
-    index = _mapping(_load_json(index_path), source=index_path.as_posix())
-    if index.get("schema_version") != "1.0":
-        raise ValueError(f"{index_path}: unsupported schema_version")
-    total = _non_negative_int(
-        index.get("total_records"), source=index_path.as_posix(), field="total_records"
+    index_path, total, parts = _partition_manifest(
+        dataset_root,
+        require_offsets=False,
     )
-    parts = index.get("parts")
-    if not isinstance(parts, list):
-        raise ValueError(f"{index_path}: parts must be an array")
 
     records: list[KnowledgeRecord] = []
     seen_topics: set[str] = set()
-    seen_parts: set[Path] = set()
-    for part_index, raw_part in enumerate(parts):
-        source = f"{index_path.as_posix()}#part-{part_index}"
-        part = _mapping(raw_part, source=source)
-        declared = _non_negative_int(part.get("records"), source=source, field="records")
-        part_path = _safe_child(dataset_root, part.get("file"), source=source, field="part file")
-        if part_path in seen_parts:
-            raise ValueError(f"{source}: duplicate Wiki part {part_path.name!r}")
-        seen_parts.add(part_path)
-
+    for part in parts:
+        part_path = part.path
         items = _load_jsonl(part_path)
-        if len(items) != declared:
+        if len(items) != part.records:
             raise ValueError(
-                f"{part_path}: declared {declared} records but contains {len(items)}"
+                f"{part_path}: declared {part.records} records but contains {len(items)}"
             )
         for item_index, item in enumerate(items):
             item_source = f"{part_path.as_posix()}#topic-{item_index}"
