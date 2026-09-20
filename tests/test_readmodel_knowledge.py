@@ -52,7 +52,7 @@ class KnowledgeProjectionTests(unittest.TestCase):
 
     def test_projection_has_expected_initial_curated_scope(self):
         projection = project_curated_knowledge(REPO_ROOT)
-        self.assertEqual(len(projection.records), 333)
+        self.assertEqual(len(projection.records), 590)
         counts: dict[str, int] = {}
         for record in projection.records:
             counts[record.kind.value] = counts.get(record.kind.value, 0) + 1
@@ -65,10 +65,51 @@ class KnowledgeProjectionTests(unittest.TestCase):
                 "company": 1,
                 "product": 303,
                 "unit": 16,
+                "endpoint": 68,
+                "operation": 15,
+                "form": 87,
+                "wiki_topic": 87,
             },
         )
         self.assertRegex(projection.source_fingerprint, r"^[0-9a-f]{64}$")
 
+
+
+    def test_extended_projectors_keep_values_out_of_search_text(self):
+        projection = project_curated_knowledge(REPO_ROOT)
+        records = {record.ref: record for record in projection.records}
+
+        operation = records["bm.operation.v1.ef4587de37e586d824803748"]
+        self.assertIn("vendor", operation.body)
+        self.assertNotIn("8561", operation.body)
+        self.assertIn(
+            "src.har.bizmania.2026-09-06.02#entry-296",
+            operation.evidence_refs,
+        )
+
+        form = records["bm.form.v1.149acbb9964adf9f"]
+        self.assertIn("city", form.body)
+        self.assertNotIn("25", form.body)
+        self.assertIn(
+            "src.har.bizmania.2026-09-06.01#entry-10125",
+            form.evidence_refs,
+        )
+
+        endpoint = records["bm.endpoint.v1.a79459f9202f98dc9a50155f"]
+        self.assertIn("cmd", endpoint.body)
+        self.assertNotIn("25", endpoint.body)
+        self.assertIn(
+            "src.har.bizmania.2026-09-06.01#entry-7822",
+            endpoint.evidence_refs,
+        )
+
+        wiki = records["bm.wiki.v1.b3142a5c857c9885c7d64247"]
+        self.assertEqual(wiki.title, "Авторегулирование снабжения")
+        self.assertIn("автозакупка", wiki.body.casefold())
+        self.assertEqual(
+            wiki.evidence_refs,
+            ("src.har.bizmania-faq.2026-09-06.01#entry-2296",),
+        )
 
     def test_projection_rejects_tampered_source_fingerprint(self):
         record = KnowledgeRecord(
@@ -146,13 +187,13 @@ class KnowledgeIndexTests(unittest.TestCase):
                     )
                     self.assertEqual(
                         connection.execute("SELECT COUNT(*) FROM ref").fetchone()[0],
-                        333,
+                        590,
                     )
 
             with KnowledgeIndex(first_path) as index:
                 meta = index.metadata()
             self.assertEqual(meta["generation"], first_generation)
-            self.assertEqual(meta["item_count"], "333")
+            self.assertEqual(meta["item_count"], "590")
             self.assertEqual(meta["completed_at"], FIXED_COMPLETED_AT)
 
     def test_foreign_database_is_rejected(self):
@@ -228,11 +269,9 @@ class KnowledgeIndexTests(unittest.TestCase):
 
 
 class RetrievalEvaluationTests(unittest.TestCase):
-    def test_v1_curated_eval_is_perfect_and_evidence_correct(self):
+    def _assert_eval_fixture_is_perfect(self, fixture: str) -> None:
         document = json.loads(
-            (REPO_ROOT / "tests/fixtures/retrieval_eval_v1.json").read_text(
-                encoding="utf-8"
-            )
+            (REPO_ROOT / "tests/fixtures" / fixture).read_text(encoding="utf-8")
         )
         cases = tuple(EvaluationCase(**case) for case in document["cases"])
         with tempfile.TemporaryDirectory() as tmp:
@@ -250,6 +289,12 @@ class RetrievalEvaluationTests(unittest.TestCase):
         self.assertEqual(metrics.recall_at_5, 1.0)
         self.assertEqual(metrics.mrr, 1.0)
         self.assertEqual(metrics.evidence_correctness, 1.0)
+
+    def test_v1_curated_eval_remains_perfect(self):
+        self._assert_eval_fixture_is_perfect("retrieval_eval_v1.json")
+
+    def test_v2_extended_eval_is_perfect(self):
+        self._assert_eval_fixture_is_perfect("retrieval_eval_v2.json")
 
 
 if __name__ == "__main__":

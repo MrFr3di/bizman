@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import json
 from pathlib import Path
-from typing import Any, Mapping
 
 from bizman.foundation.fingerprint import canonical_sha256
+from bizman.readmodel.extended import extended_knowledge_records
 from bizman.readmodel.model import KnowledgeRecord, RefKind
+from bizman.readmodel.projection_support import (
+    load_json as _load_json,
+    non_negative_int as _non_negative_int,
+    require_mapping as _require_mapping,
+    require_string as _require_string,
+    safe_child as _safe_child,
+    string_list as _string_list,
+)
 
 
 def _record_semantics(record: KnowledgeRecord) -> dict[str, object]:
@@ -42,48 +49,6 @@ class KnowledgeProjection:
         if self.source_fingerprint != expected_fingerprint:
             raise ValueError("source_fingerprint does not match projected record semantics")
         object.__setattr__(self, "records", ordered)
-
-
-def _load_json(path: Path) -> Any:
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"cannot load curated knowledge file {path}: {exc}") from exc
-
-
-def _require_mapping(value: object, *, source: str) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping):
-        raise ValueError(f"{source}: expected JSON object")
-    return value
-
-
-def _require_string(value: object, *, source: str, field: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{source}: {field} must be a non-empty string")
-    return value.strip()
-
-
-def _non_negative_int(value: object, *, source: str, field: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise ValueError(f"{source}: {field} must be a non-negative integer")
-    return value
-
-
-def _string_list(value: object, *, source: str, field: str) -> tuple[str, ...]:
-    if value is None:
-        return ()
-    if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
-        raise ValueError(f"{source}: {field} must be an array of non-empty strings")
-    return tuple(value)
-
-
-def _safe_child(root: Path, relative: object, *, source: str) -> Path:
-    text = _require_string(relative, source=source, field="part path")
-    candidate = (root / text).resolve(strict=True)
-    resolved_root = root.resolve(strict=True)
-    if not candidate.is_relative_to(resolved_root) or not candidate.is_file():
-        raise ValueError(f"{source}: part path escapes products directory")
-    return candidate
 
 
 def _action_records(root: Path) -> list[KnowledgeRecord]:
@@ -133,8 +98,10 @@ def _action_records(root: Path) -> list[KnowledgeRecord]:
                 raise ValueError(f"{source}.query_key_sets[{query_index}]: invalid keys")
             query_keys.update(raw_keys)
 
-        path_words = " ".join(part for part in route.strip("/").split("/") if part)
-        aliases = (route, f"{method} {route}", path_words)
+        path_parts = tuple(part for part in route.strip("/").split("/") if part)
+        path_words = " ".join(path_parts)
+        short_path_words = " ".join(path_parts[-2:]) if len(path_parts) >= 2 else path_words
+        aliases = (route, f"{method} {route}", path_words, short_path_words)
         body = " ".join(
             value
             for value in (
@@ -191,7 +158,12 @@ def _product_records(root: Path) -> list[KnowledgeRecord]:
             raise ValueError(
                 f"{source}: offset {declared_offset} != expected {expected_offset}"
             )
-        part_path = _safe_child(products_root, part.get("path"), source=source)
+        part_path = _safe_child(
+            products_root,
+            part.get("path"),
+            source=source,
+            field="part path",
+        )
         if part_path in seen_part_paths:
             raise ValueError(f"{source}: duplicate product part path {part_path.name!r}")
         seen_part_paths.add(part_path)
@@ -310,6 +282,7 @@ def project_curated_knowledge(repo_root: Path) -> KnowledgeProjection:
                 *_action_records(root),
                 *_product_records(root),
                 *_entity_records(root),
+                *extended_knowledge_records(root),
             ),
             key=lambda item: item.ref,
         )

@@ -1,0 +1,45 @@
+{
+  "schema_version": 2,
+  "cases": [
+    {
+      "query": "bm.action.units.vendor.select",
+      "expected_ref": "bm.action.units.vendor.select",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.02#entry-296"
+    },
+    {
+      "query": "product:416",
+      "expected_ref": "bm.product.antiseptic",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-442"
+    },
+    {
+      "query": "Компания Paradise",
+      "expected_ref": "bm.company.13393",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-661"
+    },
+    {
+      "query": "endpoint:/city/map/",
+      "expected_ref": "bm.endpoint.v1.a79459f9202f98dc9a50155f",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-7822"
+    },
+    {
+      "query": "op-011",
+      "expected_ref": "bm.operation.v1.ef4587de37e586d824803748",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.02#entry-296"
+    },
+    {
+      "query": "form:149acbb9964adf9f",
+      "expected_ref": "bm.form.v1.149acbb9964adf9f",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-10125"
+    },
+    {
+      "query": "wiki:Авторегулирование снабжения",
+      "expected_ref": "bm.wiki.v1.b3142a5c857c9885c7d64247",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-2296"
+    },
+    {
+      "query": "автозакупка недельного потребления",
+      "expected_ref": "bm.wiki.v1.b3142a5c857c9885c7d64247",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-2296"
+    }
+  ]
+}
