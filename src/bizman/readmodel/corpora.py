@@ -406,7 +406,10 @@ def _wiki_records(root: Path, capture_sources: Mapping[str, str]) -> list[Knowle
     records: list[KnowledgeRecord] = []
     for item, source in rows:
         topic = _require_string(item.get("topic"), source=source, field="topic")
-        text = _require_string(item.get("text"), source=source, field="text")
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            raise ValueError(f"{source}: text must be a string")
+        text = raw_text.strip()
         related = _string_list(item.get("related_topics"), source=source, field="related_topics")
         source_info = _require_mapping(item.get("source"), source=f"{source}.source")
         source_path = _require_string(
