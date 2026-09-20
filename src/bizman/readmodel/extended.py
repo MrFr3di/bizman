@@ -497,7 +497,10 @@ def _wiki_records(
             if topic in seen_topics:
                 raise ValueError(f"{item_source}: duplicate Wiki topic {topic!r}")
             seen_topics.add(topic)
-            text = _text(item.get("text"), source=item_source, field="text")
+            text_value = item.get("text")
+            if not isinstance(text_value, str):
+                raise ValueError(f"{item_source}: text must be a string")
+            text = text_value
             related = _string_list(
                 item.get("related_topics", []),
                 source=item_source,
