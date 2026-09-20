@@ -24,6 +24,19 @@ INDEX_SCHEMA_VERSION = 1
 PROJECTION_VERSION = 1
 _MAX_EVIDENCE_REFS_PER_HIT = 8
 _FTS_TOKEN_RE = re.compile(r"\w+", re.UNICODE)
+_EXPECTED_STRICT_TABLES = frozenset(
+    {"ref", "knowledge_item", "alias", "knowledge_evidence", "index_meta"}
+)
+_EXPECTED_META_KEYS = frozenset(
+    {
+        "schema_version",
+        "projection_version",
+        "source_fingerprint",
+        "generation",
+        "item_count",
+        "completed_at",
+    }
+)
 
 
 class ReadModelError(RuntimeError):
@@ -113,9 +126,79 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
         raise ReadModelCompatibilityError(
             f"read-model schema {user_version} != supported {INDEX_SCHEMA_VERSION}"
         )
+
+    table_rows = {
+        str(row[1]): (str(row[2]).casefold(), int(row[5]))
+        for row in connection.execute("PRAGMA table_list")
+    }
+    missing = _EXPECTED_STRICT_TABLES - set(table_rows)
+    if missing:
+        raise ReadModelCompatibilityError(
+            "read-model database is missing required tables: "
+            + ", ".join(sorted(missing))
+        )
+    if any(
+        table_rows[name][0] != "table" or table_rows[name][1] != 1
+        for name in _EXPECTED_STRICT_TABLES
+    ):
+        raise ReadModelCompatibilityError(
+            "read-model ordinary schema tables must all be STRICT"
+        )
+    fts = table_rows.get("knowledge_fts")
+    if fts is None or fts[0] != "virtual":
+        raise ReadModelCompatibilityError(
+            "read-model database is missing knowledge_fts virtual table"
+        )
+
     integrity = str(connection.execute("PRAGMA integrity_check").fetchone()[0])
     if integrity.casefold() != "ok":
         raise ReadModelIntegrityError(f"SQLite integrity_check failed: {integrity}")
+
+    meta = {
+        str(row["key"]): str(row["value"])
+        for row in connection.execute("SELECT key, value FROM index_meta")
+    }
+    if set(meta) != _EXPECTED_META_KEYS:
+        raise ReadModelCompatibilityError(
+            "read-model metadata keys do not match schema v1 contract"
+        )
+    if meta["schema_version"] != str(INDEX_SCHEMA_VERSION):
+        raise ReadModelCompatibilityError(
+            "read-model metadata schema_version does not match PRAGMA user_version"
+        )
+    if meta["projection_version"] != str(PROJECTION_VERSION):
+        raise ReadModelCompatibilityError(
+            "read-model projection version is unsupported"
+        )
+    try:
+        item_count = int(meta["item_count"])
+    except ValueError as exc:
+        raise ReadModelIntegrityError("read-model item_count is not an integer") from exc
+    if item_count < 0:
+        raise ReadModelIntegrityError("read-model item_count must be non-negative")
+
+    actual_item_count = int(connection.execute("SELECT COUNT(*) FROM ref").fetchone()[0])
+    actual_fts_count = int(
+        connection.execute("SELECT COUNT(*) FROM knowledge_fts").fetchone()[0]
+    )
+    if actual_item_count != item_count or actual_fts_count != item_count:
+        raise ReadModelIntegrityError(
+            "read-model item counts disagree with persisted metadata"
+        )
+
+    expected_generation = canonical_sha256(
+        {
+            "schema_version": INDEX_SCHEMA_VERSION,
+            "projection_version": PROJECTION_VERSION,
+            "source_fingerprint": meta["source_fingerprint"],
+            "item_count": item_count,
+        }
+    )
+    if meta["generation"] != expected_generation:
+        raise ReadModelIntegrityError(
+            "read-model generation fingerprint does not match metadata"
+        )
+    _validate_completed_at(meta["completed_at"])
 
 
 def _validate_completed_at(value: str) -> str:

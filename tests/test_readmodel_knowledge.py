@@ -24,6 +24,7 @@ from bizman.readmodel.store import (
     INDEX_APPLICATION_ID,
     INDEX_SCHEMA_VERSION,
     ReadModelCompatibilityError,
+    ReadModelIntegrityError,
 )
 
 
@@ -160,6 +161,40 @@ class KnowledgeIndexTests(unittest.TestCase):
             with closing(sqlite3.connect(path)) as connection:
                 connection.execute("CREATE TABLE foreign_table(value TEXT)")
             with self.assertRaises(ReadModelCompatibilityError):
+                KnowledgeIndex(path)
+
+
+    def test_spoofed_identity_without_schema_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "spoofed.sqlite3"
+            with closing(sqlite3.connect(path)) as connection:
+                connection.execute(f"PRAGMA application_id = {INDEX_APPLICATION_ID}")
+                connection.execute(f"PRAGMA user_version = {INDEX_SCHEMA_VERSION}")
+                connection.execute("CREATE TABLE decoy(value TEXT) STRICT")
+            with self.assertRaisesRegex(ReadModelCompatibilityError, "missing required tables"):
+                KnowledgeIndex(path)
+
+    def test_tampered_metadata_or_item_counts_are_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path, _ = self._build(Path(tmp))
+            with closing(sqlite3.connect(path)) as connection:
+                connection.execute(
+                    "UPDATE index_meta SET value = ? WHERE key = 'generation'",
+                    ("0" * 64,),
+                )
+                connection.commit()
+            with self.assertRaisesRegex(ReadModelIntegrityError, "generation fingerprint"):
+                KnowledgeIndex(path)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path, _ = self._build(Path(tmp))
+            with closing(sqlite3.connect(path)) as connection:
+                connection.execute(
+                    "UPDATE index_meta SET value = ? WHERE key = 'item_count'",
+                    ("999",),
+                )
+                connection.commit()
+            with self.assertRaisesRegex(ReadModelIntegrityError, "item counts"):
                 KnowledgeIndex(path)
 
     def test_search_resolution_order_and_bounded_evidence(self):
