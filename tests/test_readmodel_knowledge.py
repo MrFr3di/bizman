@@ -296,11 +296,9 @@ class KnowledgeIndexTests(unittest.TestCase):
 
 
 class RetrievalEvaluationTests(unittest.TestCase):
-    def test_v1_curated_eval_is_perfect_and_evidence_correct(self):
+    def _assert_perfect_fixture(self, fixture_name: str) -> None:
         document = json.loads(
-            (REPO_ROOT / "tests/fixtures/retrieval_eval_v1.json").read_text(
-                encoding="utf-8"
-            )
+            (REPO_ROOT / "tests/fixtures" / fixture_name).read_text(encoding="utf-8")
         )
         cases = tuple(EvaluationCase(**case) for case in document["cases"])
         with tempfile.TemporaryDirectory() as tmp:
@@ -319,30 +317,11 @@ class RetrievalEvaluationTests(unittest.TestCase):
         self.assertEqual(metrics.mrr, 1.0)
         self.assertEqual(metrics.evidence_correctness, 1.0)
 
+    def test_v1_curated_eval_is_perfect_and_evidence_correct(self):
+        self._assert_perfect_fixture("retrieval_eval_v1.json")
 
     def test_v2_extended_curated_eval_is_perfect_and_evidence_correct(self):
-        document = json.loads(
-            (REPO_ROOT / "tests/fixtures/retrieval_eval_v2.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        cases = tuple(EvaluationCase(**case) for case in document["cases"])
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "agent-index.sqlite3"
-            rebuild_knowledge_index(
-                path,
-                project_curated_knowledge(REPO_ROOT),
-                completed_at=FIXED_COMPLETED_AT,
-            )
-            with KnowledgeIndex(path) as index:
-                metrics = evaluate_retrieval(index, cases)
-
-        self.assertEqual(metrics.cases, len(cases))
-        self.assertEqual(metrics.recall_at_1, 1.0)
-        self.assertEqual(metrics.recall_at_5, 1.0)
-        self.assertEqual(metrics.mrr, 1.0)
-        self.assertEqual(metrics.evidence_correctness, 1.0)
-
+        self._assert_perfect_fixture("retrieval_eval_v2.json")
 
 
 if __name__ == "__main__":
