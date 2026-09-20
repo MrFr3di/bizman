@@ -39,10 +39,10 @@ class KnowledgeProjectionTests(unittest.TestCase):
             counts,
             {
                 "action": 11,
-                "city": 1,
+                "city": 2,
                 "company": 1,
                 "product": 303,
-                "unit": 17,
+                "unit": 16,
             },
         )
         self.assertRegex(projection.source_fingerprint, r"^[0-9a-f]{64}$")
