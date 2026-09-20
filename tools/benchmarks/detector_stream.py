@@ -34,7 +34,7 @@ POST_PATH = "/units/customise/headquarterretailsettings/"
 GET_PATH = "/analitics/vendors/"
 _PLACEHOLDER_RE = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*\}")
 _TRIE_CONSIDER_THRESHOLD = 1.25
-_VALIDATION_PASSES = 3
+_VALIDATION_PASSES = 2
 
 
 def _positive_int(value: object, *, name: str) -> int:

@@ -1,0 +1,16 @@
+{
+  "base_commit": "c96d96ecfe0cab7fa4d115c1cf757ab5741f28b2",
+  "purpose": "Byte-identical pre-migration regression surface that must keep running through compatibility shims against canonical src/bizman implementations during P1.",
+  "files": {
+    "tests/test_collector.py": "6a7bee2114eeb0d097a157526c611933809b3d49",
+    "tests/test_action_pipeline.py": "9027a9dd36ae151a1154524aa4f0c90b96bdb49e",
+    "tests/test_security_hardening.py": "d435d7ee1705b5a920ddf464ac619b5292bc426a",
+    "tests/test_detector_integration.py": "7babe31a80f415cc336c09f3fcae4ab564f6cf3e",
+    "tests/test_promotion_bundle.py": "2b33a99436e101f7ffe47e06efa3ea2573153074",
+    "tests/test_detector_runner.py": "588e253f27097a4240b526c704bca8451cbf1371",
+    "tests/test_detector_state.py": "c44b5c2e19bdd1dbbf7b63680e5c635561657171",
+    "tests/test_detector_evidence.py": "85aa249ee944b008ec7898836bc0979a43ee766c",
+    "tests/test_detector_diff.py": "301f7dba54c411388bd0f50e24ea1da4aa8c855e",
+    "tests/test_detector_rules.py": "107e9ee3a1a6e86a48290b2f1a8d34c9fb08fa0b"
+  }
+}

@@ -1,26 +1,22 @@
-from __future__ import annotations
+"""Compatibility shim for canonical bizman.collector.events."""
 
-from datetime import UTC, datetime
-import time
+from importlib import import_module as _import_module
 
+from bizman.collector.events import *  # noqa: F401,F403
 
-class EventSequencer:
-    """Allocate contiguous event sequence numbers for one collector session."""
-
-    def __init__(self) -> None:
-        self._value = 0
-
-    def next(self) -> int:
-        value = self._value
-        self._value += 1
-        return value
+_canonical = _import_module("bizman.collector.events")
 
 
-class CollectorClock:
-    """Clock domain shared by every event producer in one collector process."""
+def __getattr__(name: str):
+    return getattr(_canonical, name)
 
-    def monotonic(self) -> float:
-        return time.monotonic()
 
-    def wall_iso(self) -> str:
-        return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+def __dir__():
+    return sorted(set(globals()) | set(dir(_canonical)))
+
+
+__all__ = getattr(
+    _canonical,
+    "__all__",
+    tuple(name for name in dir(_canonical) if not name.startswith("_")),
+)

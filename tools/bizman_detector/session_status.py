@@ -1,16 +1,5 @@
-from __future__ import annotations
+"""Compatibility re-export for canonical session status metadata."""
 
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True, slots=True)
-class EvidenceSessionStatus:
-    """Schema-validated collector session metadata without event replay."""
-
-    session_id: str
-    status: str
-    started_at: str
-    ended_at: str | None
-
+from bizman.sessions.status import EvidenceSessionStatus
 
 __all__ = ["EvidenceSessionStatus"]

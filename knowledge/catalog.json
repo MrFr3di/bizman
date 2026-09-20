@@ -21,7 +21,7 @@
       "deprecated"
     ],
     "ci": "pull-request-gated+manual",
-    "ci_local_command": "python3 -m compileall -q tools tests && python3 -m unittest discover -s tests -v && python3 tools/validate_repo.py",
+    "ci_local_command": "uv lock --check && uv sync --locked && uv run ruff check src && uv run lint-imports && uv run python -m compileall -q src tools tests && uv run python -m unittest discover -s tests -v && uv run python tools/validate_repo.py",
     "ci_workflow": ".github/workflows/collector-e2e.yml"
   },
   "datasets": [

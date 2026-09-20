@@ -47,13 +47,19 @@
 
 ## Проверка
 
-Локально, без зависимостей и без расхода GitHub Actions quota:
+Текущий dependency/CI authority — `pyproject.toml` + `uv.lock`. Локально основной детерминированный gate:
 
 ```bash
-python3 tools/validate_repo.py
+uv lock --check
+uv sync --locked
+uv run ruff check src
+uv run lint-imports
+uv run python -m compileall -q src tools tests
+uv run python -m unittest discover -s tests -v
+uv run python tools/validate_repo.py
 ```
 
-GitHub workflow `.github/workflows/manual-validate.yml` запускается только вручную через `workflow_dispatch`; автоматических `push`, `pull_request` и scheduled запусков нет.
+GitHub workflow `.github/workflows/collector-e2e.yml` запускается для релевантных pull request и вручную через `workflow_dispatch`. Он включает Python 3.14 full validation, Python 3.11 compatibility, real Chrome E2E и benchmark jobs. Актуальная политика описана в `docs/CI.md`, этапы развития — в `docs/ROADMAP.md`.
 
 ## Правило для агентов
 

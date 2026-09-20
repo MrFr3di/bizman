@@ -10,5 +10,5 @@ Rules:
 4. Prefer stable `bm.*` IDs in cross-references instead of filename-only references.
 5. `observed`, `documented`, `discovered-reference`, `inferred`, `hypothesis`, `verified`, `contradicted`, and `deprecated` are materially different confidence states.
 6. Update machine-readable knowledge before human-facing indexes when both are changed.
-7. Run `python3 tools/validate_repo.py` before proposing a PR that changes `knowledge/**`.
+7. Run `uv sync --locked` and `uv run python tools/validate_repo.py` before proposing a PR that changes `knowledge/**`; use the full gate from root `AGENTS.md` before merge.
 8. Do not replace evidence with summaries: summaries may be regenerated; source-linked observations must remain traceable.

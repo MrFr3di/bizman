@@ -35,16 +35,19 @@ Every new protocol or mechanic claim must link to at least one source capture + 
 - Keep machine-readable knowledge as the source of truth; Markdown explains it.
 
 ## Validation and CI
-Before proposing changes to `knowledge/`, `schemas/`, generated indexes or ingestion contracts, run:
+Before proposing changes to `knowledge/`, `schemas/`, generated indexes, package/Core boundaries or ingestion contracts, run the canonical locked validation surface:
 
 ```bash
-python3 -m pip install -r tools/requirements.txt
-python3 -m compileall -q tools tests
-python3 -m unittest discover -s tests -v
-python3 tools/validate_repo.py
+uv lock --check
+uv sync --locked
+uv run ruff check src
+uv run lint-imports
+uv run python -m compileall -q src tools tests
+uv run python -m unittest discover -s tests -v
+uv run python tools/validate_repo.py
 ```
 
-Relevant pull requests use GitHub-hosted CI for the same deterministic checks plus real Chrome for Testing CDP E2E coverage and a non-gating storage benchmark. Do not add routine `push` or scheduled workflows without a concrete need; use path-filtered PR checks and `workflow_dispatch`. See `docs/CI.md`.
+`pyproject.toml` plus `uv.lock` are the dependency authority; do not reintroduce pip requirements files. Relevant pull requests use the path-filtered `collector-quality-gate` workflow, which also provides `workflow_dispatch` for manual runs. The gate includes Python 3.14 validation, Python 3.11 compatibility, real Chrome for Testing E2E and benchmarks. Do not add routine `push` or scheduled workflows without a concrete need. See `docs/CI.md`.
 
 ## Collector rules
 - Collection is passive by default. Keep the CDP command allowlist narrow and do not add mutating browser/game operations to the collector.

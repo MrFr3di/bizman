@@ -1,12 +1,22 @@
-from __future__ import annotations
+"""Compatibility shim for canonical bizman.changes.rules.forms."""
 
-from tools.bizman_detector.model import RuleDescriptor
+from importlib import import_module as _import_module
+
+from bizman.changes.rules.forms import *  # noqa: F401,F403
+
+_canonical = _import_module("bizman.changes.rules.forms")
 
 
-FORM_RULES: tuple[RuleDescriptor, ...] = (
-    RuleDescriptor("BM-FORM-001", 1, "form.signature_new"),
-    RuleDescriptor("BM-FORM-002", 1, "form.field_added"),
+def __getattr__(name: str):
+    return getattr(_canonical, name)
+
+
+def __dir__():
+    return sorted(set(globals()) | set(dir(_canonical)))
+
+
+__all__ = getattr(
+    _canonical,
+    "__all__",
+    tuple(name for name in dir(_canonical) if not name.startswith("_")),
 )
-
-
-__all__ = ["FORM_RULES"]

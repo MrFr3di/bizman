@@ -42,7 +42,7 @@ class DetectorBenchmarkContractTests(unittest.TestCase):
             )
 
         self.assertEqual(result["source_events"], 200)
-        self.assertEqual(result["validated_event_passes"], 3)
+        self.assertEqual(result["validated_event_passes"], 2)
         self.assertEqual(result["observations"]["http"], 80)
         self.assertEqual(result["observations"]["forms"], 20)
         self.assertEqual(result["observations"]["relations"], 20)
