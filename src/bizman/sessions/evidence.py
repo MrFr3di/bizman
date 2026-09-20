@@ -356,7 +356,7 @@ class EvidenceReader:
         expected_sequence = 0
 
         with _UniqueEventIds() as ids:
-            for index, (event_rel, event_path) in enumerate(event_files):
+            for event_rel, event_path in event_files:
                 digest = hashlib.sha256()
                 total_bytes = 0
                 line_number = 0
@@ -368,39 +368,39 @@ class EvidenceReader:
                     ) from exc
                 with handle:
                     while True:
-                            raw_line = handle.readline(self.max_event_line_bytes + 1)
-                            if not raw_line:
-                                break
-                            line_number += 1
-                            if len(raw_line) > self.max_event_line_bytes:
-                                raise EvidenceIntegrityError(
-                                    f"{event_rel}:{line_number}: event line exceeds "
-                                    f"{self.max_event_line_bytes} bytes"
-                                )
-                            digest.update(raw_line)
-                            total_bytes += len(raw_line)
-                            try:
-                                text = raw_line.decode("utf-8")
-                            except UnicodeDecodeError as exc:
-                                raise EvidenceFormatError(
-                                    f"{event_rel}:{line_number}: invalid UTF-8"
-                                ) from exc
-                            try:
-                                value = json.loads(text)
-                            except json.JSONDecodeError as exc:
-                                raise EvidenceFormatError(
-                                    f"{event_rel}:{line_number}: invalid JSON: {exc.msg}"
-                                ) from exc
-                            source = f"{event_rel}:{line_number}"
-                            event = self._validate_event(
-                                value,
-                                session_id=session_id,
-                                source=source,
-                                expected_sequence=expected_sequence,
-                                ids=ids,
+                        raw_line = handle.readline(self.max_event_line_bytes + 1)
+                        if not raw_line:
+                            break
+                        line_number += 1
+                        if len(raw_line) > self.max_event_line_bytes:
+                            raise EvidenceIntegrityError(
+                                f"{event_rel}:{line_number}: event line exceeds "
+                                f"{self.max_event_line_bytes} bytes"
                             )
-                            expected_sequence += 1
-                            yield event
+                        digest.update(raw_line)
+                        total_bytes += len(raw_line)
+                        try:
+                            text = raw_line.decode("utf-8")
+                        except UnicodeDecodeError as exc:
+                            raise EvidenceFormatError(
+                                f"{event_rel}:{line_number}: invalid UTF-8"
+                            ) from exc
+                        try:
+                            value = json.loads(text)
+                        except json.JSONDecodeError as exc:
+                            raise EvidenceFormatError(
+                                f"{event_rel}:{line_number}: invalid JSON: {exc.msg}"
+                            ) from exc
+                        source = f"{event_rel}:{line_number}"
+                        event = self._validate_event(
+                            value,
+                            session_id=session_id,
+                            source=source,
+                            expected_sequence=expected_sequence,
+                            ids=ids,
+                        )
+                        expected_sequence += 1
+                        yield event
                 if file_hashes is not None:
                     file_hashes.append(
                         {
