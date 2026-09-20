@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import hashlib
 import json
 from pathlib import Path
 import unittest
@@ -13,6 +14,9 @@ from tools.bizman_foundation.redaction import load_redaction_policy
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 GOLDEN_PATH = REPO_ROOT / "tests" / "fixtures" / "package_migration_golden.json"
+REGRESSION_MANIFEST_PATH = (
+    REPO_ROOT / "tests" / "fixtures" / "pre_migration_regression_blobs.json"
+)
 
 
 def _semantic_fingerprint() -> dict[str, object]:
@@ -41,6 +45,12 @@ def _semantic_fingerprint() -> dict[str, object]:
             for item in RULE_DESCRIPTORS
         ],
     }
+
+
+def _git_blob_sha(path: Path) -> str:
+    payload = path.read_bytes()
+    header = f"blob {len(payload)}\0".encode("ascii")
+    return hashlib.sha1(header + payload, usedforsecurity=False).hexdigest()
 
 
 class PackageMigrationSemanticContractTests(unittest.TestCase):

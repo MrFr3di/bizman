@@ -223,26 +223,17 @@ Compatibility modules must re-export canonical objects from `bizman.*`, not dupl
 
 ## Pre-migration parity proof
 
-Before moving production code, P1 records deterministic semantic golden fixtures from current `main`.
+P1 uses a layered proof rather than regenerating all expectations from the migrated implementation.
 
-Detector parity must cover:
+1. `tests/fixtures/package_migration_golden.json` freezes the reviewed base contract/profile fingerprints and corpus counts from `c96d96ecfe0cab7fa4d115c1cf757ab5741f28b2`.
+2. `tests/fixtures/pre_migration_regression_blobs.json` freezes the Git blob identities of selected high-value regression tests from that same base commit. Those files must remain byte-identical during P1 and are executed unchanged through the legacy `tools.*` compatibility imports, which resolve to canonical `src/bizman` objects.
+3. Package compatibility tests prove important old/new imports resolve to the same canonical objects.
 
-- canonical RuntimeContract fingerprint/baseline SHA;
-- AnalysisProfile SHA;
-- semantic DiffFact set;
-- Finding/change ID set;
-- DetectorRunSummary semantic output;
-- Promotion Bundle canonical bytes.
+The frozen pre-migration regression surface covers collector normalization/action correlation, security hardening, evidence validation, semantic diff/rules, detector runner/state integration and Promotion Bundle determinism. This prevents P1 from silently editing the old assertions to make the migration pass.
 
-Collector parity must cover deterministic semantic projection of:
+Together these checks must preserve the semantic identities required by P1: RuntimeContract/baseline/Profile fingerprints, deterministic change identity behavior, Promotion Bundle canonicalization, detector SQLite compatibility and collector/detector observable behavior for the retained base regression fixtures.
 
-- event kinds;
-- normalized HTTP request/response shapes;
-- DOM action shapes;
-- action↔HTTP correlations;
-- redacted structural payload.
-
-Runtime-only values such as UUIDs, wall-clock timestamps or CDP request IDs are normalized out of the golden collector projection where they are not semantic identity.
+If a frozen regression file must change for a legitimate P1 fix, the change requires an explicit replacement regression proving the old behavior or the intentionally corrected behavior; do not simply update the frozen blob manifest.
 
 ## Architecture enforcement
 
@@ -308,7 +299,7 @@ P1 is mergeable only when all are true:
 18. Expected infrastructure exceptions do not leak through Core.
 19. Application-generated UTC time uses injected `UtcClock`; source/evidence timestamps are unchanged.
 20. RuntimeContract/baseline/Profile/change IDs/Promotion Bundle bytes/SQLite schema remain behavior-equivalent.
-21. Pre/post migration semantic golden fixtures match.
+21. The semantic golden and frozen byte-identical pre-migration regression manifest both match.
 22. Compatibility import/CLI shims preserve object identity and behavior.
 23. No new sensitive/runtime artifacts are packaged or committed.
 24. CodeRabbit/manual review has no unresolved blocker.

@@ -37,7 +37,8 @@
 - [ ] Write a test that constructs the real RuntimeContract/profile and deterministic detector fixture, then compares canonical semantic fingerprints with `tests/fixtures/package_migration_golden.json`.
 - [ ] Add collector semantic projection coverage that excludes only explicitly runtime-specific values.
 - [ ] Run the new test without a golden file and verify RED because the migration baseline has not been captured.
-- [ ] Generate the golden only from the verified current implementation, review that it contains no secret/value-bearing data, commit it, and verify GREEN.
+- [ ] Generate the semantic golden only from the verified pre-migration base, review that it contains no secret/value-bearing data, commit it, and verify GREEN.
+- [ ] Freeze Git blob identities for selected high-value pre-migration regression tests and verify they remain byte-identical while running through compatibility shims.
 - [ ] Run the full 183-test pre-existing suite plus the new migration tests.
 - [ ] Commit: `test: freeze pre-migration semantic identities`.
 
