@@ -51,6 +51,7 @@ forbidden_modules = [
     "bizman.changes",
     "bizman.core",
     "bizman.cli",
+    "bizman.readmodel",
 ]
 
 [[tool.importlinter.contracts]]
@@ -62,6 +63,7 @@ forbidden_modules = [
     "bizman.changes",
     "bizman.core",
     "bizman.cli",
+    "bizman.readmodel",
 ]
 
 [[tool.importlinter.contracts]]
@@ -73,12 +75,24 @@ forbidden_modules = [
     "bizman.changes",
     "bizman.core",
     "bizman.cli",
+    "bizman.readmodel",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Changes do not depend on collector or application layers"
 type = "forbidden"
 source_modules = ["bizman.changes"]
+forbidden_modules = [
+    "bizman.collector",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.readmodel",
+]
+
+[[tool.importlinter.contracts]]
+name = "Read model is independent from collector and application layers"
+type = "forbidden"
+source_modules = ["bizman.readmodel"]
 forbidden_modules = [
     "bizman.collector",
     "bizman.core",
@@ -100,5 +114,6 @@ forbidden_modules = [
     "bizman.sessions",
     "bizman.collector",
     "bizman.changes",
+    "bizman.readmodel",
 ]
 allow_indirect_imports = true
