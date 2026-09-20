@@ -65,5 +65,17 @@ class PackageMigrationSemanticContractTests(unittest.TestCase):
         self.assertEqual(actual, expected)
 
 
+    def test_selected_pre_migration_regressions_remain_byte_identical(self):
+        manifest = json.loads(REGRESSION_MANIFEST_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(
+            manifest["base_commit"],
+            "c96d96ecfe0cab7fa4d115c1cf757ab5741f28b2",
+        )
+        for relative, expected_blob_sha in sorted(manifest["files"].items()):
+            path = REPO_ROOT / relative
+            self.assertTrue(path.is_file(), relative)
+            self.assertEqual(_git_blob_sha(path), expected_blob_sha, relative)
+
+
 if __name__ == "__main__":
     unittest.main()

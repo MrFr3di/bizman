@@ -313,5 +313,45 @@ class CodeRabbitReviewRegressionTests(unittest.TestCase):
         self.assertIn('- ".github/workflows/**"', workflow)
 
 
+    def test_malformed_path_placeholder_is_rejected_before_exact_match_shortcut(self):
+        from bizman.changes.normalization import PathMatcher
+
+        with self.assertRaisesRegex(ValueError, "invalid path placeholder"):
+            PathMatcher(("/users/{user-id}",))
+
+    def test_cdp_command_timeout_is_bounded_and_cleans_pending_command(self):
+        from bizman.collector.cdp import CdpCommandTimeout, CdpConnection
+
+        class SilentTransport:
+            async def send(self, message: str) -> None:
+                del message
+
+            def __aiter__(self):
+                async def messages():
+                    if False:
+                        yield ""
+
+                return messages()
+
+            async def close(self) -> None:
+                return None
+
+        async def scenario() -> None:
+            connection = CdpConnection(SilentTransport(), command_timeout=0.01)
+            with self.assertRaisesRegex(CdpCommandTimeout, "Target.getTargets"):
+                await connection.command("Target.getTargets")
+            self.assertEqual(connection._pending, {})
+
+        asyncio.run(scenario())
+
+    def test_cdp_command_timeout_rejects_non_finite_configuration(self):
+        from bizman.collector.cdp import CdpConnection
+
+        transport = MagicMock()
+        for value in (0.0, -1.0, float("nan"), float("inf")):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                CdpConnection(transport, command_timeout=value)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 import json
+import math
 from typing import Any, Protocol
 
 
@@ -65,8 +66,8 @@ class CdpConnection:
     ) -> None:
         if event_queue_size <= 0:
             raise ValueError("event_queue_size must be positive")
-        if command_timeout <= 0:
-            raise ValueError("command_timeout must be positive")
+        if not math.isfinite(command_timeout) or command_timeout <= 0:
+            raise ValueError("command_timeout must be a finite positive number")
         self._transport = transport
         self._allowed_methods = allowed_methods
         self._events: asyncio.Queue[CdpEvent] = asyncio.Queue(
