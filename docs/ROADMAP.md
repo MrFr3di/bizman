@@ -183,7 +183,32 @@ The `bizman.readmodel` package may consume deterministic lower layers but must n
 
 ### P2-B — Curated Corpus Coverage
 
-Extend explicit projectors to the remaining high-value curated corpora, especially operations, endpoints, forms and Wiki. Every projector defines exactly which fields are searchable and which provenance refs are retained.
+Extend explicit projectors to the remaining high-value curated corpora while preserving the P2-A retrieval contract.
+
+Implemented scope:
+
+```text
+P2-A base               333
+endpoints                68
+operations               15
+forms                    87
+Wiki topics              87
+---------------------------
+total                    590
+```
+
+Identity/provenance policy:
+
+- endpoints receive versioned deterministic refs from endpoint path identity;
+- operations receive versioned deterministic refs from path + query-key + body-key identity, while existing `op-*` IDs remain aliases;
+- forms preserve the existing deterministic `form_id` inside the versioned `bm.form.v1.*` namespace;
+- Wiki topics receive versioned deterministic refs from topic identity;
+- HAR observations are translated through the capture manifest to canonical `src.har.*#entry-N` evidence refs;
+- session observations retain their sanitized session/sequence refs.
+
+Searchable endpoint/operation/form text is allowlisted structure only: route, method, query-key names, field names/types and related structural metadata. Captured query/form/sample values are provenance, never FTS input. Wiki normalized documentation text remains searchable.
+
+P2-B bumps the projection contract version while retaining SQLite schema v1. The P2-A retrieval corpus remains a regression suite; P2-B adds an extended corpus and must preserve Recall@1/5, MRR and evidence correctness.
 
 ### P2-C — Session + Change Intelligence
 
