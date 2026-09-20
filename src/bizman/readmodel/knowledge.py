@@ -9,6 +9,23 @@ from bizman.foundation.fingerprint import canonical_sha256
 from bizman.readmodel.model import KnowledgeRecord, RefKind
 
 
+def _record_semantics(record: KnowledgeRecord) -> dict[str, object]:
+    return {
+        "ref": record.ref,
+        "kind": record.kind.value,
+        "title": record.title,
+        "aliases": list(record.aliases),
+        "body": record.body,
+        "evidence_refs": list(record.evidence_refs),
+        "source_dataset": record.source_dataset,
+    }
+
+
+def _projection_fingerprint(records: tuple[KnowledgeRecord, ...]) -> str:
+    ordered = tuple(sorted(records, key=lambda item: item.ref))
+    return canonical_sha256([_record_semantics(record) for record in ordered])
+
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeProjection:
     records: tuple[KnowledgeRecord, ...]
@@ -16,9 +33,15 @@ class KnowledgeProjection:
 
     def __post_init__(self) -> None:
         records = tuple(self.records)
+        if not all(isinstance(record, KnowledgeRecord) for record in records):
+            raise TypeError("records must contain only KnowledgeRecord values")
         if len({record.ref for record in records}) != len(records):
             raise ValueError("knowledge projection contains duplicate refs")
-        object.__setattr__(self, "records", tuple(sorted(records, key=lambda item: item.ref)))
+        ordered = tuple(sorted(records, key=lambda item: item.ref))
+        expected_fingerprint = _projection_fingerprint(ordered)
+        if self.source_fingerprint != expected_fingerprint:
+            raise ValueError("source_fingerprint does not match projected record semantics")
+        object.__setattr__(self, "records", ordered)
 
 
 def _load_json(path: Path) -> Any:
@@ -38,6 +61,12 @@ def _require_string(value: object, *, source: str, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{source}: {field} must be a non-empty string")
     return value.strip()
+
+
+def _non_negative_int(value: object, *, source: str, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{source}: {field} must be a non-negative integer")
+    return value
 
 
 def _string_list(value: object, *, source: str, field: str) -> tuple[str, ...]:
@@ -63,6 +92,11 @@ def _action_records(root: Path) -> list[KnowledgeRecord]:
     items = document.get("items")
     if not isinstance(items, list):
         raise ValueError(f"{path}: items must be an array")
+    declared_count = _non_negative_int(
+        document.get("count"), source=path.as_posix(), field="count"
+    )
+    if declared_count != len(items):
+        raise ValueError(f"{path}: declared count {declared_count} != {len(items)} items")
     records: list[KnowledgeRecord] = []
     for index, raw in enumerate(items):
         source = f"{path.as_posix()}#item-{index}"
@@ -71,6 +105,8 @@ def _action_records(root: Path) -> list[KnowledgeRecord]:
         method = _require_string(item.get("method"), source=source, field="method").upper()
         route = _require_string(item.get("path"), source=source, field="path")
         evidence = _string_list(item.get("evidence"), source=source, field="evidence")
+        if item.get("confidence") != "observed":
+            raise ValueError(f"{source}: action confidence must be observed")
 
         form_fields = item.get("form_fields")
         field_names: list[str] = []
@@ -133,15 +169,53 @@ def _product_records(root: Path) -> list[KnowledgeRecord]:
         raise ValueError(f"{index_path}: parts must be an array")
 
     records: list[KnowledgeRecord] = []
-    declared_total = index.get("total_count")
+    declared_total = _non_negative_int(
+        index.get("total_count"), source=index_path.as_posix(), field="total_count"
+    )
+    declared_part_count = _non_negative_int(
+        index.get("part_count"), source=index_path.as_posix(), field="part_count"
+    )
+    if declared_part_count != len(parts):
+        raise ValueError(
+            f"{index_path}: declared part_count {declared_part_count} != {len(parts)} parts"
+        )
+
+    expected_offset = 0
+    seen_part_paths: set[Path] = set()
     for part_index, raw_part in enumerate(parts):
         source = f"{index_path.as_posix()}#part-{part_index}"
         part = _require_mapping(raw_part, source=source)
+        declared_offset = _non_negative_int(part.get("offset"), source=source, field="offset")
+        declared_count = _non_negative_int(part.get("count"), source=source, field="count")
+        if declared_offset != expected_offset:
+            raise ValueError(
+                f"{source}: offset {declared_offset} != expected {expected_offset}"
+            )
         part_path = _safe_child(products_root, part.get("path"), source=source)
+        if part_path in seen_part_paths:
+            raise ValueError(f"{source}: duplicate product part path {part_path.name!r}")
+        seen_part_paths.add(part_path)
+
         document = _require_mapping(_load_json(part_path), source=part_path.as_posix())
         items = document.get("items")
         if not isinstance(items, list):
             raise ValueError(f"{part_path}: items must be an array")
+        if _non_negative_int(
+            document.get("part"), source=part_path.as_posix(), field="part"
+        ) != part_index:
+            raise ValueError(f"{part_path}: part number does not match manifest order")
+        if _non_negative_int(
+            document.get("offset"), source=part_path.as_posix(), field="offset"
+        ) != declared_offset:
+            raise ValueError(f"{part_path}: offset disagrees with product manifest")
+        if _non_negative_int(
+            document.get("count"), source=part_path.as_posix(), field="count"
+        ) != declared_count:
+            raise ValueError(f"{part_path}: count disagrees with product manifest")
+        if declared_count != len(items):
+            raise ValueError(
+                f"{part_path}: declared count {declared_count} != {len(items)} items"
+            )
         for item_index, raw in enumerate(items):
             item_source = f"{part_path.as_posix()}#item-{item_index}"
             item = _require_mapping(raw, source=item_source)
@@ -170,14 +244,12 @@ def _product_records(root: Path) -> list[KnowledgeRecord]:
                     source_dataset="products",
                 )
             )
+        expected_offset += declared_count
 
-    if isinstance(declared_total, int) and not isinstance(declared_total, bool):
-        if declared_total != len(records):
-            raise ValueError(
-                f"{index_path}: declared total_count {declared_total} != {len(records)} records"
-            )
-    else:
-        raise ValueError(f"{index_path}: total_count must be an integer")
+    if declared_total != len(records):
+        raise ValueError(
+            f"{index_path}: declared total_count {declared_total} != {len(records)} records"
+        )
     return records
 
 
@@ -228,18 +300,6 @@ def _entity_records(root: Path) -> list[KnowledgeRecord]:
     return records
 
 
-def _record_semantics(record: KnowledgeRecord) -> dict[str, object]:
-    return {
-        "ref": record.ref,
-        "kind": record.kind.value,
-        "title": record.title,
-        "aliases": list(record.aliases),
-        "body": record.body,
-        "evidence_refs": list(record.evidence_refs),
-        "source_dataset": record.source_dataset,
-    }
-
-
 def project_curated_knowledge(repo_root: Path) -> KnowledgeProjection:
     root = Path(repo_root).expanduser().resolve(strict=True)
     if not root.is_dir():
@@ -256,9 +316,7 @@ def project_curated_knowledge(repo_root: Path) -> KnowledgeProjection:
     )
     return KnowledgeProjection(
         records=records,
-        source_fingerprint=canonical_sha256(
-            [_record_semantics(record) for record in records]
-        ),
+        source_fingerprint=_projection_fingerprint(records),
     )
 
 

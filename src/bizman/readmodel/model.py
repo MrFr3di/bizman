@@ -19,6 +19,15 @@ class RefKind(StrEnum):
     UNIT = "unit"
 
 
+_REF_PREFIX = {
+    RefKind.ACTION: "bm.action.",
+    RefKind.PRODUCT: "bm.product.",
+    RefKind.CITY: "bm.city.",
+    RefKind.COMPANY: "bm.company.",
+    RefKind.UNIT: "bm.unit.",
+}
+
+
 class MatchKind(StrEnum):
     EXACT_REF = "exact_ref"
     EXACT_ALIAS = "exact_alias"
@@ -48,6 +57,10 @@ class KnowledgeRecord:
             raise TypeError("ref must be a non-empty string")
         if not isinstance(self.kind, RefKind):
             raise TypeError("kind must be RefKind")
+        if not self.ref.startswith(_REF_PREFIX[self.kind]):
+            raise ValueError(
+                f"ref {self.ref!r} does not match kind {self.kind.value!r}"
+            )
         if not isinstance(self.title, str) or not self.title.strip():
             raise TypeError("title must be a non-empty string")
         if not isinstance(self.body, str):

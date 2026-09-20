@@ -395,7 +395,7 @@ class KnowledgeIndex:
             ORDER BY score, r.ref
             LIMIT ?
             """,
-            (expression, *fts_kind_values, max(remaining * 4, remaining)),
+            (expression, *fts_kind_values, remaining + len(seen)),
         )
         self._append_rows(
             hits, seen, rows, MatchKind.FULL_TEXT, limit=query.limit

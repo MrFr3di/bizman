@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import closing
 import json
 from pathlib import Path
+import shutil
 import sqlite3
 import tempfile
 import unittest
@@ -10,7 +11,10 @@ import unittest
 from bizman.readmodel import (
     EvaluationCase,
     KnowledgeIndex,
+    KnowledgeProjection,
+    KnowledgeRecord,
     MatchKind,
+    RefKind,
     SearchQuery,
     evaluate_retrieval,
     project_curated_knowledge,
@@ -28,6 +32,23 @@ FIXED_COMPLETED_AT = "2026-09-20T13:30:00Z"
 
 
 class KnowledgeProjectionTests(unittest.TestCase):
+    def _copy_curated_scope(self, root: Path) -> Path:
+        (root / "knowledge/actions").mkdir(parents=True)
+        (root / "knowledge/domain").mkdir(parents=True)
+        shutil.copy2(
+            REPO_ROOT / "knowledge/actions/catalog.json",
+            root / "knowledge/actions/catalog.json",
+        )
+        shutil.copy2(
+            REPO_ROOT / "knowledge/domain/entities.json",
+            root / "knowledge/domain/entities.json",
+        )
+        shutil.copytree(
+            REPO_ROOT / "knowledge/domain/products",
+            root / "knowledge/domain/products",
+        )
+        return root
+
     def test_projection_has_expected_initial_curated_scope(self):
         projection = project_curated_knowledge(REPO_ROOT)
         self.assertEqual(len(projection.records), 333)
@@ -46,6 +67,52 @@ class KnowledgeProjectionTests(unittest.TestCase):
             },
         )
         self.assertRegex(projection.source_fingerprint, r"^[0-9a-f]{64}$")
+
+
+    def test_projection_rejects_tampered_source_fingerprint(self):
+        record = KnowledgeRecord(
+            ref="bm.product.synthetic",
+            kind=RefKind.PRODUCT,
+            title="Synthetic",
+            aliases=("synthetic",),
+            body="synthetic",
+            evidence_refs=("src.synthetic#1",),
+            source_dataset="products",
+        )
+        with self.assertRaisesRegex(ValueError, "source_fingerprint"):
+            KnowledgeProjection(records=(record,), source_fingerprint="0" * 64)
+
+    def test_projection_fails_closed_on_manifest_or_confidence_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._copy_curated_scope(Path(tmp) / "repo")
+            action_path = root / "knowledge/actions/catalog.json"
+            actions = json.loads(action_path.read_text(encoding="utf-8"))
+            actions["items"][0]["confidence"] = "inferred"
+            action_path.write_text(json.dumps(actions), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "confidence"):
+                project_curated_knowledge(root)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._copy_curated_scope(Path(tmp) / "repo")
+            index_path = root / "knowledge/domain/products/index.json"
+            product_index = json.loads(index_path.read_text(encoding="utf-8"))
+            product_index["parts"][1]["offset"] += 1
+            index_path.write_text(json.dumps(product_index), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "offset"):
+                project_curated_knowledge(root)
+
+    def test_record_kind_must_match_canonical_ref_namespace(self):
+        with self.assertRaisesRegex(ValueError, "does not match kind"):
+            KnowledgeRecord(
+                ref="bm.action.synthetic",
+                kind=RefKind.PRODUCT,
+                title="Synthetic",
+                aliases=(),
+                body="",
+                evidence_refs=("src.synthetic#1",),
+                source_dataset="products",
+            )
+
 
 
 class KnowledgeIndexTests(unittest.TestCase):
