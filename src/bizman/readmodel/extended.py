@@ -8,52 +8,18 @@ from urllib.parse import parse_qsl, urlsplit
 
 from bizman.foundation.fingerprint import canonical_sha256
 from bizman.readmodel.model import KnowledgeRecord, RefKind
+from bizman.readmodel.projection_support import (
+    load_json as _load_json,
+    non_negative_int as _non_negative_int,
+    require_mapping as _mapping,
+    require_string as _text,
+    safe_child as _safe_child,
+    string_list as _string_list,
+)
 
 
 _FORM_ID_RE = re.compile(r"^[0-9a-f]{16}$")
 _OPERATION_ID_RE = re.compile(r"^op-[0-9]{3}$")
-
-
-def _load_json(path: Path) -> Any:
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"cannot load curated knowledge file {path}: {exc}") from exc
-
-
-def _mapping(value: object, *, source: str) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping):
-        raise ValueError(f"{source}: expected JSON object")
-    return value
-
-
-def _text(value: object, *, source: str, field: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{source}: {field} must be a non-empty string")
-    return value.strip()
-
-
-def _non_negative_int(value: object, *, source: str, field: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise ValueError(f"{source}: {field} must be a non-negative integer")
-    return value
-
-
-def _string_list(value: object, *, source: str, field: str) -> tuple[str, ...]:
-    if not isinstance(value, list) or not all(
-        isinstance(item, str) and item for item in value
-    ):
-        raise ValueError(f"{source}: {field} must be an array of non-empty strings")
-    return tuple(value)
-
-
-def _safe_part(root: Path, relative: object, *, source: str) -> Path:
-    name = _text(relative, source=source, field="part file")
-    resolved_root = root.resolve(strict=True)
-    candidate = (root / name).resolve(strict=True)
-    if not candidate.is_relative_to(resolved_root) or not candidate.is_file():
-        raise ValueError(f"{source}: part file escapes dataset directory")
-    return candidate
 
 
 def _versioned_ref(namespace: str, semantic_identity: Mapping[str, object]) -> str:
@@ -132,7 +98,7 @@ def _endpoint_records(
         source = f"{index_path.as_posix()}#part-{part_index}"
         part = _mapping(raw_part, source=source)
         declared = _non_negative_int(part.get("records"), source=source, field="records")
-        part_path = _safe_part(dataset_root, part.get("file"), source=source)
+        part_path = _safe_child(dataset_root, part.get("file"), source=source, field="part file")
         if part_path in seen_parts:
             raise ValueError(f"{source}: duplicate endpoint part {part_path.name!r}")
         seen_parts.add(part_path)
@@ -353,7 +319,7 @@ def _form_records(
         if offset != expected_offset:
             raise ValueError(f"{source}: offset {offset} != expected {expected_offset}")
 
-        part_path = _safe_part(dataset_root, part.get("file"), source=source)
+        part_path = _safe_child(dataset_root, part.get("file"), source=source, field="part file")
         if part_path in seen_parts:
             raise ValueError(f"{source}: duplicate form part {part_path.name!r}")
         seen_parts.add(part_path)
@@ -481,7 +447,7 @@ def _wiki_records(
         source = f"{index_path.as_posix()}#part-{part_index}"
         part = _mapping(raw_part, source=source)
         declared = _non_negative_int(part.get("records"), source=source, field="records")
-        part_path = _safe_part(dataset_root, part.get("file"), source=source)
+        part_path = _safe_child(dataset_root, part.get("file"), source=source, field="part file")
         if part_path in seen_parts:
             raise ValueError(f"{source}: duplicate Wiki part {part_path.name!r}")
         seen_parts.add(part_path)
