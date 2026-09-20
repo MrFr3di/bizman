@@ -134,8 +134,10 @@ def _action_records(root: Path) -> list[KnowledgeRecord]:
                 raise ValueError(f"{source}.query_key_sets[{query_index}]: invalid keys")
             query_keys.update(raw_keys)
 
-        path_words = " ".join(part for part in route.strip("/").split("/") if part)
-        aliases = (route, f"{method} {route}", path_words)
+        path_segments = tuple(part for part in route.strip("/").split("/") if part)
+        path_words = " ".join(path_segments)
+        tail_words = " ".join(path_segments[-2:])
+        aliases = (route, f"{method} {route}", path_words, tail_words)
         body = " ".join(
             value
             for value in (
