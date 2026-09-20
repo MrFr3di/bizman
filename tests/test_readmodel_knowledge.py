@@ -129,6 +129,35 @@ class KnowledgeProjectionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "offset"):
                 project_curated_knowledge(root)
 
+
+    def test_projection_rejects_invalid_capture_registry_identity_or_integrity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._copy_curated_scope(Path(tmp) / "repo")
+            captures_path = root / "knowledge/sources/captures.json"
+            captures = json.loads(captures_path.read_text(encoding="utf-8"))
+            captures["captures"][0]["source_id"] = "har:bizmania.ru.har"
+            captures_path.write_text(json.dumps(captures), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "canonical src"):
+                project_curated_knowledge(root)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._copy_curated_scope(Path(tmp) / "repo")
+            captures_path = root / "knowledge/sources/captures.json"
+            captures = json.loads(captures_path.read_text(encoding="utf-8"))
+            captures["captures"][0].pop("sha256")
+            captures_path.write_text(json.dumps(captures), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "sha256"):
+                project_curated_knowledge(root)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._copy_curated_scope(Path(tmp) / "repo")
+            captures_path = root / "knowledge/sources/captures.json"
+            captures = json.loads(captures_path.read_text(encoding="utf-8"))
+            captures["captures"][0]["bytes"] = -1
+            captures_path.write_text(json.dumps(captures), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "bytes"):
+                project_curated_knowledge(root)
+
     def test_record_kind_must_match_canonical_ref_namespace(self):
         with self.assertRaisesRegex(ValueError, "does not match kind"):
             KnowledgeRecord(
