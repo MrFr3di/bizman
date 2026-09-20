@@ -13,6 +13,16 @@ class ValidationResult:
     errors: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
+    def __post_init__(self) -> None:
+        errors = tuple(self.errors)
+        warnings = tuple(self.warnings)
+        if not all(isinstance(value, str) for value in errors):
+            raise TypeError("errors must contain only strings")
+        if not all(isinstance(value, str) for value in warnings):
+            raise TypeError("warnings must contain only strings")
+        object.__setattr__(self, "errors", errors)
+        object.__setattr__(self, "warnings", warnings)
+
     @property
     def ok(self) -> bool:
         return not self.errors

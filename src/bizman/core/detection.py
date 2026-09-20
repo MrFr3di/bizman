@@ -40,6 +40,36 @@ class DetectorRunSummary:
     materialized_bundle_count: int
     pending_bundle_count: int
 
+    def __post_init__(self) -> None:
+        evidence_sha256s = tuple(self.evidence_sha256s)
+        first_seen_change_ids = tuple(self.first_seen_change_ids)
+        repeated_change_ids = tuple(self.repeated_change_ids)
+
+        normalized_fact_counts: list[tuple[str, int]] = []
+        for pair in self.fact_counts:
+            try:
+                key, value = pair
+            except (TypeError, ValueError) as exc:
+                raise TypeError("fact_counts must contain key/count pairs") from exc
+            if not isinstance(key, str) or not key:
+                raise TypeError("fact_counts keys must be non-empty strings")
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise TypeError("fact_counts values must be non-negative integers")
+            normalized_fact_counts.append((key, value))
+
+        for name, values in (
+            ("evidence_sha256s", evidence_sha256s),
+            ("first_seen_change_ids", first_seen_change_ids),
+            ("repeated_change_ids", repeated_change_ids),
+        ):
+            if not all(isinstance(value, str) and value for value in values):
+                raise TypeError(f"{name} must contain only non-empty strings")
+
+        object.__setattr__(self, "evidence_sha256s", evidence_sha256s)
+        object.__setattr__(self, "fact_counts", tuple(normalized_fact_counts))
+        object.__setattr__(self, "first_seen_change_ids", first_seen_change_ids)
+        object.__setattr__(self, "repeated_change_ids", repeated_change_ids)
+
     @classmethod
     def from_internal(cls, value: _DetectorRunSummary) -> "DetectorRunSummary":
         if not isinstance(value, _DetectorRunSummary):

@@ -130,6 +130,65 @@ class CorePublicApiTests(unittest.TestCase):
         self.assertEqual(DetectorRunSummary.__module__, "bizman.core.detection")
         self.assertEqual(ValidationResult.__module__, "bizman.core.validation")
 
+    def test_public_result_dtos_copy_mutable_constructor_inputs(self):
+        from bizman.core import DetectorRunSummary, ValidationResult
+
+        evidence = ["a" * 64]
+        facts = [["known", 1]]
+        first_seen = ["chg." + "b" * 64]
+        repeated = ["chg." + "c" * 64]
+        summary = DetectorRunSummary(
+            analysis_profile_sha256="d" * 64,
+            baseline_sha256="e" * 64,
+            dry_run=True,
+            sessions_discovered=1,
+            sessions_processed=1,
+            sessions_checkpointed=0,
+            sessions_failed_skipped=0,
+            sessions_unfinalized_skipped=0,
+            evidence_sha256s=evidence,
+            fact_counts=facts,
+            first_seen_change_ids=first_seen,
+            repeated_change_ids=repeated,
+            materialized_bundle_count=0,
+            pending_bundle_count=0,
+        )
+        errors = ["one"]
+        warnings = ["two"]
+        validation = ValidationResult(errors=errors, warnings=warnings)
+
+        evidence.append("mutated")
+        facts[0][1] = 999
+        first_seen.append("mutated")
+        repeated.append("mutated")
+        errors.append("mutated")
+        warnings.append("mutated")
+
+        self.assertEqual(summary.evidence_sha256s, ("a" * 64,))
+        self.assertEqual(summary.fact_counts, (("known", 1),))
+        self.assertEqual(summary.first_seen_change_ids, ("chg." + "b" * 64,))
+        self.assertEqual(summary.repeated_change_ids, ("chg." + "c" * 64,))
+        self.assertEqual(validation.errors, ("one",))
+        self.assertEqual(validation.warnings, ("two",))
+
+        with self.assertRaises(TypeError):
+            DetectorRunSummary(
+                analysis_profile_sha256="d" * 64,
+                baseline_sha256="e" * 64,
+                dry_run=True,
+                sessions_discovered=0,
+                sessions_processed=0,
+                sessions_checkpointed=0,
+                sessions_failed_skipped=0,
+                sessions_unfinalized_skipped=0,
+                evidence_sha256s=(),
+                fact_counts=(("known", []),),
+                first_seen_change_ids=(),
+                repeated_change_ids=(),
+                materialized_bundle_count=0,
+                pending_bundle_count=0,
+            )
+
 
 class CoreUseCaseTests(unittest.TestCase):
     def test_detection_dry_run_uses_context_configuration_without_writes(self):
