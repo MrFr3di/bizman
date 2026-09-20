@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from bizman.foundation.fingerprint import canonical_sha256
+from bizman.readmodel.extended import extended_knowledge_records
 from bizman.readmodel.model import KnowledgeRecord, RefKind
 
 
@@ -310,6 +311,7 @@ def project_curated_knowledge(repo_root: Path) -> KnowledgeProjection:
                 *_action_records(root),
                 *_product_records(root),
                 *_entity_records(root),
+                *extended_knowledge_records(root),
             ),
             key=lambda item: item.ref,
         )

@@ -17,6 +17,10 @@ class RefKind(StrEnum):
     CITY = "city"
     COMPANY = "company"
     UNIT = "unit"
+    ENDPOINT = "endpoint"
+    OPERATION = "operation"
+    FORM = "form"
+    WIKI_TOPIC = "wiki_topic"
 
 
 _REF_PREFIX = {
@@ -25,6 +29,10 @@ _REF_PREFIX = {
     RefKind.CITY: "bm.city.",
     RefKind.COMPANY: "bm.company.",
     RefKind.UNIT: "bm.unit.",
+    RefKind.ENDPOINT: "bm.endpoint.v1.",
+    RefKind.OPERATION: "bm.operation.v1.",
+    RefKind.FORM: "bm.form.v1.",
+    RefKind.WIKI_TOPIC: "bm.wiki.v1.",
 }
 
 
