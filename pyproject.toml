@@ -38,6 +38,18 @@ ignore = ["I", "RUF"]
 "src/bizman/changes/diff.py" = ["F401"]
 "src/bizman/collector/network.py" = ["F401"]
 
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = ["bizman"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
 [tool.importlinter]
 root_package = "bizman"
 

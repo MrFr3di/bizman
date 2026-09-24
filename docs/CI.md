@@ -23,8 +23,10 @@ The full lane runs:
 2. Ruff against the installable `src/bizman` package.
 3. Import Linter contracts for the package dependency directions.
 4. `python -m compileall -q src tools tests`.
-5. Full `unittest` discovery.
-6. `tools/validate_repo.py` for committed structured knowledge and schemas.
+5. Full `unittest` discovery under exact-version-pinned Coverage.py `7.16.1`.
+6. Generate `coverage.xml` for the installable `bizman` package and upload it as a short-lived CI artifact.
+7. `tools/validate_repo.py` for committed structured knowledge and schemas.
+8. When explicitly activated, run CI-based SonarQube Cloud analysis and import that exact coverage report.
 
 The package architecture gate enforces these dependency directions:
 
@@ -59,6 +61,23 @@ The full test suite covers, among other invariants:
 - 590-record curated read-model coverage across actions/products/entities/endpoints/operations/forms/Wiki;
 - versioned retrieval evals with Recall@1/5, MRR and evidence correctness;
 - regression proof that expanded corpora do not reduce the earlier P2-A retrieval metrics.
+
+### Python coverage and SonarQube Cloud
+
+The Python 3.14 lane measures the same full `unittest` suite; coverage instrumentation does not replace, filter or split the tests. Coverage.py is pinned to `7.16.1` and layered onto the locked project environment with `uv run --locked --with`, so `pyproject.toml` + `uv.lock` remain the dependency authority for BizMan itself.
+
+Coverage configuration lives in `pyproject.toml`. It records branch coverage for the installable `bizman` package with relative paths, writes `coverage.xml`, and uploads the XML as the `python-coverage` workflow artifact.
+
+SonarQube Cloud must use CI-based analysis before it can consume external Python coverage. The current Automatic Analysis mode cannot import `coverage.xml`. Migration is deliberately explicit:
+
+1. disable Automatic Analysis for the SonarQube Cloud project;
+2. add repository secret `SONAR_TOKEN`;
+3. add repository variable `SONAR_ORGANIZATION` containing the actual SonarQube Cloud organization key;
+4. set repository variable `SONAR_CI_ENABLED=true`.
+
+When enabled for same-repository pull requests or manual runs, the workflow fails closed if the organization key or token is unavailable, then runs the SHA-pinned SonarQube scanner. Fork pull requests still run and publish coverage but skip the secret-bearing scanner step.
+
+`sonar-project.properties` is the CI scanner contract and points Python coverage at `coverage.xml`. `.sonarcloud.properties` remains only as the compatibility scope for Automatic Analysis until that external mode is disabled.
 
 ### Distribution isolation in the full lane
 
@@ -123,7 +142,8 @@ uv sync --locked
 uv run ruff check src
 uv run lint-imports
 uv run python -m compileall -q src tools tests
-uv run python -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
 ```
 
