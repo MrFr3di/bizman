@@ -54,6 +54,8 @@ def _parse_instant(value: object, *, name: str) -> datetime:
 
 @dataclass(frozen=True, slots=True)
 class SessionSummary:
+    """Verified session aggregates; anomaly_count is normalized http.failed events."""
+
     session_id: str
     manifest_sha256: str
     evidence_sha256: str

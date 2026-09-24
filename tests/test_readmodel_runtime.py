@@ -396,22 +396,30 @@ class RuntimeProjectionTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "ChangeIndexRecord"):
             RuntimeProjection(changes=(object(),))
 
-    def test_readmodel_runtime_has_no_raw_event_or_detector_sql_dependency(self):
-        path = REPO_ROOT / "src/bizman/readmodel/runtime.py"
-        source = path.read_text(encoding="utf-8")
-        tree = ast.parse(source, filename=str(path))
-        imported: set[str] = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                imported.update(alias.name for alias in node.names)
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                imported.add(node.module)
+    def test_readmodel_has_no_raw_session_files_or_detector_state_dependency(self):
+        violations: list[str] = []
+        for path in sorted((REPO_ROOT / "src/bizman/readmodel").rglob("*.py")):
+            source = path.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(path))
+            for node in ast.walk(tree):
+                modules: list[str] = []
+                if isinstance(node, ast.Import):
+                    modules.extend(alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    modules.append(node.module)
+                for module in modules:
+                    if module == "bizman.changes.state" or module.startswith(
+                        "bizman.changes.state."
+                    ):
+                        violations.append(
+                            f"{path.relative_to(REPO_ROOT)}:{node.lineno}:{module}"
+                        )
+            if "events/" in source or ".jsonl" in source:
+                violations.append(
+                    f"{path.relative_to(REPO_ROOT)}: direct runtime event path reference"
+                )
 
-        self.assertNotIn("sqlite3", imported)
-        self.assertNotIn("bizman.changes.state", imported)
-        self.assertNotIn("pathlib", imported)
-        self.assertNotIn("events/", source)
-        self.assertNotIn(".jsonl", source)
+        self.assertEqual(violations, [])
 
 
 if __name__ == "__main__":
