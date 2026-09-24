@@ -10,6 +10,7 @@ from typing import Iterable
 
 from bizman.foundation.fingerprint import canonical_sha256
 from bizman.readmodel.knowledge import KnowledgeProjection
+from bizman.readmodel.runtime import ChangeIndexRecord, RuntimeProjection, SessionSummary
 from bizman.readmodel.model import (
     MatchKind,
     RefKind,
@@ -20,20 +21,23 @@ from bizman.readmodel.model import (
 
 
 INDEX_APPLICATION_ID = 0x424D4931
-INDEX_SCHEMA_VERSION = 1
-PROJECTION_VERSION = 2
+INDEX_SCHEMA_VERSION = 2
+PROJECTION_VERSION = 3
 _MAX_EVIDENCE_REFS_PER_HIT = 8
 _FTS_TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 _EXPECTED_STRICT_TABLES = frozenset(
-    {"ref", "knowledge_item", "alias", "knowledge_evidence", "index_meta"}
+    {"ref", "knowledge_item", "alias", "knowledge_evidence", "session_summary", "change_index", "index_meta"}
 )
 _EXPECTED_META_KEYS = frozenset(
     {
         "schema_version",
         "projection_version",
         "source_fingerprint",
+        "runtime_fingerprint",
         "generation",
         "item_count",
+        "session_count",
+        "change_count",
         "completed_at",
     }
 )
@@ -84,6 +88,43 @@ _SCHEMA = (
     ) STRICT
     """,
     """
+    CREATE TABLE session_summary (
+        session_id TEXT PRIMARY KEY,
+        manifest_sha256 TEXT NOT NULL,
+        evidence_sha256 TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        ended_at TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('completed', 'cancelled')),
+        event_count INTEGER NOT NULL CHECK (event_count >= 0),
+        action_count INTEGER NOT NULL CHECK (action_count >= 0),
+        http_request_count INTEGER NOT NULL CHECK (http_request_count >= 0),
+        http_response_count INTEGER NOT NULL CHECK (http_response_count >= 0),
+        correlation_strong_count INTEGER NOT NULL CHECK (correlation_strong_count >= 0),
+        correlation_probable_count INTEGER NOT NULL CHECK (correlation_probable_count >= 0),
+        correlation_temporal_count INTEGER NOT NULL CHECK (correlation_temporal_count >= 0),
+        correlation_exact_count INTEGER NOT NULL CHECK (correlation_exact_count >= 0),
+        uncorrelated_action_count INTEGER NOT NULL CHECK (uncorrelated_action_count >= 0),
+        warning_count INTEGER NOT NULL CHECK (warning_count >= 0),
+        anomaly_count INTEGER NOT NULL CHECK (anomaly_count >= 0)
+    ) STRICT
+    """,
+    """
+    CREATE TABLE change_index (
+        analysis_profile_sha256 TEXT NOT NULL,
+        change_id TEXT NOT NULL,
+        rule_id TEXT NOT NULL,
+        rule_version INTEGER NOT NULL CHECK (rule_version > 0),
+        kind TEXT NOT NULL,
+        novelty_class TEXT NOT NULL,
+        first_session_id TEXT NOT NULL,
+        first_seen_at TEXT NOT NULL,
+        last_session_id TEXT NOT NULL,
+        last_seen_at TEXT NOT NULL,
+        occurrence_count INTEGER NOT NULL CHECK (occurrence_count > 0),
+        PRIMARY KEY (analysis_profile_sha256, change_id)
+    ) STRICT
+    """,
+    """
     CREATE TABLE index_meta (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -113,6 +154,56 @@ def _connect(path: Path, *, read_only: bool) -> sqlite3.Connection:
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA busy_timeout = 5000")
     return connection
+
+
+def _runtime_projection_from_connection(connection: sqlite3.Connection) -> RuntimeProjection:
+    sessions = tuple(
+        SessionSummary(
+            session_id=str(row["session_id"]),
+            manifest_sha256=str(row["manifest_sha256"]),
+            evidence_sha256=str(row["evidence_sha256"]),
+            started_at=str(row["started_at"]),
+            ended_at=str(row["ended_at"]),
+            status=str(row["status"]),
+            event_count=int(row["event_count"]),
+            action_count=int(row["action_count"]),
+            http_request_count=int(row["http_request_count"]),
+            http_response_count=int(row["http_response_count"]),
+            correlation_strong_count=int(row["correlation_strong_count"]),
+            correlation_probable_count=int(row["correlation_probable_count"]),
+            correlation_temporal_count=int(row["correlation_temporal_count"]),
+            correlation_exact_count=int(row["correlation_exact_count"]),
+            uncorrelated_action_count=int(row["uncorrelated_action_count"]),
+            warning_count=int(row["warning_count"]),
+            anomaly_count=int(row["anomaly_count"]),
+        )
+        for row in connection.execute(
+            "SELECT * FROM session_summary ORDER BY session_id"
+        )
+    )
+    changes = tuple(
+        ChangeIndexRecord(
+            analysis_profile_sha256=str(row["analysis_profile_sha256"]),
+            change_id=str(row["change_id"]),
+            rule_id=str(row["rule_id"]),
+            rule_version=int(row["rule_version"]),
+            kind=str(row["kind"]),
+            novelty_class=str(row["novelty_class"]),
+            first_session_id=str(row["first_session_id"]),
+            first_seen_at=str(row["first_seen_at"]),
+            last_session_id=str(row["last_session_id"]),
+            last_seen_at=str(row["last_seen_at"]),
+            occurrence_count=int(row["occurrence_count"]),
+        )
+        for row in connection.execute(
+            """
+            SELECT *
+            FROM change_index
+            ORDER BY analysis_profile_sha256, change_id
+            """
+        )
+    )
+    return RuntimeProjection(sessions=sessions, changes=changes)
 
 
 def _validate_identity(connection: sqlite3.Connection) -> None:
@@ -160,7 +251,7 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
     }
     if set(meta) != _EXPECTED_META_KEYS:
         raise ReadModelCompatibilityError(
-            "read-model metadata keys do not match schema v1 contract"
+            "read-model metadata keys do not match schema v2 contract"
         )
     if meta["schema_version"] != str(INDEX_SCHEMA_VERSION):
         raise ReadModelCompatibilityError(
@@ -172,18 +263,36 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
         )
     try:
         item_count = int(meta["item_count"])
+        session_count = int(meta["session_count"])
+        change_count = int(meta["change_count"])
     except ValueError as exc:
-        raise ReadModelIntegrityError("read-model item_count is not an integer") from exc
-    if item_count < 0:
-        raise ReadModelIntegrityError("read-model item_count must be non-negative")
+        raise ReadModelIntegrityError("read-model counts must be integers") from exc
+    if min(item_count, session_count, change_count) < 0:
+        raise ReadModelIntegrityError("read-model counts must be non-negative")
 
     actual_item_count = int(connection.execute("SELECT COUNT(*) FROM ref").fetchone()[0])
     actual_fts_count = int(
         connection.execute("SELECT COUNT(*) FROM knowledge_fts").fetchone()[0]
     )
+    actual_session_count = int(
+        connection.execute("SELECT COUNT(*) FROM session_summary").fetchone()[0]
+    )
+    actual_change_count = int(
+        connection.execute("SELECT COUNT(*) FROM change_index").fetchone()[0]
+    )
     if actual_item_count != item_count or actual_fts_count != item_count:
         raise ReadModelIntegrityError(
             "read-model item counts disagree with persisted metadata"
+        )
+    if actual_session_count != session_count or actual_change_count != change_count:
+        raise ReadModelIntegrityError(
+            "read-model runtime counts disagree with persisted metadata"
+        )
+
+    runtime = _runtime_projection_from_connection(connection)
+    if runtime.source_fingerprint != meta["runtime_fingerprint"]:
+        raise ReadModelIntegrityError(
+            "read-model runtime fingerprint does not match persisted rows"
         )
 
     expected_generation = canonical_sha256(
@@ -191,7 +300,10 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
             "schema_version": INDEX_SCHEMA_VERSION,
             "projection_version": PROJECTION_VERSION,
             "source_fingerprint": meta["source_fingerprint"],
+            "runtime_fingerprint": meta["runtime_fingerprint"],
             "item_count": item_count,
+            "session_count": session_count,
+            "change_count": change_count,
         }
     )
     if meta["generation"] != expected_generation:
@@ -213,13 +325,19 @@ def _validate_completed_at(value: str) -> str:
     return value
 
 
-def _semantic_generation(projection: KnowledgeProjection) -> str:
+def _semantic_generation(
+    projection: KnowledgeProjection,
+    runtime_projection: RuntimeProjection,
+) -> str:
     return canonical_sha256(
         {
             "schema_version": INDEX_SCHEMA_VERSION,
             "projection_version": PROJECTION_VERSION,
             "source_fingerprint": projection.source_fingerprint,
+            "runtime_fingerprint": runtime_projection.source_fingerprint,
             "item_count": len(projection.records),
+            "session_count": len(runtime_projection.sessions),
+            "change_count": len(runtime_projection.changes),
         }
     )
 
@@ -227,6 +345,7 @@ def _semantic_generation(projection: KnowledgeProjection) -> str:
 def _initialize(
     connection: sqlite3.Connection,
     projection: KnowledgeProjection,
+    runtime_projection: RuntimeProjection,
     *,
     completed_at: str,
 ) -> str:
@@ -269,13 +388,73 @@ def _initialize(
             ),
         )
 
-    generation = _semantic_generation(projection)
+    for item in runtime_projection.sessions:
+        connection.execute(
+            """
+            INSERT INTO session_summary(
+                session_id, manifest_sha256, evidence_sha256, started_at, ended_at,
+                status, event_count, action_count, http_request_count,
+                http_response_count, correlation_strong_count,
+                correlation_probable_count, correlation_temporal_count,
+                correlation_exact_count, uncorrelated_action_count, warning_count,
+                anomaly_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item.session_id,
+                item.manifest_sha256,
+                item.evidence_sha256,
+                item.started_at,
+                item.ended_at,
+                item.status,
+                item.event_count,
+                item.action_count,
+                item.http_request_count,
+                item.http_response_count,
+                item.correlation_strong_count,
+                item.correlation_probable_count,
+                item.correlation_temporal_count,
+                item.correlation_exact_count,
+                item.uncorrelated_action_count,
+                item.warning_count,
+                item.anomaly_count,
+            ),
+        )
+
+    for item in runtime_projection.changes:
+        connection.execute(
+            """
+            INSERT INTO change_index(
+                analysis_profile_sha256, change_id, rule_id, rule_version, kind,
+                novelty_class, first_session_id, first_seen_at, last_session_id,
+                last_seen_at, occurrence_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item.analysis_profile_sha256,
+                item.change_id,
+                item.rule_id,
+                item.rule_version,
+                item.kind,
+                item.novelty_class,
+                item.first_session_id,
+                item.first_seen_at,
+                item.last_session_id,
+                item.last_seen_at,
+                item.occurrence_count,
+            ),
+        )
+
+    generation = _semantic_generation(projection, runtime_projection)
     meta = {
         "schema_version": str(INDEX_SCHEMA_VERSION),
         "projection_version": str(PROJECTION_VERSION),
         "source_fingerprint": projection.source_fingerprint,
+        "runtime_fingerprint": runtime_projection.source_fingerprint,
         "generation": generation,
         "item_count": str(len(projection.records)),
+        "session_count": str(len(runtime_projection.sessions)),
+        "change_count": str(len(runtime_projection.changes)),
         "completed_at": completed_at,
     }
     connection.executemany(
@@ -285,14 +464,17 @@ def _initialize(
     return generation
 
 
-def rebuild_knowledge_index(
+def rebuild_agent_index(
     database_path: Path,
     projection: KnowledgeProjection,
+    runtime_projection: RuntimeProjection,
     *,
     completed_at: str,
 ) -> str:
     if not isinstance(projection, KnowledgeProjection):
         raise TypeError("projection must be KnowledgeProjection")
+    if not isinstance(runtime_projection, RuntimeProjection):
+        raise TypeError("runtime_projection must be RuntimeProjection")
     completed = _validate_completed_at(completed_at)
     target = Path(database_path).expanduser().resolve(strict=False)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -302,7 +484,12 @@ def rebuild_knowledge_index(
         connection = _connect(staged, read_only=False)
         try:
             connection.execute("BEGIN IMMEDIATE")
-            generation = _initialize(connection, projection, completed_at=completed)
+            generation = _initialize(
+                connection,
+                projection,
+                runtime_projection,
+                completed_at=completed,
+            )
             connection.execute("COMMIT")
             _validate_identity(connection)
         except BaseException:
@@ -314,6 +501,24 @@ def rebuild_knowledge_index(
 
         os.replace(staged, target)
     return generation
+
+
+def rebuild_knowledge_index(
+    database_path: Path,
+    projection: KnowledgeProjection,
+    *,
+    completed_at: str,
+    runtime_projection: RuntimeProjection | None = None,
+) -> str:
+    """Compatibility entry point; runtime data defaults to an empty projection."""
+
+    runtime = runtime_projection if runtime_projection is not None else RuntimeProjection()
+    return rebuild_agent_index(
+        database_path,
+        projection,
+        runtime,
+        completed_at=completed_at,
+    )
 
 
 def _fts_query(text: str) -> str | None:
@@ -349,6 +554,29 @@ class KnowledgeIndex:
                 "SELECT key, value FROM index_meta ORDER BY key"
             )
         }
+
+    def session_summaries(self) -> tuple[SessionSummary, ...]:
+        return _runtime_projection_from_connection(self._connection).sessions
+
+    def change_records(
+        self,
+        analysis_profile_sha256: str | None = None,
+    ) -> tuple[ChangeIndexRecord, ...]:
+        runtime = _runtime_projection_from_connection(self._connection)
+        if analysis_profile_sha256 is None:
+            return runtime.changes
+        if (
+            not isinstance(analysis_profile_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", analysis_profile_sha256) is None
+        ):
+            raise ValueError(
+                "analysis_profile_sha256 must be 64 lowercase hexadecimal characters"
+            )
+        return tuple(
+            item
+            for item in runtime.changes
+            if item.analysis_profile_sha256 == analysis_profile_sha256
+        )
 
     def _kind_clause(
         self,
@@ -493,5 +721,6 @@ __all__ = [
     "ReadModelCompatibilityError",
     "ReadModelError",
     "ReadModelIntegrityError",
+    "rebuild_agent_index",
     "rebuild_knowledge_index",
 ]
