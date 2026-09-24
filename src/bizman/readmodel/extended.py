@@ -7,6 +7,9 @@ import re
 from typing import Any, Mapping
 from urllib.parse import parse_qsl, urlsplit
 
+from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema.exceptions import SchemaError
+
 from bizman.foundation.fingerprint import canonical_sha256
 from bizman.readmodel.model import KnowledgeRecord, RefKind
 from bizman.readmodel.projection_support import (
@@ -101,12 +104,81 @@ def _versioned_ref(namespace: str, semantic_identity: Mapping[str, object]) -> s
     return f"bm.{namespace}.v1.{digest}"
 
 
+def _schema_validator(path: Path) -> Draft202012Validator:
+    schema = _mapping(_load_json(path), source=path.as_posix())
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as exc:
+        raise ValueError(f"{path}: invalid JSON Schema: {exc.message}") from exc
+    return Draft202012Validator(schema, format_checker=FormatChecker())
+
+
+def _validate_schema_instance(
+    value: object,
+    *,
+    validator: Draft202012Validator,
+    schema_path: Path,
+    source: str,
+) -> None:
+    errors = sorted(
+        validator.iter_errors(value),
+        key=lambda item: tuple(str(part) for part in item.absolute_path),
+    )
+    if not errors:
+        return
+    error = errors[0]
+    location = "/".join(str(part) for part in error.absolute_path) or "$"
+    raise ValueError(
+        f"{source}: violates {schema_path.name} at {location}: {error.message}"
+    )
+
+
 def _capture_sources(root: Path) -> dict[str, str]:
     path = root / "knowledge" / "sources" / "captures.json"
     document = _mapping(_load_json(path), source=path.as_posix())
-    captures = document.get("captures")
-    if not isinstance(captures, list):
-        raise ValueError(f"{path}: captures must be an array")
+
+    capture_schema_path = root / "schemas" / "capture-index.schema.json"
+    _validate_schema_instance(
+        document,
+        validator=_schema_validator(capture_schema_path),
+        schema_path=capture_schema_path,
+        source=path.as_posix(),
+    )
+    captures = document["captures"]
+    assert isinstance(captures, list)
+
+    source_schema_path = root / "schemas" / "source.schema.json"
+    source_validator = _schema_validator(source_schema_path)
+    source_manifests: dict[str, Mapping[str, Any]] = {}
+    seen_manifest_ids: set[str] = set()
+    for manifest_path in sorted(path.parent.glob("*.har.json")):
+        manifest = _mapping(_load_json(manifest_path), source=manifest_path.as_posix())
+        _validate_schema_instance(
+            manifest,
+            validator=source_validator,
+            schema_path=source_schema_path,
+            source=manifest_path.as_posix(),
+        )
+        manifest_file_name = _text(
+            manifest.get("source_filename"),
+            source=manifest_path.as_posix(),
+            field="source_filename",
+        )
+        manifest_source_id = _text(
+            manifest.get("id"),
+            source=manifest_path.as_posix(),
+            field="id",
+        )
+        if manifest_file_name in source_manifests:
+            raise ValueError(
+                f"{manifest_path}: duplicate source_filename {manifest_file_name!r}"
+            )
+        if manifest_source_id in seen_manifest_ids:
+            raise ValueError(
+                f"{manifest_path}: duplicate canonical source id {manifest_source_id!r}"
+            )
+        source_manifests[manifest_file_name] = manifest
+        seen_manifest_ids.add(manifest_source_id)
 
     result: dict[str, str] = {}
     seen_source_ids: set[str] = set()
@@ -119,6 +191,23 @@ def _capture_sources(root: Path) -> dict[str, str]:
             raise ValueError(f"{source}: duplicate capture file_name {file_name!r}")
         if source_id in seen_source_ids:
             raise ValueError(f"{source}: duplicate capture source_id {source_id!r}")
+
+        manifest = source_manifests.get(file_name)
+        if manifest is None:
+            raise ValueError(f"{source}: no source manifest for {file_name!r}")
+        for capture_field, manifest_field in (
+            ("source_id", "id"),
+            ("file_name", "source_filename"),
+            ("sha256", "sha256"),
+            ("bytes", "size_bytes"),
+            ("entries", "entries"),
+        ):
+            if item.get(capture_field) != manifest.get(manifest_field):
+                raise ValueError(
+                    f"{source}: {capture_field} disagrees with source manifest "
+                    f"{manifest_field}"
+                )
+
         result[file_name] = source_id
         seen_source_ids.add(source_id)
     return result

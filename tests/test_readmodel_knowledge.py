@@ -50,6 +50,28 @@ class KnowledgeProjectionTests(unittest.TestCase):
         )
         return root
 
+    def _copy_extended_curated_scope(self, root: Path) -> Path:
+        self._copy_curated_scope(root)
+        shutil.copytree(
+            REPO_ROOT / "knowledge/sources",
+            root / "knowledge/sources",
+        )
+        shutil.copytree(
+            REPO_ROOT / "knowledge/http",
+            root / "knowledge/http",
+        )
+        shutil.copytree(
+            REPO_ROOT / "knowledge/wiki",
+            root / "knowledge/wiki",
+        )
+        (root / "schemas").mkdir(parents=True)
+        for schema_name in ("capture-index.schema.json", "source.schema.json"):
+            shutil.copy2(
+                REPO_ROOT / "schemas" / schema_name,
+                root / "schemas" / schema_name,
+            )
+        return root
+
     def test_projection_has_expected_initial_curated_scope(self):
         projection = project_curated_knowledge(REPO_ROOT)
         self.assertEqual(len(projection.records), 590)
@@ -110,6 +132,54 @@ class KnowledgeProjectionTests(unittest.TestCase):
             wiki.evidence_refs,
             ("src.har.bizmania-faq.2026-09-06.01#entry-2296",),
         )
+
+    def test_projection_rejects_malformed_capture_provenance_at_boundary(self):
+        mutations = (
+            (
+                "noncanonical source id",
+                lambda document: document["captures"][0].__setitem__(
+                    "source_id", "har:bizmania.ru.har"
+                ),
+                "capture-index.schema.json",
+            ),
+            (
+                "missing integrity digest",
+                lambda document: document["captures"][0].pop("sha256"),
+                "capture-index.schema.json",
+            ),
+        )
+        for label, mutate, expected in mutations:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = self._copy_extended_curated_scope(Path(tmp) / "repo")
+                captures_path = root / "knowledge/sources/captures.json"
+                captures = json.loads(captures_path.read_text(encoding="utf-8"))
+                mutate(captures)
+                captures_path.write_text(json.dumps(captures), encoding="utf-8")
+
+                with self.assertRaisesRegex(ValueError, expected):
+                    project_curated_knowledge(root)
+
+    def test_projection_rejects_capture_source_manifest_integrity_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._copy_extended_curated_scope(Path(tmp) / "repo")
+            captures_path = root / "knowledge/sources/captures.json"
+            captures = json.loads(captures_path.read_text(encoding="utf-8"))
+            captures["captures"][0]["sha256"] = "0" * 64
+            captures_path.write_text(json.dumps(captures), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "sha256 disagrees"):
+                project_curated_knowledge(root)
+
+    def test_projection_validates_referenced_source_manifests(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._copy_extended_curated_scope(Path(tmp) / "repo")
+            manifest_path = root / "knowledge/sources/bizmania.ru.har.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["sha256"] = "not-a-digest"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "source.schema.json"):
+                project_curated_knowledge(root)
 
     def test_projection_rejects_tampered_source_fingerprint(self):
         record = KnowledgeRecord(

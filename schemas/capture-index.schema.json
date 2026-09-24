@@ -18,7 +18,7 @@
           "ended_at", "creator", "pages", "methods", "top_hosts", "top_mime_types"
         ],
         "properties": {
-          "source_id": {"type": "string", "pattern": "^src\\."},
+          "source_id": {"type": "string", "pattern": "^src\\.[a-z0-9][a-z0-9.-]*$"},
           "legacy_source_ids": {
             "type": "array",
             "items": {"type": "string"},
