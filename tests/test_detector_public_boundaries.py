@@ -142,6 +142,14 @@ class EvidenceSessionInfoBoundaryTests(unittest.TestCase):
 
 
 class DetectorStateReadBoundaryTests(unittest.TestCase):
+    def test_change_summary_reader_missing_state_is_non_destructive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "missing" / "state.sqlite3"
+            self.assertIsNone(ChangeSummaryReader.open_if_exists(path))
+            self.assertFalse(path.exists())
+            with self.assertRaises(FileNotFoundError):
+                ChangeSummaryReader(path)
+
     def test_change_summary_reader_is_narrow_public_read_only_boundary(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "detector" / "state.sqlite3"

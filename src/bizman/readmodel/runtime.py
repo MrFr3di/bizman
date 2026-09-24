@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import re
 
 from bizman.changes import ChangeSummary, ChangeSummaryReader
 from bizman.foundation.fingerprint import canonical_sha256
-from bizman.sessions import EvidenceReader
+from bizman.sessions import EvidenceReader, EvidenceSessionInfo
 
 
 RUNTIME_PROJECTION_VERSION = 1
@@ -154,17 +153,19 @@ class RuntimeProjection:
     changes: tuple[ChangeIndexRecord, ...] = ()
 
     def __post_init__(self) -> None:
-        sessions = tuple(sorted(tuple(self.sessions), key=lambda item: item.session_id))
-        changes = tuple(
-            sorted(
-                tuple(self.changes),
-                key=lambda item: (item.analysis_profile_sha256, item.change_id),
-            )
-        )
+        sessions = tuple(self.sessions)
+        changes = tuple(self.changes)
         if not all(isinstance(item, SessionSummary) for item in sessions):
             raise TypeError("sessions must contain SessionSummary values")
         if not all(isinstance(item, ChangeIndexRecord) for item in changes):
             raise TypeError("changes must contain ChangeIndexRecord values")
+        sessions = tuple(sorted(sessions, key=lambda item: item.session_id))
+        changes = tuple(
+            sorted(
+                changes,
+                key=lambda item: (item.analysis_profile_sha256, item.change_id),
+            )
+        )
         if len({item.session_id for item in sessions}) != len(sessions):
             raise ValueError("runtime projection contains duplicate session_id values")
         if len({(item.analysis_profile_sha256, item.change_id) for item in changes}) != len(changes):
@@ -199,7 +200,7 @@ def _change_record(summary: ChangeSummary) -> ChangeIndexRecord:
     )
 
 
-def _session_summary(reader: EvidenceReader, info: object) -> SessionSummary:
+def _session_summary(reader: EvidenceReader, info: EvidenceSessionInfo) -> SessionSummary:
     identity = info.identity
     action_ids: set[str] = set()
     correlated_action_ids: set[str] = set()

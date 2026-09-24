@@ -2,29 +2,29 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from bizman.changes.model import ChangeSummary
-
-if TYPE_CHECKING:
-    from bizman.changes.state import DetectorState
 
 
 class ChangeSummaryReader:
     """Narrow read-only detector-state boundary for downstream projections."""
 
-    def __init__(self, state: DetectorState) -> None:
+    def __init__(self, path: Path) -> None:
+        from bizman.changes.state import DetectorState
+
+        resolved = Path(path).expanduser().resolve(strict=False)
+        state = DetectorState.open_read_only_if_exists(resolved)
+        if state is None:
+            raise FileNotFoundError(f"detector state does not exist: {resolved}")
         self._state = state
         self._closed = False
 
     @classmethod
     def open_if_exists(cls, path: Path) -> ChangeSummaryReader | None:
-        from bizman.changes.state import DetectorState
-
-        state = DetectorState.open_read_only_if_exists(path)
-        if state is None:
+        try:
+            return cls(path)
+        except FileNotFoundError:
             return None
-        return cls(state)
 
     def close(self) -> None:
         if self._closed:
