@@ -84,7 +84,7 @@ class ChangesPackageCompatibilityTests(unittest.TestCase):
         from bizman.changes.promotion import PromotionBundleBuilder as promotion_new
         from bizman.changes.rules import RuleEngine as rules_new
         from bizman.changes.runner import DetectorRunner as runner_new
-        from bizman.changes.state import ChangeSummary as summary_new
+        from bizman.changes.model import ChangeSummary as summary_new
         from bizman.changes.state import DetectorState as state_new
         from tools.bizman_detector.baseline import BaselineCompiler as compiler_old
         from tools.bizman_detector.diff import SemanticDiff as diff_old

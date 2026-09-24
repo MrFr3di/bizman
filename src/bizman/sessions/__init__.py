@@ -8,6 +8,7 @@ from bizman.sessions.evidence import (
     EvidenceIdentity,
     EvidenceIntegrityError,
     EvidenceReader,
+    EvidenceSessionInfo,
     EvidenceStatusError,
 )
 from bizman.sessions.status import EvidenceSessionStatus
@@ -20,6 +21,7 @@ __all__ = [
     "EvidenceIdentity",
     "EvidenceIntegrityError",
     "EvidenceReader",
+    "EvidenceSessionInfo",
     "EvidenceSessionStatus",
     "EvidenceStatusError",
 ]

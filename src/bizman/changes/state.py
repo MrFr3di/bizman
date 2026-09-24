@@ -12,7 +12,7 @@ import sqlite3
 from typing import Final
 
 from bizman.sessions.evidence import EvidenceIdentity
-from bizman.changes.model import AnalysisProfile, Finding
+from bizman.changes.model import AnalysisProfile, ChangeSummary, Finding
 from bizman.foundation.fingerprint import canonical_json_bytes
 
 
@@ -61,21 +61,6 @@ class TransactionResult:
     processed: bool
     first_seen_change_ids: tuple[str, ...] = ()
     outbox_bundle_id: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class ChangeSummary:
-    analysis_profile_sha256: str
-    change_id: str
-    rule_id: str
-    rule_version: int
-    kind: str
-    novelty_class: str
-    first_session_id: str
-    first_seen_at: str
-    last_session_id: str
-    last_seen_at: str
-    occurrence_count: int
 
 
 OutboxFactory = Callable[

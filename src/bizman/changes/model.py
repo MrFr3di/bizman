@@ -176,6 +176,23 @@ class Finding:
 
 
 @dataclass(frozen=True, slots=True)
+class ChangeSummary:
+    """Validated read-only projection of one detector change row."""
+
+    analysis_profile_sha256: str
+    change_id: str
+    rule_id: str
+    rule_version: int
+    kind: str
+    novelty_class: str
+    first_session_id: str
+    first_seen_at: str
+    last_session_id: str
+    last_seen_at: str
+    occurrence_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class AnalysisProfile:
     """Replay namespace for one complete deterministic detector interpretation."""
 
@@ -191,6 +208,7 @@ class AnalysisProfile:
 __all__ = [
     "ActionRequestFamily",
     "AnalysisProfile",
+    "ChangeSummary",
     "DiffFact",
     "EndpointFamily",
     "EndpointMethodContract",
