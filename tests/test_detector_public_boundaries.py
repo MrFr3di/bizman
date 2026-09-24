@@ -157,7 +157,7 @@ class DetectorStateReadBoundaryTests(unittest.TestCase):
                 state.process_session_transaction(
                     identity=_identity(),
                     profile=_profile(),
-                    findings=(_finding(1),),
+                    findings=(_finding(2), _finding(1)),
                     outbox_factory=lambda identity, profile, first_seen: None,
                     processed_at="2026-09-07T12:11:00Z",
                 )
@@ -166,9 +166,15 @@ class DetectorStateReadBoundaryTests(unittest.TestCase):
             assert reader is not None
             with reader:
                 summaries = tuple(reader.iter_summaries())
-            self.assertEqual(len(summaries), 1)
-            self.assertIsInstance(summaries[0], ChangeSummary)
-            self.assertEqual(summaries[0].analysis_profile_sha256, _profile().sha256)
+            self.assertEqual(len(summaries), 2)
+            self.assertTrue(all(isinstance(item, ChangeSummary) for item in summaries))
+            self.assertEqual(
+                [item.change_id for item in summaries],
+                sorted(item.change_id for item in summaries),
+            )
+            self.assertTrue(
+                all(item.analysis_profile_sha256 == _profile().sha256 for item in summaries)
+            )
             with self.assertRaisesRegex(RuntimeError, "closed"):
                 tuple(reader.iter_summaries())
 

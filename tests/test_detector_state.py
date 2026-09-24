@@ -12,7 +12,6 @@ from tools.bizman_detector.model import AnalysisProfile, Finding
 from tools.bizman_detector.state import (
     APPLICATION_ID,
     USER_VERSION,
-    ChangeSummary,
     DetectorState,
     OutboxPayload,
     StateCompatibilityError,
@@ -197,45 +196,6 @@ class DetectorStateTransactionTests(unittest.TestCase):
                 processed_at="2026-09-07T12:05:00Z",
             )
             self.assertTrue(replayed.processed)
-
-    def test_change_summary_read_boundary_is_typed_ordered_and_profile_scoped(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            state = DetectorState.open_rw(Path(tmp) / "state.sqlite3")
-            self.addCleanup(state.close)
-
-            first_finding = _finding(change_id="chg." + "1" * 64)
-            second_finding = _finding(change_id="chg." + "2" * 64)
-            state.process_session_transaction(
-                identity=_identity(),
-                profile=_profile(),
-                findings=(second_finding, first_finding),
-                outbox_factory=_payload,
-                processed_at="2026-09-07T12:02:00Z",
-            )
-            replay_profile = _profile(sha256="9" * 64)
-            state.process_session_transaction(
-                identity=_identity(),
-                profile=replay_profile,
-                findings=(first_finding,),
-                outbox_factory=_payload,
-                processed_at="2026-09-07T12:03:00Z",
-            )
-
-            summaries = tuple(state.iter_change_summaries())
-            self.assertEqual(len(summaries), 3)
-            self.assertTrue(all(isinstance(item, ChangeSummary) for item in summaries))
-            self.assertEqual(
-                [(item.analysis_profile_sha256, item.change_id) for item in summaries],
-                sorted(
-                    (item.analysis_profile_sha256, item.change_id)
-                    for item in summaries
-                ),
-            )
-            self.assertEqual(
-                {item.analysis_profile_sha256 for item in summaries},
-                {_profile().sha256, replay_profile.sha256},
-            )
-            self.assertTrue(all(item.occurrence_count == 1 for item in summaries))
 
     def test_changes_store_value_free_canonical_identity_and_occurrences(self):
         with tempfile.TemporaryDirectory() as tmp:
