@@ -84,6 +84,7 @@ class ChangesPackageCompatibilityTests(unittest.TestCase):
         from bizman.changes.promotion import PromotionBundleBuilder as promotion_new
         from bizman.changes.rules import RuleEngine as rules_new
         from bizman.changes.runner import DetectorRunner as runner_new
+        from bizman.changes.state import ChangeSummary as summary_new
         from bizman.changes.state import DetectorState as state_new
         from tools.bizman_detector.baseline import BaselineCompiler as compiler_old
         from tools.bizman_detector.diff import SemanticDiff as diff_old
@@ -91,6 +92,7 @@ class ChangesPackageCompatibilityTests(unittest.TestCase):
         from tools.bizman_detector.promotion import PromotionBundleBuilder as promotion_old
         from tools.bizman_detector.rules import RuleEngine as rules_old
         from tools.bizman_detector.runner import DetectorRunner as runner_old
+        from tools.bizman_detector.state import ChangeSummary as summary_old
         from tools.bizman_detector.state import DetectorState as state_old
 
         self.assertIs(compiler_old, compiler_new)
@@ -100,6 +102,7 @@ class ChangesPackageCompatibilityTests(unittest.TestCase):
         self.assertIs(rules_old, rules_new)
         self.assertIs(runner_old, runner_new)
         self.assertIs(state_old, state_new)
+        self.assertIs(summary_old, summary_new)
 
 
 if __name__ == "__main__":
