@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from datetime import UTC, datetime
 from pathlib import Path
 import sqlite3
@@ -158,11 +158,14 @@ def _runtime_projection() -> RuntimeProjection:
     )
 
 
-def _build_index(data_dir: Path) -> None:
+def _build_index(
+    data_dir: Path,
+    runtime: RuntimeProjection | None = None,
+) -> None:
     rebuild_agent_index(
         data_dir / "index" / "agent-index.sqlite3",
         _knowledge_projection(),
-        _runtime_projection(),
+        runtime if runtime is not None else _runtime_projection(),
         completed_at="2026-09-25T12:00:00Z",
     )
 
@@ -300,6 +303,32 @@ class CoreReadApiTests(unittest.TestCase):
         self.assertIsNotNone(exact.session)
         assert exact.session is not None
         self.assertEqual(exact.session.event_count, 20)
+
+    def test_session_cursor_rejects_semantically_changed_index_generation(self):
+        from bizman.core import SessionListRequest, list_sessions
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            _build_index(data_dir)
+            context = _context(data_dir)
+            first = list_sessions(context, SessionListRequest(limit=1))
+            self.assertIsNotNone(first.next_cursor)
+
+            original = _runtime_projection()
+            changed = RuntimeProjection(
+                sessions=(
+                    replace(original.sessions[0], event_count=11),
+                    *original.sessions[1:],
+                ),
+                changes=original.changes,
+            )
+            _build_index(data_dir, changed)
+
+            with self.assertRaisesRegex(ValueError, "generation"):
+                list_sessions(
+                    context,
+                    SessionListRequest(limit=1, cursor=first.next_cursor),
+                )
 
     def test_change_pagination_preserves_profile_scope(self):
         from bizman.core import ChangeListRequest, list_changes
@@ -440,6 +469,11 @@ class CoreReadApiTests(unittest.TestCase):
             (
                 "fts",
                 "UPDATE knowledge_fts SET title = 'tampered' WHERE ref = 'bm.city.1'",
+            ),
+            (
+                "foreign-key",
+                "INSERT INTO alias(normalized_alias, alias, ref) "
+                "VALUES ('orphan', 'orphan', 'bm.city.999')",
             ),
         )
         for label, statement in corruption_cases:
