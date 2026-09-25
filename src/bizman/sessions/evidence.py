@@ -54,6 +54,24 @@ class EvidenceIdentity:
     status: str
 
 
+@dataclass(frozen=True, slots=True)
+class EvidenceSessionInfo:
+    """Verified finalized session identity plus safe manifest-level counters."""
+
+    identity: EvidenceIdentity
+    warning_count: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.identity, EvidenceIdentity):
+            raise TypeError("identity must be EvidenceIdentity")
+        if (
+            isinstance(self.warning_count, bool)
+            or not isinstance(self.warning_count, int)
+            or self.warning_count < 0
+        ):
+            raise ValueError("warning_count must be a non-negative integer")
+
+
 class _UniqueEventIds:
     """Exact duplicate detection with bounded in-memory growth.
 
@@ -487,8 +505,14 @@ class EvidenceReader:
         return self._identity_from_hashes(manifest, file_hashes)
 
     def inspect(self, session_id: str) -> EvidenceIdentity:
+        return self.inspect_info(session_id).identity
+
+    def inspect_info(self, session_id: str) -> EvidenceSessionInfo:
         manifest = self._read_manifest(session_id, require_finalized=True)
-        return self._inspect_manifest(manifest)
+        identity = self._inspect_manifest(manifest)
+        warnings = manifest.get("warnings")
+        assert isinstance(warnings, list)
+        return EvidenceSessionInfo(identity=identity, warning_count=len(warnings))
 
     def iter_events(
         self,
@@ -613,6 +637,13 @@ class EvidenceReader:
         self,
         selected: tuple[str, ...] = (),
     ) -> Iterator[EvidenceIdentity]:
+        for info in self.iter_finalized_info(selected):
+            yield info.identity
+
+    def iter_finalized_info(
+        self,
+        selected: tuple[str, ...] = (),
+    ) -> Iterator[EvidenceSessionInfo]:
         if selected:
             session_ids = sorted({self._validate_session_id(item) for item in selected})
         else:
@@ -632,7 +663,10 @@ class EvidenceReader:
             manifest = self._read_manifest(session_id, require_finalized=False)
             if manifest.get("status") not in _FINALIZED_STATUSES:
                 continue
-            yield self._inspect_manifest(manifest)
+            identity = self._inspect_manifest(manifest)
+            warnings = manifest.get("warnings")
+            assert isinstance(warnings, list)
+            yield EvidenceSessionInfo(identity=identity, warning_count=len(warnings))
 
 
 __all__ = [
@@ -643,6 +677,7 @@ __all__ = [
     "EvidenceIdentity",
     "EvidenceIntegrityError",
     "EvidenceReader",
+    "EvidenceSessionInfo",
     "EvidenceSessionStatus",
     "EvidenceStatusError",
 ]

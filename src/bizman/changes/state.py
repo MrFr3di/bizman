@@ -12,7 +12,7 @@ import sqlite3
 from typing import Final
 
 from bizman.sessions.evidence import EvidenceIdentity
-from bizman.changes.model import AnalysisProfile, Finding
+from bizman.changes.model import AnalysisProfile, ChangeSummary, Finding
 from bizman.foundation.fingerprint import canonical_json_bytes
 
 
@@ -368,6 +368,66 @@ class DetectorState:
             result.update(str(row[0]) for row in rows)
         return frozenset(result)
 
+    def iter_change_summaries(self) -> Iterator[ChangeSummary]:
+        """Yield validated change summaries without exposing detector SQL."""
+
+        rows = self._connection.execute(
+            """
+            SELECT analysis_profile_sha256, change_id, rule_id, rule_version,
+                   kind, novelty_class, first_session_id, first_seen_at,
+                   last_session_id, last_seen_at, occurrence_count
+            FROM changes
+            ORDER BY analysis_profile_sha256, change_id
+            """
+        )
+        for row in rows:
+            profile = _require_sha256(row[0], name="analysis_profile_sha256")
+            change_id = _require_text(row[1], name="change_id")
+            rule_id = _require_text(row[2], name="rule_id")
+            rule_version = row[3]
+            if (
+                isinstance(rule_version, bool)
+                or not isinstance(rule_version, int)
+                or rule_version <= 0
+            ):
+                raise StateIntegrityError("changes.rule_version must be a positive integer")
+            kind = _require_text(row[4], name="kind")
+            novelty_class = _require_text(row[5], name="novelty_class")
+            first_session_id = _require_text(row[6], name="first_session_id")
+            first_seen_at = _require_text(row[7], name="first_seen_at")
+            last_session_id = _require_text(row[8], name="last_session_id")
+            last_seen_at = _require_text(row[9], name="last_seen_at")
+            occurrence_count = row[10]
+            if (
+                isinstance(occurrence_count, bool)
+                or not isinstance(occurrence_count, int)
+                or occurrence_count <= 0
+            ):
+                raise StateIntegrityError(
+                    "changes.occurrence_count must be a positive integer"
+                )
+
+            first_instant = _parse_instant(first_seen_at, name="first_seen_at")
+            last_instant = _parse_instant(last_seen_at, name="last_seen_at")
+            if last_instant < first_instant:
+                raise StateIntegrityError(
+                    f"change {change_id!r} last_seen_at precedes first_seen_at"
+                )
+
+            yield ChangeSummary(
+                analysis_profile_sha256=profile,
+                change_id=change_id,
+                rule_id=rule_id,
+                rule_version=rule_version,
+                kind=kind,
+                novelty_class=novelty_class,
+                first_session_id=first_session_id,
+                first_seen_at=first_seen_at,
+                last_session_id=last_session_id,
+                last_seen_at=last_seen_at,
+                occurrence_count=occurrence_count,
+            )
+
     @contextmanager
     def _immediate_transaction(self) -> Iterator[None]:
         if self._read_only:
@@ -680,6 +740,7 @@ class DetectorState:
 __all__ = [
     "APPLICATION_ID",
     "USER_VERSION",
+    "ChangeSummary",
     "DetectorState",
     "OutboxFactory",
     "OutboxItem",

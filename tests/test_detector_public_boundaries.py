@@ -6,6 +6,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from bizman.changes import ChangeSummary, ChangeSummaryReader
+from bizman.sessions import EvidenceSessionInfo
 from tools.bizman_detector.evidence import EvidenceIdentity, EvidenceReader
 from tools.bizman_detector.model import AnalysisProfile, Finding
 from tools.bizman_detector.state import DetectorState
@@ -114,7 +116,68 @@ class EvidenceSessionStatusBoundaryTests(unittest.TestCase):
             )
 
 
+class EvidenceSessionInfoBoundaryTests(unittest.TestCase):
+    def test_finalized_info_exposes_verified_identity_and_warning_count_only(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            session_id = SESSION_COMPLETED
+            directory = data_dir / "sessions" / session_id
+            directory.mkdir(parents=True, exist_ok=True)
+            manifest = _manifest(session_id, "completed", "2026-09-07T12:00:00Z")
+            manifest["warnings"] = ["first warning", "second warning"]
+            (directory / "manifest.json").write_text(
+                json.dumps(manifest),
+                encoding="utf-8",
+            )
+
+            reader = EvidenceReader(repo_root, data_dir)
+            info = reader.inspect_info(session_id)
+            self.assertIsInstance(info, EvidenceSessionInfo)
+            self.assertEqual(info.warning_count, 2)
+            self.assertEqual(info.identity, reader.inspect(session_id))
+
+            discovered = tuple(reader.iter_finalized_info())
+            self.assertEqual(discovered, (info,))
+
+
 class DetectorStateReadBoundaryTests(unittest.TestCase):
+    def test_change_summary_reader_missing_state_is_non_destructive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "missing" / "state.sqlite3"
+            self.assertIsNone(ChangeSummaryReader.open_if_exists(path))
+            self.assertFalse(path.exists())
+            with self.assertRaises(FileNotFoundError):
+                ChangeSummaryReader(path)
+
+    def test_change_summary_reader_is_narrow_public_read_only_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "detector" / "state.sqlite3"
+            with DetectorState.open_rw(path) as state:
+                state.process_session_transaction(
+                    identity=_identity(),
+                    profile=_profile(),
+                    findings=(_finding(2), _finding(1)),
+                    outbox_factory=lambda identity, profile, first_seen: None,
+                    processed_at="2026-09-07T12:11:00Z",
+                )
+
+            reader = ChangeSummaryReader.open_if_exists(path)
+            assert reader is not None
+            with reader:
+                summaries = tuple(reader.iter_summaries())
+            self.assertEqual(len(summaries), 2)
+            self.assertTrue(all(isinstance(item, ChangeSummary) for item in summaries))
+            self.assertEqual(
+                [item.change_id for item in summaries],
+                sorted(item.change_id for item in summaries),
+            )
+            self.assertTrue(
+                all(item.analysis_profile_sha256 == _profile().sha256 for item in summaries)
+            )
+            with self.assertRaisesRegex(RuntimeError, "closed"):
+                tuple(reader.iter_summaries())
+
     def test_existing_change_lookup_is_public_exact_and_chunked(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "detector" / "state.sqlite3"

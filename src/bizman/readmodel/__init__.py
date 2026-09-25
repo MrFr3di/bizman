@@ -9,15 +9,23 @@ from bizman.readmodel.model import (
     SearchHit,
     SearchQuery,
 )
+from bizman.readmodel.runtime import (
+    ChangeIndexRecord,
+    RuntimeProjection,
+    SessionSummary,
+    project_runtime_intelligence,
+)
 from bizman.readmodel.store import (
     INDEX_APPLICATION_ID,
     INDEX_SCHEMA_VERSION,
     KnowledgeIndex,
+    rebuild_agent_index,
     rebuild_knowledge_index,
 )
 
 __all__ = [
     "EvaluationCase",
+    "ChangeIndexRecord",
     "EvaluationMetrics",
     "INDEX_APPLICATION_ID",
     "INDEX_SCHEMA_VERSION",
@@ -27,8 +35,12 @@ __all__ = [
     "MatchKind",
     "RefKind",
     "SearchHit",
+    "RuntimeProjection",
     "SearchQuery",
+    "SessionSummary",
     "evaluate_retrieval",
     "project_curated_knowledge",
+    "project_runtime_intelligence",
+    "rebuild_agent_index",
     "rebuild_knowledge_index",
 ]
