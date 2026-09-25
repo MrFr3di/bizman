@@ -12,6 +12,7 @@ from bizman.foundation.fingerprint import canonical_sha256
 from bizman.readmodel.knowledge import KnowledgeProjection
 from bizman.readmodel.runtime import ChangeIndexRecord, RuntimeProjection, SessionSummary
 from bizman.readmodel.model import (
+    KnowledgeRecord,
     MatchKind,
     RefKind,
     SearchHit,
