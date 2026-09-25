@@ -194,6 +194,94 @@ def _change_from_row(row: sqlite3.Row) -> ChangeIndexRecord:
     )
 
 
+def _knowledge_records_from_connection(
+    connection: sqlite3.Connection,
+) -> tuple[KnowledgeRecord, ...]:
+    rows = tuple(
+        connection.execute(
+            """
+            SELECT r.ref, r.kind, r.source_dataset, i.title, i.body
+            FROM ref AS r
+            JOIN knowledge_item AS i ON i.ref = r.ref
+            ORDER BY r.ref
+            """
+        )
+    )
+    records: list[KnowledgeRecord] = []
+    for row in rows:
+        ref = str(row["ref"])
+        aliases = tuple(
+            str(alias_row["alias"])
+            for alias_row in connection.execute(
+                """
+                SELECT alias
+                FROM alias
+                WHERE ref = ?
+                ORDER BY normalized_alias, alias
+                """,
+                (ref,),
+            )
+        )
+        evidence_refs = tuple(
+            str(evidence_row["evidence_ref"])
+            for evidence_row in connection.execute(
+                """
+                SELECT evidence_ref
+                FROM knowledge_evidence
+                WHERE ref = ?
+                ORDER BY ordinal
+                """,
+                (ref,),
+            )
+        )
+        records.append(
+            KnowledgeRecord(
+                ref=ref,
+                kind=RefKind(str(row["kind"])),
+                title=str(row["title"]),
+                aliases=aliases,
+                body=str(row["body"]),
+                evidence_refs=evidence_refs,
+                source_dataset=str(row["source_dataset"]),
+            )
+        )
+    return tuple(records)
+
+
+def _validate_fts_projection(
+    connection: sqlite3.Connection,
+    records: tuple[KnowledgeRecord, ...],
+) -> None:
+    expected = tuple(
+        (
+            item.ref,
+            item.title,
+            " ".join(item.aliases),
+            item.body,
+        )
+        for item in records
+    )
+    actual = tuple(
+        (
+            str(row["ref"]),
+            str(row["title"]),
+            str(row["aliases"]),
+            str(row["body"]),
+        )
+        for row in connection.execute(
+            """
+            SELECT ref, title, aliases, body
+            FROM knowledge_fts
+            ORDER BY ref
+            """
+        )
+    )
+    if actual != expected:
+        raise ReadModelIntegrityError(
+            "read-model FTS rows disagree with projected knowledge"
+        )
+
+
 def _runtime_projection_from_connection(connection: sqlite3.Connection) -> RuntimeProjection:
     sessions = tuple(
         _session_from_row(row)
@@ -296,6 +384,18 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
         raise ReadModelIntegrityError(
             "read-model runtime counts disagree with persisted metadata"
         )
+
+    try:
+        knowledge_records = _knowledge_records_from_connection(connection)
+        KnowledgeProjection(
+            records=knowledge_records,
+            source_fingerprint=meta["source_fingerprint"],
+        )
+    except (TypeError, ValueError) as exc:
+        raise ReadModelIntegrityError(
+            "read-model knowledge rows violate source fingerprint invariants"
+        ) from exc
+    _validate_fts_projection(connection, knowledge_records)
 
     try:
         runtime = _runtime_projection_from_connection(connection)
