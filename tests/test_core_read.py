@@ -427,18 +427,31 @@ class CoreReadApiTests(unittest.TestCase):
             with self.assertRaises(ContractMismatchError):
                 list_sessions(_context(data_dir), SessionListRequest())
 
-        with tempfile.TemporaryDirectory() as tmp:
-            data_dir = Path(tmp) / "corrupt"
-            _build_index(data_dir)
-            path = data_dir / "index" / "agent-index.sqlite3"
-            with sqlite3.connect(path) as connection:
-                connection.execute(
-                    "UPDATE index_meta SET value = 'not-rfc3339' "
-                    "WHERE key = 'completed_at'"
-                )
-                connection.commit()
-            with self.assertRaises(DataIntegrityError):
-                list_sessions(_context(data_dir), SessionListRequest())
+        corruption_cases = (
+            (
+                "metadata",
+                "UPDATE index_meta SET value = 'not-rfc3339' "
+                "WHERE key = 'completed_at'",
+            ),
+            (
+                "knowledge",
+                "UPDATE knowledge_item SET body = 'tampered' WHERE ref = 'bm.city.1'",
+            ),
+            (
+                "fts",
+                "UPDATE knowledge_fts SET title = 'tampered' WHERE ref = 'bm.city.1'",
+            ),
+        )
+        for label, statement in corruption_cases:
+            with self.subTest(corruption=label), tempfile.TemporaryDirectory() as tmp:
+                data_dir = Path(tmp) / "corrupt"
+                _build_index(data_dir)
+                path = data_dir / "index" / "agent-index.sqlite3"
+                with sqlite3.connect(path) as connection:
+                    connection.execute(statement)
+                    connection.commit()
+                with self.assertRaises(DataIntegrityError):
+                    list_sessions(_context(data_dir), SessionListRequest())
 
 
 if __name__ == "__main__":
