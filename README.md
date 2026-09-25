@@ -15,10 +15,11 @@ Completed foundations include:
 - privacy-safe DOM action context and deterministic action-to-HTTP correlation;
 - deterministic Change Detector with versioned rules, analysis profiles, SQLite checkpoints/outbox and Promotion Bundles;
 - installable `src/bizman` package and stable `bizman.core` application boundary;
+- deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
 
-Current delivery stage is **P1 — Python package + Core boundary**. The next stage is **P2 — Agent Index + Session Intelligence**, followed by **P3 — read-only MCP**. See `docs/ROADMAP.md`.
+Current delivery stage is **P2 — Agent Index + Session Intelligence**. P2-A knowledge retrieval, P2-B curated corpus coverage and P2-C session/change intelligence are complete. The next slices are **P2-D — Core Read API** and **P2-E — Evaluation + hardening**, followed by **P3 — read-only MCP**. See `docs/ROADMAP.md`.
 
 ## Current corpus
 
@@ -61,6 +62,7 @@ src/bizman/
   sessions/                     immutable evidence/session boundary
   collector/                    passive CDP collector
   changes/                      detector/diff/rules/state/promotion
+  readmodel/                    rebuildable Agent Index + runtime intelligence
   core/                         stable application use-case boundary
   cli/                          thin command-line adapter over Core
 config/                         capture/runtime policies
@@ -79,7 +81,7 @@ docs/                           architecture, CI, provenance and plans
 tools/                          compatibility delegates, CI helpers, benchmarks
 ```
 
-`tools/` is no longer the canonical production namespace. Production implementations live under `src/bizman`; supported legacy scripts remain thin compatibility delegates during P1.
+`tools/` is no longer the canonical production namespace. Production implementations live under `src/bizman`; supported legacy scripts remain thin compatibility delegates during the compatibility window.
 
 Large corpora are partitioned behind `index.json` manifests. Each manifest records counts, part names and offsets where applicable so tooling can read the required slice rather than loading an entire corpus.
 
@@ -123,7 +125,7 @@ uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData" --dry-run
 
 The collector should run against a dedicated Chrome profile exposing a local DevTools endpoint. Collection is passive: the CDP command allowlist permits observation/instrumentation required for capture but not game writes.
 
-Legacy commands `tools/collect_live.py`, `tools/detect_changes.py` and `tools/validate_repo.py` remain available as compatibility delegates in P1. New integrations should use the installed `bizman` CLI or `bizman.core` rather than importing `tools.*`.
+Legacy commands `tools/collect_live.py`, `tools/detect_changes.py` and `tools/validate_repo.py` remain available as compatibility delegates during the compatibility window. New integrations should use the installed `bizman` CLI or `bizman.core` rather than importing `tools.*`.
 
 Operational sessions/events/CAS, browser profiles, detector SQLite state and Promotion Bundles stay under the external `BizManData` root and are never package assets or intended Git content.
 
@@ -135,7 +137,7 @@ Operational sessions/events/CAS, browser profiles, detector SQLite state and Pro
 - change detection;
 - repository validation.
 
-CLI code consumes Core rather than lower implementation packages. Future MCP adapters must follow the same rule; P1 intentionally does not add MCP, Agent Index, Current State, analytics or write automation.
+CLI code consumes Core rather than lower implementation packages. The derived Agent Index now lives below Core in `bizman.readmodel`; P2-D will expose bounded immutable read operations through `bizman.core`. Future MCP adapters must consume that Core surface rather than importing `readmodel` directly. Current State, analytics and write automation remain later stages.
 
 ## Change detection
 
@@ -166,7 +168,8 @@ uv sync --locked
 uv run ruff check src
 uv run lint-imports
 uv run python -m compileall -q src tools tests
-uv run python -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
 ```
 
@@ -187,9 +190,9 @@ The stable sequence is:
 
 ```text
 D1  deterministic Change Detector        completed
-P1  Python package + Core boundary       current
-P2  Agent Index + Session Intelligence   next
-P3  read-only MCP
+P1  Python package + Core boundary       completed
+P2  Agent Index + Session Intelligence   current (A/B/C complete; D/E next)
+P3  read-only MCP                        after P2
 P4  replayable Current State
 P5  Parquet history + deterministic analytics
 P6  experiment framework
