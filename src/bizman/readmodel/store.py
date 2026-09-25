@@ -156,45 +156,53 @@ def _connect(path: Path, *, read_only: bool) -> sqlite3.Connection:
     return connection
 
 
+def _session_from_row(row: sqlite3.Row) -> SessionSummary:
+    return SessionSummary(
+        session_id=str(row["session_id"]),
+        manifest_sha256=str(row["manifest_sha256"]),
+        evidence_sha256=str(row["evidence_sha256"]),
+        started_at=str(row["started_at"]),
+        ended_at=str(row["ended_at"]),
+        status=str(row["status"]),
+        event_count=int(row["event_count"]),
+        action_count=int(row["action_count"]),
+        http_request_count=int(row["http_request_count"]),
+        http_response_count=int(row["http_response_count"]),
+        correlation_strong_count=int(row["correlation_strong_count"]),
+        correlation_probable_count=int(row["correlation_probable_count"]),
+        correlation_temporal_count=int(row["correlation_temporal_count"]),
+        correlation_exact_count=int(row["correlation_exact_count"]),
+        uncorrelated_action_count=int(row["uncorrelated_action_count"]),
+        warning_count=int(row["warning_count"]),
+        anomaly_count=int(row["anomaly_count"]),
+    )
+
+
+def _change_from_row(row: sqlite3.Row) -> ChangeIndexRecord:
+    return ChangeIndexRecord(
+        analysis_profile_sha256=str(row["analysis_profile_sha256"]),
+        change_id=str(row["change_id"]),
+        rule_id=str(row["rule_id"]),
+        rule_version=int(row["rule_version"]),
+        kind=str(row["kind"]),
+        novelty_class=str(row["novelty_class"]),
+        first_session_id=str(row["first_session_id"]),
+        first_seen_at=str(row["first_seen_at"]),
+        last_session_id=str(row["last_session_id"]),
+        last_seen_at=str(row["last_seen_at"]),
+        occurrence_count=int(row["occurrence_count"]),
+    )
+
+
 def _runtime_projection_from_connection(connection: sqlite3.Connection) -> RuntimeProjection:
     sessions = tuple(
-        SessionSummary(
-            session_id=str(row["session_id"]),
-            manifest_sha256=str(row["manifest_sha256"]),
-            evidence_sha256=str(row["evidence_sha256"]),
-            started_at=str(row["started_at"]),
-            ended_at=str(row["ended_at"]),
-            status=str(row["status"]),
-            event_count=int(row["event_count"]),
-            action_count=int(row["action_count"]),
-            http_request_count=int(row["http_request_count"]),
-            http_response_count=int(row["http_response_count"]),
-            correlation_strong_count=int(row["correlation_strong_count"]),
-            correlation_probable_count=int(row["correlation_probable_count"]),
-            correlation_temporal_count=int(row["correlation_temporal_count"]),
-            correlation_exact_count=int(row["correlation_exact_count"]),
-            uncorrelated_action_count=int(row["uncorrelated_action_count"]),
-            warning_count=int(row["warning_count"]),
-            anomaly_count=int(row["anomaly_count"]),
-        )
+        _session_from_row(row)
         for row in connection.execute(
             "SELECT * FROM session_summary ORDER BY session_id"
         )
     )
     changes = tuple(
-        ChangeIndexRecord(
-            analysis_profile_sha256=str(row["analysis_profile_sha256"]),
-            change_id=str(row["change_id"]),
-            rule_id=str(row["rule_id"]),
-            rule_version=int(row["rule_version"]),
-            kind=str(row["kind"]),
-            novelty_class=str(row["novelty_class"]),
-            first_session_id=str(row["first_session_id"]),
-            first_seen_at=str(row["first_seen_at"]),
-            last_session_id=str(row["last_session_id"]),
-            last_seen_at=str(row["last_seen_at"]),
-            occurrence_count=int(row["occurrence_count"]),
-        )
+        _change_from_row(row)
         for row in connection.execute(
             """
             SELECT *
@@ -565,6 +573,214 @@ class KnowledgeIndex:
             )
         }
 
+    @staticmethod
+    def _page_limit(limit: int) -> int:
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            raise TypeError("page limit must be an integer")
+        if not 1 <= limit <= 50:
+            raise ValueError("page limit must be between 1 and 50")
+        return limit
+
+    @staticmethod
+    def _after_key(
+        after: tuple[str, str] | None,
+        *,
+        name: str,
+    ) -> tuple[str, str] | None:
+        if after is None:
+            return None
+        if not isinstance(after, tuple) or len(after) != 2:
+            raise TypeError(f"{name} must be a two-item tuple or None")
+        if not all(isinstance(value, str) and value for value in after):
+            raise ValueError(f"{name} values must be non-empty strings")
+        return after
+
+    def _aliases(self, ref: str) -> tuple[str, ...]:
+        return tuple(
+            str(row["alias"])
+            for row in self._connection.execute(
+                """
+                SELECT alias
+                FROM alias
+                WHERE ref = ?
+                ORDER BY normalized_alias, alias
+                """,
+                (ref,),
+            )
+        )
+
+    def knowledge_record(self, ref: str) -> KnowledgeRecord | None:
+        if not isinstance(ref, str) or not ref:
+            raise TypeError("ref must be a non-empty string")
+        row = self._connection.execute(
+            """
+            SELECT r.ref, r.kind, r.source_dataset, i.title, i.body
+            FROM ref AS r
+            JOIN knowledge_item AS i ON i.ref = r.ref
+            WHERE r.ref = ?
+            """,
+            (ref,),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            return KnowledgeRecord(
+                ref=str(row["ref"]),
+                kind=RefKind(str(row["kind"])),
+                title=str(row["title"]),
+                aliases=self._aliases(ref),
+                body=str(row["body"]),
+                evidence_refs=self._evidence(ref),
+                source_dataset=str(row["source_dataset"]),
+            )
+        except (TypeError, ValueError) as exc:
+            raise ReadModelIntegrityError(
+                "read-model knowledge row violates projection invariants"
+            ) from exc
+
+    def session_record(self, session_id: str) -> SessionSummary | None:
+        if not isinstance(session_id, str) or not session_id:
+            raise TypeError("session_id must be a non-empty string")
+        row = self._connection.execute(
+            "SELECT * FROM session_summary WHERE session_id = ?",
+            (session_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            return _session_from_row(row)
+        except (TypeError, ValueError) as exc:
+            raise ReadModelIntegrityError(
+                "read-model session row violates projection invariants"
+            ) from exc
+
+    def session_page(
+        self,
+        *,
+        limit: int = 20,
+        after: tuple[str, str] | None = None,
+    ) -> tuple[tuple[SessionSummary, ...], bool]:
+        page_limit = self._page_limit(limit)
+        after_key = self._after_key(after, name="session after key")
+        parameters: tuple[object, ...]
+        if after_key is None:
+            where = ""
+            parameters = (page_limit + 1,)
+        else:
+            where = "WHERE started_at > ? OR (started_at = ? AND session_id > ?)"
+            parameters = (
+                after_key[0],
+                after_key[0],
+                after_key[1],
+                page_limit + 1,
+            )
+        rows = tuple(
+            self._connection.execute(
+                f"""
+                SELECT *
+                FROM session_summary
+                {where}
+                ORDER BY started_at, session_id
+                LIMIT ?
+                """,
+                parameters,
+            )
+        )
+        try:
+            values = tuple(_session_from_row(row) for row in rows)
+        except (TypeError, ValueError) as exc:
+            raise ReadModelIntegrityError(
+                "read-model session page violates projection invariants"
+            ) from exc
+        return values[:page_limit], len(values) > page_limit
+
+    def change_record(
+        self,
+        analysis_profile_sha256: str,
+        change_id: str,
+    ) -> ChangeIndexRecord | None:
+        self._validate_profile(analysis_profile_sha256)
+        if not isinstance(change_id, str) or not change_id:
+            raise TypeError("change_id must be a non-empty string")
+        row = self._connection.execute(
+            """
+            SELECT *
+            FROM change_index
+            WHERE analysis_profile_sha256 = ? AND change_id = ?
+            """,
+            (analysis_profile_sha256, change_id),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            return _change_from_row(row)
+        except (TypeError, ValueError) as exc:
+            raise ReadModelIntegrityError(
+                "read-model change row violates projection invariants"
+            ) from exc
+
+    @staticmethod
+    def _validate_profile(analysis_profile_sha256: str) -> str:
+        if (
+            not isinstance(analysis_profile_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", analysis_profile_sha256) is None
+        ):
+            raise ValueError(
+                "analysis_profile_sha256 must be 64 lowercase hexadecimal characters"
+            )
+        return analysis_profile_sha256
+
+    def change_page(
+        self,
+        *,
+        limit: int = 20,
+        analysis_profile_sha256: str | None = None,
+        after: tuple[str, str] | None = None,
+    ) -> tuple[tuple[ChangeIndexRecord, ...], bool]:
+        page_limit = self._page_limit(limit)
+        profile = (
+            self._validate_profile(analysis_profile_sha256)
+            if analysis_profile_sha256 is not None
+            else None
+        )
+        after_key = self._after_key(after, name="change after key")
+        if profile is not None and after_key is not None and after_key[0] != profile:
+            raise ValueError("change after key does not match profile filter")
+
+        clauses: list[str] = []
+        parameters: list[object] = []
+        if profile is not None:
+            clauses.append("analysis_profile_sha256 = ?")
+            parameters.append(profile)
+        if after_key is not None:
+            clauses.append(
+                "(analysis_profile_sha256 > ? OR "
+                "(analysis_profile_sha256 = ? AND change_id > ?))"
+            )
+            parameters.extend((after_key[0], after_key[0], after_key[1]))
+        where = "WHERE " + " AND ".join(clauses) if clauses else ""
+        parameters.append(page_limit + 1)
+
+        rows = tuple(
+            self._connection.execute(
+                f"""
+                SELECT *
+                FROM change_index
+                {where}
+                ORDER BY analysis_profile_sha256, change_id
+                LIMIT ?
+                """,
+                tuple(parameters),
+            )
+        )
+        try:
+            values = tuple(_change_from_row(row) for row in rows)
+        except (TypeError, ValueError) as exc:
+            raise ReadModelIntegrityError(
+                "read-model change page violates projection invariants"
+            ) from exc
+        return values[:page_limit], len(values) > page_limit
+
     def session_summaries(self) -> tuple[SessionSummary, ...]:
         return _runtime_projection_from_connection(self._connection).sessions
 
@@ -575,13 +791,7 @@ class KnowledgeIndex:
         runtime = _runtime_projection_from_connection(self._connection)
         if analysis_profile_sha256 is None:
             return runtime.changes
-        if (
-            not isinstance(analysis_profile_sha256, str)
-            or re.fullmatch(r"[0-9a-f]{64}", analysis_profile_sha256) is None
-        ):
-            raise ValueError(
-                "analysis_profile_sha256 must be 64 lowercase hexadecimal characters"
-            )
+        self._validate_profile(analysis_profile_sha256)
         return tuple(
             item
             for item in runtime.changes
@@ -618,13 +828,18 @@ class KnowledgeIndex:
         )
 
     def _hit(self, row: sqlite3.Row, match_kind: MatchKind) -> SearchHit:
-        return SearchHit(
-            ref=str(row["ref"]),
-            kind=RefKind(str(row["kind"])),
-            title=str(row["title"]),
-            match_kind=match_kind,
-            evidence_refs=self._evidence(str(row["ref"])),
-        )
+        try:
+            return SearchHit(
+                ref=str(row["ref"]),
+                kind=RefKind(str(row["kind"])),
+                title=str(row["title"]),
+                match_kind=match_kind,
+                evidence_refs=self._evidence(str(row["ref"])),
+            )
+        except (TypeError, ValueError) as exc:
+            raise ReadModelIntegrityError(
+                "read-model search row violates projection invariants"
+            ) from exc
 
     def _append_rows(
         self,
