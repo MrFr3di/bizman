@@ -20,7 +20,8 @@
 - `src/bizman/readmodel/` — детерминированная проекция curated knowledge и runtime intelligence.
 - `BizManData/index/agent-index.sqlite3` — внешний rebuildable SQLite read model; не является source of truth.
 - P2-A/P2-B индексируют 590 curated records; P2-C добавляет verified `session_summary` и profile-scoped `change_index`.
-- Обычные agent/read запросы не должны обходить этот слой прямым чтением repository JSON/JSONL или detector SQLite.
+- P2-D предоставляет bounded path-free read API через `bizman.core`: knowledge resolve/search/get, session list/get и profile-scoped change list/get.
+- Обычные agent/read запросы и будущий MCP должны идти через Core, а не читать repository JSON/JSONL, detector SQLite или Agent Index напрямую.
 
 ## HTTP / протокол
 
