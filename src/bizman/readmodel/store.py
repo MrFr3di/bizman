@@ -289,7 +289,12 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
             "read-model runtime counts disagree with persisted metadata"
         )
 
-    runtime = _runtime_projection_from_connection(connection)
+    try:
+        runtime = _runtime_projection_from_connection(connection)
+    except (TypeError, ValueError) as exc:
+        raise ReadModelIntegrityError(
+            "read-model runtime rows violate projection invariants"
+        ) from exc
     if runtime.source_fingerprint != meta["runtime_fingerprint"]:
         raise ReadModelIntegrityError(
             "read-model runtime fingerprint does not match persisted rows"
@@ -310,7 +315,12 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
         raise ReadModelIntegrityError(
             "read-model generation fingerprint does not match metadata"
         )
-    _validate_completed_at(meta["completed_at"])
+    try:
+        _validate_completed_at(meta["completed_at"])
+    except (TypeError, ValueError) as exc:
+        raise ReadModelIntegrityError(
+            "read-model completed_at violates metadata invariants"
+        ) from exc
 
 
 def _validate_completed_at(value: str) -> str:
