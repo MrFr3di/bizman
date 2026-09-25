@@ -1,6 +1,6 @@
 # BizMan unified roadmap
 
-Status: stable delivery-stage roadmap, updated 2026-09-09.
+Status: stable delivery-stage roadmap, updated 2026-09-25.
 
 BizMan evolves from deterministic evidence collection into a read-optimized agent platform and only later into guarded automation. Delivery stages use stable identifiers (`D1`, `P1`, `P2`, ...) rather than GitHub pull-request numbers. PR numbers are implementation history, not architecture.
 
@@ -108,7 +108,7 @@ Completed capabilities:
 
 D1 remains the correctness foundation for every downstream projection. Future parsers must not silently reinterpret incompatible evidence.
 
-## 4. Current stage: P1 — Python package + Core boundary
+## 4. Completed stage: P1 — Python package + Core boundary
 
 Goal: turn the verified production implementation into an installable package and establish a small stable application boundary without changing Collector/Detector semantics.
 
@@ -146,7 +146,7 @@ P1 exit gate:
 - no unresolved blocker review threads or security/runtime artifacts;
 - branch is current with target branch before merge.
 
-## 5. P2 — Agent Index + Session Intelligence
+## 5. Current stage: P2 — Agent Index + Session Intelligence
 
 Goal: stop agents and future adapters from scanning raw repository files/session JSONL for ordinary read tasks.
 
@@ -159,6 +159,8 @@ BizManData/index/agent-index.sqlite3
 The DB is a derived read model, not a source of truth. P2 is delivered as small vertical slices.
 
 ### P2-A — Knowledge Retrieval Kernel
+
+Status: completed.
 
 Initial scope is deliberately limited to curated objects that already have stable IDs and explicit provenance:
 
@@ -182,6 +184,8 @@ This slice establishes:
 The `bizman.readmodel` package may consume deterministic lower layers but must not import collector, Core or CLI. Core integration is deferred until a useful read model exists.
 
 ### P2-B — Curated Corpus Coverage
+
+Status: completed.
 
 Extend explicit projectors to the remaining high-value curated corpora while preserving the P2-A retrieval contract.
 
@@ -212,23 +216,19 @@ P2-B bumps the projection contract version while retaining SQLite schema v1. The
 
 ### P2-C — Session + Change Intelligence
 
-Add deterministic summaries and anomaly/change indexes from sanitized runtime data. Session data is consumed through `EvidenceReader`; P2 code must not bypass evidence validation with direct JSONL parsing.
+Status: completed.
 
-Minimum summary fields:
+P2-C projects sanitized runtime evidence and detector results into Agent Index without bypassing their owning boundaries:
 
-```text
-event_count
-action_count
-http_request_count
-http_response_count
-strong/probable/temporal correlations
-uncorrelated actions
-new findings by kind
-indeterminate evidence count
-conflicts/warnings
-```
+- finalized sessions are read only through the public `EvidenceReader` API and are bound to verified manifest/evidence identity;
+- detector changes are read only through the public `bizman.changes` summary boundary; `readmodel` does not query detector SQLite directly;
+- `session_summary` stores session identity/time/status, event/action/HTTP counts, correlation buckets, uncorrelated actions and warning/anomaly counters;
+- `change_index` stores profile-scoped change identity, rule/kind/novelty metadata, first/last session/time and occurrence count;
+- change identity remains `(analysis_profile_sha256, change_id)`; different analysis profiles are never collapsed;
+- Agent Index advances to SQLite schema/user_version 2 and projection version 3; pre-P2-C schema v1 is rejected and rebuilt rather than migrated in place;
+- runtime rows and metadata are covered by deterministic fingerprints and fail closed on persisted invariant corruption.
 
-Detector/change rows remain scoped by `analysis_profile_sha256` so interpretations from different profiles are never silently mixed.
+This split keeps per-session evidence aggregates separate from detector change summaries. Higher-level grouping such as findings-by-kind belongs in the bounded P2-D read API rather than being duplicated into the storage schema without a concrete consumer.
 
 ### P2-D — Core Read API
 
@@ -560,11 +560,11 @@ These stores have different projection/version/migration lifecycles. `bizman.cor
 
 ## 16. CI evolution
 
-Current P1 CI:
+Current CI:
 
 ```text
 validate (Python 3.14)
-  lock + Ruff + Import Linter + compile + full tests + repository validation
+  lock + Ruff + Import Linter + compile + full tests with coverage + repository validation
 
 compatibility (Python 3.11)
   compile + Core/migration/CLI contracts + public import/CLI smoke
@@ -596,9 +596,9 @@ F1  curated knowledge/provenance          completed
 F2  passive CDP collector                 completed
 F3  action context/correlation            completed
 D1  deterministic Change Detector         completed
-P1  Python package + Core boundary        current
-P2  Agent Index + Session Intelligence    next
-P3  read-only MCP v1
+P1  Python package + Core boundary        completed
+P2  Agent Index + Session Intelligence    current (A/B/C complete; D/E next)
+P3  read-only MCP v1                      after P2
 P4  replayable Current State
 P5  Parquet history + analytics
 P6  experiment framework
@@ -627,8 +627,8 @@ BizMan reaches the intended agent-toolchain milestone when:
 The shortest path from the current stage is therefore:
 
 ```text
-P1 package/Core
-  -> P2 Agent Index + Session Intelligence
+P2-D Core Read API
+  -> P2-E Evaluation + hardening
   -> P3 read-only MCP
   -> P4 Current State
   -> P5 History/Analytics

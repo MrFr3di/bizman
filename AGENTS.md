@@ -43,7 +43,8 @@ uv sync --locked
 uv run ruff check src
 uv run lint-imports
 uv run python -m compileall -q src tools tests
-uv run python -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
 ```
 

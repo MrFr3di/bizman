@@ -13,6 +13,14 @@
 - `docs/architecture/provenance.md` — provenance, evidence и уровни уверенности.
 - `docs/research/captures.md` — сведения об исходных захватах.
 - `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные.
+- `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов.
+
+## Agent Index / read model
+
+- `src/bizman/readmodel/` — детерминированная проекция curated knowledge и runtime intelligence.
+- `BizManData/index/agent-index.sqlite3` — внешний rebuildable SQLite read model; не является source of truth.
+- P2-A/P2-B индексируют 590 curated records; P2-C добавляет verified `session_summary` и profile-scoped `change_index`.
+- Обычные agent/read запросы не должны обходить этот слой прямым чтением repository JSON/JSONL или detector SQLite.
 
 ## HTTP / протокол
 
@@ -55,7 +63,8 @@ uv sync --locked
 uv run ruff check src
 uv run lint-imports
 uv run python -m compileall -q src tools tests
-uv run python -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
+uv run --locked --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
 ```
 
