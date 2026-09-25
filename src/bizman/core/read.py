@@ -83,10 +83,10 @@ def _require_session_id(value: object) -> str:
 
 
 def _normalize_kinds(values: object) -> tuple[str, ...]:
+    if isinstance(values, list):
+        values = tuple(values)
     if not isinstance(values, tuple):
-        values = tuple(values) if isinstance(values, (list, set, frozenset)) else values
-    if not isinstance(values, tuple):
-        raise TypeError("kinds must be a tuple or finite sequence of strings")
+        raise TypeError("kinds must be a tuple or list of strings")
     result: list[str] = []
     for value in values:
         if not isinstance(value, str) or value not in _KNOWLEDGE_KINDS:
@@ -143,6 +143,9 @@ def _decode_cursor(
         envelope = json.loads(raw.decode("utf-8"))
     except (UnicodeError, binascii.Error, json.JSONDecodeError) as exc:
         raise ValueError("cursor is malformed") from exc
+    canonical_encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    if not hmac.compare_digest(encoded, canonical_encoded):
+        raise ValueError("cursor encoding is not canonical")
     if not isinstance(envelope, dict) or set(envelope) != {"payload", "sha256"}:
         raise ValueError("cursor envelope is invalid")
     payload = envelope["payload"]
