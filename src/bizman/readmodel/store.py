@@ -198,51 +198,46 @@ def _change_from_row(row: sqlite3.Row) -> ChangeIndexRecord:
 def _knowledge_records_from_connection(
     connection: sqlite3.Connection,
 ) -> tuple[KnowledgeRecord, ...]:
-    rows = tuple(
-        connection.execute(
-            """
-            SELECT r.ref, r.kind, r.source_dataset, i.title, i.body
-            FROM ref AS r
-            JOIN knowledge_item AS i ON i.ref = r.ref
-            ORDER BY r.ref
-            """
+    aliases_by_ref: dict[str, list[str]] = {}
+    for row in connection.execute(
+        """
+        SELECT ref, alias
+        FROM alias
+        ORDER BY ref, normalized_alias, alias
+        """
+    ):
+        aliases_by_ref.setdefault(str(row["ref"]), []).append(str(row["alias"]))
+
+    evidence_by_ref: dict[str, list[str]] = {}
+    for row in connection.execute(
+        """
+        SELECT ref, evidence_ref
+        FROM knowledge_evidence
+        ORDER BY ref, ordinal
+        """
+    ):
+        evidence_by_ref.setdefault(str(row["ref"]), []).append(
+            str(row["evidence_ref"])
         )
-    )
+
     records: list[KnowledgeRecord] = []
-    for row in rows:
+    for row in connection.execute(
+        """
+        SELECT r.ref, r.kind, r.source_dataset, i.title, i.body
+        FROM ref AS r
+        JOIN knowledge_item AS i ON i.ref = r.ref
+        ORDER BY r.ref
+        """
+    ):
         ref = str(row["ref"])
-        aliases = tuple(
-            str(alias_row["alias"])
-            for alias_row in connection.execute(
-                """
-                SELECT alias
-                FROM alias
-                WHERE ref = ?
-                ORDER BY normalized_alias, alias
-                """,
-                (ref,),
-            )
-        )
-        evidence_refs = tuple(
-            str(evidence_row["evidence_ref"])
-            for evidence_row in connection.execute(
-                """
-                SELECT evidence_ref
-                FROM knowledge_evidence
-                WHERE ref = ?
-                ORDER BY ordinal
-                """,
-                (ref,),
-            )
-        )
         records.append(
             KnowledgeRecord(
                 ref=ref,
                 kind=RefKind(str(row["kind"])),
                 title=str(row["title"]),
-                aliases=aliases,
+                aliases=tuple(aliases_by_ref.get(ref, ())),
                 body=str(row["body"]),
-                evidence_refs=evidence_refs,
+                evidence_refs=tuple(evidence_by_ref.get(ref, ())),
                 source_dataset=str(row["source_dataset"]),
             )
         )
@@ -341,6 +336,11 @@ def _validate_identity(connection: sqlite3.Connection) -> None:
     integrity = str(connection.execute("PRAGMA integrity_check").fetchone()[0])
     if integrity.casefold() != "ok":
         raise ReadModelIntegrityError(f"SQLite integrity_check failed: {integrity}")
+    foreign_key_violation = connection.execute("PRAGMA foreign_key_check").fetchone()
+    if foreign_key_violation is not None:
+        raise ReadModelIntegrityError(
+            "SQLite foreign_key_check found a persisted relationship violation"
+        )
 
     meta = {
         str(row["key"]): str(row["value"])
