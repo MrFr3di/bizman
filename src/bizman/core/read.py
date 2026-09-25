@@ -5,6 +5,7 @@ import binascii
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime
 import hashlib
 import hmac
 import json
@@ -44,8 +45,10 @@ _KNOWLEDGE_KINDS = frozenset(kind.value for kind in RefKind)
 
 
 def _require_text(value: object, *, name: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise TypeError(f"{name} must be a non-empty string")
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{name} must be non-empty")
     return value
 
 
@@ -82,6 +85,17 @@ def _require_session_id(value: object) -> str:
     return value
 
 
+def _require_instant(value: object, *, name: str) -> str:
+    text = _require_text(value, name=name)
+    try:
+        instant = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{name} must be RFC3339") from exc
+    if instant.tzinfo is None or instant.utcoffset() is None:
+        raise ValueError(f"{name} must include a timezone offset")
+    return text
+
+
 def _normalize_kinds(values: object) -> tuple[str, ...]:
     if isinstance(values, list):
         values = tuple(values)
@@ -105,8 +119,17 @@ def _canonical_json(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def _encode_cursor(*, kind: str, scope: str, key: tuple[str, str]) -> str:
+def _encode_cursor(
+    *,
+    kind: str,
+    scope: str,
+    generation: str,
+    key: tuple[str, str],
+) -> str:
+    if _SHA256_RE.fullmatch(generation) is None:
+        raise ValueError("cursor generation must be a lowercase SHA-256")
     payload = {
+        "generation": generation,
         "kind": kind,
         "scope": scope,
         "key": list(key),
@@ -126,7 +149,7 @@ def _decode_cursor(
     *,
     kind: str,
     scope: str,
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     _require_text(cursor, name="cursor")
     if not cursor.startswith(_CURSOR_PREFIX):
         raise ValueError("cursor has an unsupported format")
@@ -152,7 +175,7 @@ def _decode_cursor(
     checksum = envelope["sha256"]
     if (
         not isinstance(payload, dict)
-        or set(payload) != {"kind", "scope", "key", "version"}
+        or set(payload) != {"generation", "kind", "scope", "key", "version"}
         or not isinstance(checksum, str)
         or _SHA256_RE.fullmatch(checksum) is None
     ):
@@ -164,6 +187,9 @@ def _decode_cursor(
         raise ValueError("cursor version is unsupported")
     if payload["kind"] != kind or payload["scope"] != scope:
         raise ValueError("cursor does not belong to this query")
+    generation = payload["generation"]
+    if not isinstance(generation, str) or _SHA256_RE.fullmatch(generation) is None:
+        raise ValueError("cursor generation is invalid")
     key = payload["key"]
     if (
         not isinstance(key, list)
@@ -171,7 +197,7 @@ def _decode_cursor(
         or not all(isinstance(value, str) and value for value in key)
     ):
         raise ValueError("cursor key is invalid")
-    return key[0], key[1]
+    return generation, key[0], key[1]
 
 
 def _kind_values(values: tuple[str, ...]) -> tuple[RefKind, ...]:
@@ -282,7 +308,13 @@ class SessionListRequest:
     def __post_init__(self) -> None:
         _require_limit(self.limit)
         if self.cursor is not None:
-            _decode_cursor(self.cursor, kind="sessions", scope="*")
+            _, started_at, session_id = _decode_cursor(
+                self.cursor,
+                kind="sessions",
+                scope="*",
+            )
+            _require_instant(started_at, name="session cursor started_at")
+            _require_session_id(session_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -333,7 +365,15 @@ class ChangeListRequest:
         profile = _require_profile(self.analysis_profile_sha256, optional=True)
         scope = profile if profile is not None else "*"
         if self.cursor is not None:
-            _decode_cursor(self.cursor, kind="changes", scope=scope)
+            _, cursor_profile, change_id = _decode_cursor(
+                self.cursor,
+                kind="changes",
+                scope=scope,
+            )
+            _require_profile(cursor_profile)
+            _require_text(change_id, name="change cursor change_id")
+            if profile is not None and cursor_profile != profile:
+                raise ValueError("change cursor key does not match profile filter")
 
 
 @dataclass(frozen=True, slots=True)
@@ -476,12 +516,21 @@ def list_sessions(
 ) -> SessionPage:
     if not isinstance(request, SessionListRequest):
         raise TypeError("request must be SessionListRequest")
-    after = (
+    cursor_state = (
         _decode_cursor(request.cursor, kind="sessions", scope="*")
         if request.cursor is not None
         else None
     )
+    cursor_generation = cursor_state[0] if cursor_state is not None else None
+    after = (
+        (cursor_state[1], cursor_state[2])
+        if cursor_state is not None
+        else None
+    )
     with _agent_index(context) as index:
+        generation = index.metadata()["generation"]
+        if cursor_generation is not None and cursor_generation != generation:
+            raise ValueError("cursor generation does not match current Agent Index")
         values, has_more = index.session_page(limit=request.limit, after=after)
     items = tuple(_session_record(item) for item in values)
     next_cursor = None
@@ -490,6 +539,7 @@ def list_sessions(
         next_cursor = _encode_cursor(
             kind="sessions",
             scope="*",
+            generation=generation,
             key=(last.started_at, last.session_id),
         )
     return SessionPage(items=items, next_cursor=next_cursor)
@@ -516,12 +566,21 @@ def list_changes(
         raise TypeError("request must be ChangeListRequest")
     profile = request.analysis_profile_sha256
     scope = profile if profile is not None else "*"
-    after = (
+    cursor_state = (
         _decode_cursor(request.cursor, kind="changes", scope=scope)
         if request.cursor is not None
         else None
     )
+    cursor_generation = cursor_state[0] if cursor_state is not None else None
+    after = (
+        (cursor_state[1], cursor_state[2])
+        if cursor_state is not None
+        else None
+    )
     with _agent_index(context) as index:
+        generation = index.metadata()["generation"]
+        if cursor_generation is not None and cursor_generation != generation:
+            raise ValueError("cursor generation does not match current Agent Index")
         values, has_more = index.change_page(
             limit=request.limit,
             analysis_profile_sha256=profile,
@@ -534,6 +593,7 @@ def list_changes(
         next_cursor = _encode_cursor(
             kind="changes",
             scope=scope,
+            generation=generation,
             key=(last.analysis_profile_sha256, last.change_id),
         )
     return ChangePage(items=items, next_cursor=next_cursor)
