@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import UTC, datetime
 from pathlib import Path
 import sqlite3
@@ -168,6 +168,57 @@ def _build_index(data_dir: Path) -> None:
 
 
 class CoreReadApiTests(unittest.TestCase):
+    def test_public_read_dtos_are_frozen_slotted_path_free_and_core_owned(self):
+        from bizman.core import (
+            ChangeGetRequest,
+            ChangeGetResult,
+            ChangeListRequest,
+            ChangePage,
+            ChangeRecord,
+            KnowledgeGetRequest,
+            KnowledgeGetResult,
+            KnowledgeHit,
+            KnowledgeItem,
+            KnowledgeResolveRequest,
+            KnowledgeResolveResult,
+            KnowledgeSearchRequest,
+            KnowledgeSearchResult,
+            SessionGetRequest,
+            SessionGetResult,
+            SessionListRequest,
+            SessionPage,
+            SessionRecord,
+        )
+
+        dto_types = (
+            ChangeGetRequest,
+            ChangeGetResult,
+            ChangeListRequest,
+            ChangePage,
+            ChangeRecord,
+            KnowledgeGetRequest,
+            KnowledgeGetResult,
+            KnowledgeHit,
+            KnowledgeItem,
+            KnowledgeResolveRequest,
+            KnowledgeResolveResult,
+            KnowledgeSearchRequest,
+            KnowledgeSearchResult,
+            SessionGetRequest,
+            SessionGetResult,
+            SessionListRequest,
+            SessionPage,
+            SessionRecord,
+        )
+        for dto in dto_types:
+            with self.subTest(dto=dto.__name__):
+                self.assertTrue(dto.__dataclass_params__.frozen)
+                self.assertIn("__slots__", dto.__dict__)
+                self.assertEqual(dto.__module__, "bizman.core.read")
+                annotations = " ".join(str(field.type) for field in fields(dto))
+                self.assertNotIn("Path", annotations)
+                self.assertNotIn("readmodel", annotations.casefold())
+
     def test_knowledge_resolve_search_and_get_are_core_owned(self):
         from bizman.core import (
             KnowledgeGetRequest,
