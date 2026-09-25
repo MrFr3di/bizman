@@ -379,6 +379,105 @@ class RuntimeProjectionTests(unittest.TestCase):
             with self.assertRaisesRegex(ReadModelIntegrityError, "runtime fingerprint"):
                 KnowledgeIndex(path)
 
+    def test_invalid_persisted_session_rows_raise_read_model_integrity_error(self):
+        mutations = (
+            (
+                "uppercase manifest hash",
+                "UPDATE session_summary SET manifest_sha256 = upper(manifest_sha256) "
+                "WHERE session_id = ?",
+                (SESSION_A,),
+            ),
+            (
+                "invalid started_at",
+                "UPDATE session_summary SET started_at = 'not-rfc3339' WHERE session_id = ?",
+                (SESSION_A,),
+            ),
+            (
+                "uncorrelated actions exceed actions",
+                "UPDATE session_summary "
+                "SET uncorrelated_action_count = action_count + 1 WHERE session_id = ?",
+                (SESSION_A,),
+            ),
+        )
+        for label, statement, parameters in mutations:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                reader, _ = self._fixture(root)
+                path = root / "agent-index.sqlite3"
+                rebuild_agent_index(
+                    path,
+                    project_curated_knowledge(REPO_ROOT),
+                    project_runtime_intelligence(reader),
+                    completed_at=FIXED_COMPLETED_AT,
+                )
+                with closing(sqlite3.connect(path)) as connection:
+                    connection.execute(statement, parameters)
+                    connection.commit()
+
+                with self.assertRaisesRegex(
+                    ReadModelIntegrityError,
+                    "runtime rows violate projection invariants",
+                ):
+                    KnowledgeIndex(path)
+
+    def test_invalid_persisted_change_rows_raise_read_model_integrity_error(self):
+        mutations = (
+            (
+                "invalid first session UUID",
+                "UPDATE change_index SET first_session_id = 'not-a-uuidv7'",
+            ),
+            (
+                "invalid last_seen_at",
+                "UPDATE change_index SET last_seen_at = 'not-rfc3339'",
+            ),
+        )
+        for label, statement in mutations:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                reader, state_path = self._fixture(root)
+                self._detector_state(reader, state_path)
+                with ChangeSummaryReader(state_path) as change_reader:
+                    runtime = project_runtime_intelligence(reader, change_reader)
+                path = root / "agent-index.sqlite3"
+                rebuild_agent_index(
+                    path,
+                    project_curated_knowledge(REPO_ROOT),
+                    runtime,
+                    completed_at=FIXED_COMPLETED_AT,
+                )
+                with closing(sqlite3.connect(path)) as connection:
+                    connection.execute(statement)
+                    connection.commit()
+
+                with self.assertRaisesRegex(
+                    ReadModelIntegrityError,
+                    "runtime rows violate projection invariants",
+                ):
+                    KnowledgeIndex(path)
+
+    def test_invalid_persisted_completed_at_raises_read_model_integrity_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            reader, _ = self._fixture(root)
+            path = root / "agent-index.sqlite3"
+            rebuild_agent_index(
+                path,
+                project_curated_knowledge(REPO_ROOT),
+                project_runtime_intelligence(reader),
+                completed_at=FIXED_COMPLETED_AT,
+            )
+            with closing(sqlite3.connect(path)) as connection:
+                connection.execute(
+                    "UPDATE index_meta SET value = 'not-rfc3339' WHERE key = 'completed_at'"
+                )
+                connection.commit()
+
+            with self.assertRaisesRegex(
+                ReadModelIntegrityError,
+                "completed_at violates metadata invariants",
+            ):
+                KnowledgeIndex(path)
+
     def test_pre_p2c_schema_is_explicitly_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "schema-v1.sqlite3"
