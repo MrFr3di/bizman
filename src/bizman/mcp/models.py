@@ -65,7 +65,7 @@ class EvidenceItem(BaseModel):
     ref: str
     kind: KnowledgeKind
     title: str
-    aliases: tuple[str, ...]
+    aliases: Annotated[tuple[str, ...], Field(max_length=64)]
     body: str
     evidence_refs: Annotated[tuple[str, ...], Field(max_length=8)]
     source_dataset: str
