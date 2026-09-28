@@ -277,6 +277,88 @@ jobs:
                   f"{item['speedup_vs_A']:.2f}x |"
               )
           PY
+      - name: Run Agent Index/Core benchmark
+        id: readmodel-benchmark
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run python tools/benchmarks/readmodel_core.py \
+            --repeats 5 \
+            --small-sessions 20 \
+            --small-changes 40 \
+            --large-sessions 200 \
+            --large-changes 400 \
+            | tee "$RUNNER_TEMP/readmodel-benchmark.json"
+      - name: Publish Agent Index/Core benchmark summary
+        if: always()
+        shell: bash
+        run: |
+          uv run python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          from pathlib import Path
+
+          path = Path(os.environ["RUNNER_TEMP"]) / "readmodel-benchmark.json"
+          print("## Agent Index / Core benchmark (non-gating)")
+          if not path.exists():
+              print("Read-model benchmark did not produce a result file.")
+              raise SystemExit(0)
+          try:
+              data = json.loads(path.read_text())
+          except (OSError, json.JSONDecodeError) as exc:
+              print(f"Read-model benchmark result was unreadable: {exc}")
+              raise SystemExit(0)
+
+          evaluation = data["evaluation"]
+          v3 = evaluation["corpora"]["v3"]
+          print(
+              f"Retrieval decision: \`{evaluation['decision']}\`; "
+              f"v3 overall accuracy {v3['overall_accuracy']:.3f}, "
+              f"Recall@1 {v3['recall_at_1']:.3f}, "
+              f"Recall@5 {v3['recall_at_5']:.3f}, "
+              f"evidence {v3['evidence_correctness']:.3f}, "
+              f"no-match {v3['no_match_accuracy']:.3f}."
+          )
+          print("")
+          print("| Operation | Cold Core p50 ms | Cold p95 ms | Warm index p50 ms | Warm p95 ms |")
+          print("|---|---:|---:|---:|---:|")
+          cold = data["latency"]["cold_core"]
+          warm = data["latency"]["warm_index"]
+          for name in cold:
+              print(
+                  f"| {name} | {cold[name]['p50_ms']:.3f} | "
+                  f"{cold[name]['p95_ms']:.3f} | "
+                  f"{warm[name]['p50_ms']:.3f} | {warm[name]['p95_ms']:.3f} |"
+              )
+          integrity = data["latency"]["integrity_open"]
+          print("")
+          print(
+              f"Fresh index validation: p50 {integrity['p50_ms']:.3f} ms, "
+              f"p95 {integrity['p95_ms']:.3f} ms."
+          )
+          print("")
+          print("| Rebuild | Sessions | Changes | Seconds | DB MiB | Peak tracemalloc MiB |")
+          print("|---|---:|---:|---:|---:|---:|")
+          for name, item in data["rebuild"].items():
+              print(
+                  f"| {name} | {item['sessions']} | {item['changes']} | "
+                  f"{item['elapsed_seconds']:.3f} | "
+                  f"{item['database_bytes'] / (1024 * 1024):.2f} | "
+                  f"{item['peak_tracemalloc_bytes'] / (1024 * 1024):.2f} |"
+              )
+          print("")
+          print("Representative serialized Core result sizes:")
+          for name, size in data["serialized_result_bytes"].items():
+              print(f"- \`{name}\`: {size} bytes")
+          PY
+      - name: Upload Agent Index/Core benchmark report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: readmodel-benchmark
+          path: \${{ runner.temp }}/readmodel-benchmark.json
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Run detector matching and streaming benchmark
         id: detector-benchmark
         continue-on-error: true
