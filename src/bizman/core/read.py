@@ -340,6 +340,94 @@ class SessionGetResult:
 
 
 @dataclass(frozen=True, slots=True)
+class SessionCompareRequest:
+    from_session_id: str
+    to_session_id: str
+
+    def __post_init__(self) -> None:
+        _require_session_id(self.from_session_id)
+        _require_session_id(self.to_session_id)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionComparison:
+    from_session_id: str
+    from_started_at: str
+    from_ended_at: str
+    from_status: str
+    to_session_id: str
+    to_started_at: str
+    to_ended_at: str
+    to_status: str
+    event_count_delta: int
+    action_count_delta: int
+    http_request_count_delta: int
+    http_response_count_delta: int
+    correlation_strong_count_delta: int
+    correlation_probable_count_delta: int
+    correlation_temporal_count_delta: int
+    correlation_exact_count_delta: int
+    uncorrelated_action_count_delta: int
+    warning_count_delta: int
+    anomaly_count_delta: int
+
+
+@dataclass(frozen=True, slots=True)
+class SessionCompareResult:
+    comparison: SessionComparison | None
+    missing_session_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        missing = tuple(self.missing_session_ids)
+        if len(missing) != len(set(missing)):
+            raise ValueError("missing_session_ids must be unique")
+        for session_id in missing:
+            _require_session_id(session_id)
+        if self.comparison is None and not missing:
+            raise ValueError("missing comparison requires missing_session_ids")
+        if self.comparison is not None and missing:
+            raise ValueError("successful comparison cannot report missing_session_ids")
+        object.__setattr__(self, "missing_session_ids", missing)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionAnomalyRecord:
+    session_id: str
+    started_at: str
+    ended_at: str
+    status: str
+    warning_count: int
+    anomaly_count: int
+    uncorrelated_action_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class SessionAnomalyListRequest:
+    limit: int = 20
+    cursor: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_limit(self.limit)
+        if self.cursor is not None:
+            _, started_at, session_id = _decode_cursor(
+                self.cursor,
+                kind="session-anomalies",
+                scope="*",
+            )
+            _require_instant(started_at, name="session anomaly cursor started_at")
+            _require_session_id(session_id)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionAnomalyPage:
+    items: tuple[SessionAnomalyRecord, ...]
+    next_cursor: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "items", tuple(self.items))
+
+
+@dataclass(frozen=True, slots=True)
 class ChangeRecord:
     analysis_profile_sha256: str
     change_id: str
@@ -428,6 +516,59 @@ def _session_record(item: ReadSessionRecord) -> SessionRecord:
             field: getattr(item, field)
             for field in SessionRecord.__dataclass_fields__
         }
+    )
+
+
+def _session_anomaly_record(item: ReadSessionRecord) -> SessionAnomalyRecord:
+    return SessionAnomalyRecord(
+        session_id=item.session_id,
+        started_at=item.started_at,
+        ended_at=item.ended_at,
+        status=item.status,
+        warning_count=item.warning_count,
+        anomaly_count=item.anomaly_count,
+        uncorrelated_action_count=item.uncorrelated_action_count,
+    )
+
+
+def _session_comparison(
+    before: ReadSessionRecord,
+    after: ReadSessionRecord,
+) -> SessionComparison:
+    return SessionComparison(
+        from_session_id=before.session_id,
+        from_started_at=before.started_at,
+        from_ended_at=before.ended_at,
+        from_status=before.status,
+        to_session_id=after.session_id,
+        to_started_at=after.started_at,
+        to_ended_at=after.ended_at,
+        to_status=after.status,
+        event_count_delta=after.event_count - before.event_count,
+        action_count_delta=after.action_count - before.action_count,
+        http_request_count_delta=(
+            after.http_request_count - before.http_request_count
+        ),
+        http_response_count_delta=(
+            after.http_response_count - before.http_response_count
+        ),
+        correlation_strong_count_delta=(
+            after.correlation_strong_count - before.correlation_strong_count
+        ),
+        correlation_probable_count_delta=(
+            after.correlation_probable_count - before.correlation_probable_count
+        ),
+        correlation_temporal_count_delta=(
+            after.correlation_temporal_count - before.correlation_temporal_count
+        ),
+        correlation_exact_count_delta=(
+            after.correlation_exact_count - before.correlation_exact_count
+        ),
+        uncorrelated_action_count_delta=(
+            after.uncorrelated_action_count - before.uncorrelated_action_count
+        ),
+        warning_count_delta=after.warning_count - before.warning_count,
+        anomaly_count_delta=after.anomaly_count - before.anomaly_count,
     )
 
 
@@ -558,6 +699,76 @@ def get_session(
     )
 
 
+def compare_sessions(
+    context: CoreContext,
+    request: SessionCompareRequest,
+) -> SessionCompareResult:
+    if not isinstance(request, SessionCompareRequest):
+        raise TypeError("request must be SessionCompareRequest")
+    with _agent_index(context) as index:
+        before = index.session_record(request.from_session_id)
+        after = index.session_record(request.to_session_id)
+
+    missing: list[str] = []
+    if before is None:
+        missing.append(request.from_session_id)
+    if after is None and request.to_session_id not in missing:
+        missing.append(request.to_session_id)
+    if missing:
+        return SessionCompareResult(
+            comparison=None,
+            missing_session_ids=tuple(missing),
+        )
+
+    assert before is not None
+    assert after is not None
+    return SessionCompareResult(
+        comparison=_session_comparison(before, after),
+    )
+
+
+def list_session_anomalies(
+    context: CoreContext,
+    request: SessionAnomalyListRequest,
+) -> SessionAnomalyPage:
+    if not isinstance(request, SessionAnomalyListRequest):
+        raise TypeError("request must be SessionAnomalyListRequest")
+    cursor_state = (
+        _decode_cursor(
+            request.cursor,
+            kind="session-anomalies",
+            scope="*",
+        )
+        if request.cursor is not None
+        else None
+    )
+    cursor_generation = cursor_state[0] if cursor_state is not None else None
+    after = (
+        (cursor_state[1], cursor_state[2])
+        if cursor_state is not None
+        else None
+    )
+    with _agent_index(context) as index:
+        generation = index.metadata()["generation"]
+        if cursor_generation is not None and cursor_generation != generation:
+            raise ValueError("cursor generation does not match current Agent Index")
+        values, has_more = index.session_signal_page(
+            limit=request.limit,
+            after=after,
+        )
+    items = tuple(_session_anomaly_record(item) for item in values)
+    next_cursor = None
+    if has_more and items:
+        last = items[-1]
+        next_cursor = _encode_cursor(
+            kind="session-anomalies",
+            scope="*",
+            generation=generation,
+            key=(last.started_at, last.session_id),
+        )
+    return SessionAnomalyPage(items=items, next_cursor=next_cursor)
+
+
 def list_changes(
     context: CoreContext,
     request: ChangeListRequest,
@@ -629,15 +840,23 @@ __all__ = [
     "KnowledgeResolveResult",
     "KnowledgeSearchRequest",
     "KnowledgeSearchResult",
+    "SessionAnomalyListRequest",
+    "SessionAnomalyPage",
+    "SessionAnomalyRecord",
+    "SessionCompareRequest",
+    "SessionCompareResult",
+    "SessionComparison",
     "SessionGetRequest",
     "SessionGetResult",
     "SessionListRequest",
     "SessionPage",
     "SessionRecord",
+    "compare_sessions",
     "get_change",
     "get_knowledge",
     "get_session",
     "list_changes",
+    "list_session_anomalies",
     "list_sessions",
     "resolve_knowledge",
     "search_knowledge",
