@@ -8,12 +8,14 @@ from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from bizman.core import (
+    AssetError,
     ConfigurationError,
     ContractMismatchError,
     CoreContext,
     ChangeGetRequest,
     ChangeListRequest,
     DataIntegrityError,
+    EvidenceTraceRequest,
     KnowledgeGetRequest,
     KnowledgeResolveRequest,
     KnowledgeSearchRequest,
@@ -27,6 +29,7 @@ from bizman.core import (
     list_sessions,
     resolve_knowledge,
     search_knowledge,
+    trace_evidence,
 )
 from bizman.mcp.models import (
     ChangeGetResult,
@@ -34,6 +37,7 @@ from bizman.mcp.models import (
     EvidenceGetResult,
     EvidenceResolveResult,
     EvidenceSearchResult,
+    EvidenceTraceResult,
     KnowledgeKind,
     SessionListResult,
     SessionSummaryResult,
@@ -43,6 +47,7 @@ from bizman.mcp.models import (
     resolve_result,
     search_result,
     session_list_result,
+    trace_result,
     session_summary_result,
 )
 
@@ -66,6 +71,14 @@ ProfileSha256 = Annotated[
 ]
 ChangeId = Annotated[str, Field(min_length=1, max_length=256)]
 Cursor = Annotated[str, Field(min_length=1, max_length=2048)]
+EvidenceReference = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=512,
+        pattern=r"^[a-z0-9][a-z0-9.-]*#(?:entry|seq)-(?:0|[1-9][0-9]*)$",
+    ),
+]
 
 _READ_ONLY = ToolAnnotations(
     read_only_hint=True,
@@ -75,6 +88,10 @@ _READ_ONLY = ToolAnnotations(
 
 
 def _raise_tool_error(exc: Exception) -> NoReturn:
+    if isinstance(exc, AssetError):
+        raise ToolError(
+            "BizMan provenance or repository assets are unavailable or invalid."
+        ) from exc
     if isinstance(exc, ConfigurationError):
         raise ToolError(
             "Agent Index is unavailable; rebuild it before using BizMan read tools."
@@ -85,7 +102,7 @@ def _raise_tool_error(exc: Exception) -> NoReturn:
         ) from exc
     if isinstance(exc, DataIntegrityError):
         raise ToolError(
-            "Agent Index failed integrity validation; rebuild it from trusted inputs."
+            "BizMan read data failed integrity validation; restore trusted derived assets."
         ) from exc
     if isinstance(exc, OperationError):
         raise ToolError("Agent Index read operation failed.") from exc
@@ -101,9 +118,9 @@ def build_server(context: CoreContext) -> MCPServer:
     server = MCPServer(
         "BizMan",
         instructions=(
-            "Read-only BizMan evidence, session, and change tools. Use canonical refs "
-            "returned by resolve/search for exact evidence gets. Tool outputs come from "
-            "the deterministic BizMan Core read model."
+            "Read-only BizMan evidence, provenance, session, and change tools. Use "
+            "canonical refs returned by resolve/search for exact evidence gets, and "
+            "evidence refs for provenance traces. Tool outputs come from BizMan Core."
         ),
     )
 
@@ -131,6 +148,7 @@ def build_server(context: CoreContext) -> MCPServer:
             )
             return resolve_result(value)
         except (
+            AssetError,
             ConfigurationError,
             ContractMismatchError,
             DataIntegrityError,
@@ -166,6 +184,7 @@ def build_server(context: CoreContext) -> MCPServer:
             )
             return search_result(value)
         except (
+            AssetError,
             ConfigurationError,
             ContractMismatchError,
             DataIntegrityError,
@@ -195,6 +214,7 @@ def build_server(context: CoreContext) -> MCPServer:
             )
             return session_list_result(value)
         except (
+            AssetError,
             ConfigurationError,
             ContractMismatchError,
             DataIntegrityError,
@@ -219,6 +239,7 @@ def build_server(context: CoreContext) -> MCPServer:
             )
             return session_summary_result(value)
         except (
+            AssetError,
             ConfigurationError,
             ContractMismatchError,
             DataIntegrityError,
@@ -254,6 +275,7 @@ def build_server(context: CoreContext) -> MCPServer:
             )
             return change_list_result(value)
         except (
+            AssetError,
             ConfigurationError,
             ContractMismatchError,
             DataIntegrityError,
@@ -286,6 +308,36 @@ def build_server(context: CoreContext) -> MCPServer:
             )
             return change_get_result(value)
         except (
+            AssetError,
+            ConfigurationError,
+            ContractMismatchError,
+            DataIntegrityError,
+            OperationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            _raise_tool_error(exc)
+
+    @server.tool(
+        name="evidence.trace",
+        title="Trace BizMan evidence provenance",
+        description=(
+            "Resolve one BizMan evidence reference to bounded verified source metadata. "
+            "Raw HAR/session bytes are never returned."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=True,
+    )
+    def evidence_trace(evidence_ref: EvidenceReference) -> EvidenceTraceResult:
+        try:
+            return trace_result(
+                trace_evidence(
+                    context,
+                    EvidenceTraceRequest(evidence_ref=evidence_ref),
+                )
+            )
+        except (
+            AssetError,
             ConfigurationError,
             ContractMismatchError,
             DataIntegrityError,
@@ -310,6 +362,7 @@ def build_server(context: CoreContext) -> MCPServer:
             value = get_knowledge(context, KnowledgeGetRequest(ref=ref))
             return get_result(value)
         except (
+            AssetError,
             ConfigurationError,
             ContractMismatchError,
             DataIntegrityError,
