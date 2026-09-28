@@ -1,0 +1,50 @@
+{
+  "schema_version": 3,
+  "cases": [
+    {
+      "query": "Универмаг",
+      "expected_ref": "bm.unit.13507",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-3225",
+      "category": "ambiguous_title"
+    },
+    {
+      "query": "магазинов электроники",
+      "expected_ref": "bm.unit.13443",
+      "expected_evidence_ref": "src.har.bizmania.2026-09-06.01#entry-4082",
+      "category": "natural_language"
+    },
+    {
+      "query": "автозакупка недельного потребления",
+      "expected_ref": "bm.wiki.v1.b3142a5c857c9885c7d64247",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-2296",
+      "category": "fts_required"
+    },
+    {
+      "query": "Авторегулирование снабжения",
+      "expected_ref": "bm.wiki.v1.b3142a5c857c9885c7d64247",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-2296",
+      "category": "kind_filtered",
+      "kinds": ["wiki_topic"]
+    },
+    {
+      "query": "Автокресло",
+      "expected_ref": "bm.product.carseat",
+      "expected_evidence_ref": "src.har.bizmania-faq.2026-09-06.01#entry-442",
+      "category": "kind_filtered",
+      "kinds": ["product"]
+    },
+    {
+      "query": "bizman_eval_nonexistent_9f4c1a7d",
+      "expected_ref": null,
+      "expected_evidence_ref": null,
+      "category": "negative"
+    },
+    {
+      "query": "bm.company.13393",
+      "expected_ref": null,
+      "expected_evidence_ref": null,
+      "category": "negative_kind_filtered",
+      "kinds": ["product"]
+    }
+  ]
+}
