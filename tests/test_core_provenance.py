@@ -197,6 +197,23 @@ class CoreEvidenceTraceTests(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):
             request.evidence_ref = LIVE_REF
 
+        with self.assertRaisesRegex(ValueError, "RFC3339"):
+            EvidenceTrace(
+                evidence_ref=HAR_REF,
+                source_id="src.har.bizmania.2026-09-06.01",
+                source_kind="har_capture",
+                locator_kind="entry",
+                ordinal=224,
+                source_record_count=10210,
+                raw_source_committed=False,
+                source_sha256="a" * 64,
+                runtime_session_id=None,
+                observed_from="not-a-time",
+                observed_to=None,
+                privacy="private",
+                provenance_policy="policy",
+            )
+
         with self.assertRaisesRegex(ValueError, "source does not match"):
             EvidenceTrace(
                 evidence_ref=HAR_REF,
