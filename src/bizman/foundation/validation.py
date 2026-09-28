@@ -264,6 +264,10 @@ def _validate_known_instances(root: Path, result: ValidationResult) -> None:
             root / "config/redaction-policy.json",
             root / "schemas/redaction-policy.schema.json",
         ),
+        (
+            root / "knowledge/sources/promoted-sessions.json",
+            root / "schemas/promoted-session-index.schema.json",
+        ),
     )
     for instance_path, schema_path in pairs:
         if instance_path.exists() and schema_path.exists():
