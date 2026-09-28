@@ -55,6 +55,7 @@ class EvidenceTrace:
     observed_from: str
     observed_to: str | None
     privacy: str
+    provenance_policy: str
 
     def __post_init__(self) -> None:
         if self.source_kind not in {"har_capture", "promoted_session"}:
@@ -112,6 +113,7 @@ class _TraceSource:
     observed_from: str
     observed_to: str | None
     privacy: str
+    provenance_policy: str
 
 
 def _mapping(value: object, *, source: str) -> Mapping[str, Any]:
@@ -184,6 +186,13 @@ def _har_sources(root: Path) -> dict[str, _TraceSource]:
     )
     if document.get("schema_version") != "2.0":
         raise DataIntegrityError("capture provenance registry version is incompatible")
+    if set(document) != {"schema_version", "generated_at", "policy", "captures"}:
+        raise DataIntegrityError("capture provenance registry has unexpected fields")
+    provenance_policy = _text(
+        document.get("policy"),
+        source="knowledge/sources/captures.json",
+        field="policy",
+    )
     captures = document.get("captures")
     if not isinstance(captures, list):
         raise AssetError("capture provenance registry must contain captures array")
@@ -276,6 +285,7 @@ def _har_sources(root: Path) -> dict[str, _TraceSource]:
             observed_from=observed_from,
             observed_to=observed_to,
             privacy=privacy,
+            provenance_policy=provenance_policy,
         )
     return sources
 
@@ -288,7 +298,9 @@ def _promoted_sources(root: Path) -> dict[str, _TraceSource]:
     )
     if document.get("schema_version") != "1.0":
         raise DataIntegrityError("promoted session registry version is incompatible")
-    _text(document.get("policy"), source=path.name, field="policy")
+    if set(document) != {"schema_version", "policy", "sources"}:
+        raise DataIntegrityError("promoted session registry has unexpected fields")
+    provenance_policy = _text(document.get("policy"), source=path.name, field="policy")
     values = document.get("sources")
     if not isinstance(values, list):
         raise AssetError("promoted session registry must contain sources array")
@@ -297,6 +309,16 @@ def _promoted_sources(root: Path) -> dict[str, _TraceSource]:
     for index, raw_value in enumerate(values):
         label = f"knowledge/sources/promoted-sessions.json#source-{index}"
         value = _mapping(raw_value, source=label)
+        expected_fields = {
+            "source_id",
+            "runtime_session_id",
+            "started_at",
+            "event_count",
+            "raw_source_committed",
+            "privacy",
+        }
+        if set(value) != expected_fields:
+            raise DataIntegrityError("promoted session source has unexpected fields")
         source_id = _text(value.get("source_id"), source=label, field="source_id")
         if _PROMOTED_SOURCE_ID_RE.fullmatch(source_id) is None:
             raise DataIntegrityError("promoted source id is invalid")
@@ -334,6 +356,7 @@ def _promoted_sources(root: Path) -> dict[str, _TraceSource]:
             observed_from=observed_from,
             observed_to=None,
             privacy=privacy,
+            provenance_policy=provenance_policy,
         )
     return sources
 
@@ -384,6 +407,7 @@ def trace_evidence(
             observed_from=source.observed_from,
             observed_to=source.observed_to,
             privacy=source.privacy,
+            provenance_policy=source.provenance_policy,
         )
     )
 
