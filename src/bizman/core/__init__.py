@@ -12,6 +12,12 @@ from bizman.core.errors import (
     DataIntegrityError,
     OperationError,
 )
+from bizman.core.provenance import (
+    EvidenceTrace,
+    EvidenceTraceRequest,
+    EvidenceTraceResult,
+    trace_evidence,
+)
 from bizman.core.read import (
     ChangeGetRequest,
     ChangeGetResult,
@@ -59,6 +65,9 @@ __all__ = [
     "CoreContext",
     "DataIntegrityError",
     "DetectionRequest",
+    "EvidenceTrace",
+    "EvidenceTraceRequest",
+    "EvidenceTraceResult",
     "DetectorRunSummary",
     "KnowledgeGetRequest",
     "KnowledgeGetResult",
@@ -87,5 +96,6 @@ __all__ = [
     "list_sessions",
     "resolve_knowledge",
     "search_knowledge",
+    "trace_evidence",
     "validate_repository",
 ]
