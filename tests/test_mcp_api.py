@@ -628,6 +628,72 @@ class MCPProtocolTests(unittest.TestCase):
 
         _build_context(self.data_dir, self.runtime)
 
+    def test_session_anomaly_cursor_is_scoped_and_generation_bound(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+
+        async def first_pages():
+            async with Client(build_server(self.context)) as client:
+                ordinary = await client.call_tool(
+                    "sessions.list",
+                    {"limit": 5},
+                )
+                anomalies = await client.call_tool(
+                    "sessions.anomalies",
+                    {"limit": 5},
+                )
+                return ordinary, anomalies
+
+        ordinary, anomalies = _run(first_pages())
+        self.assertFalse(ordinary.is_error)
+        self.assertFalse(anomalies.is_error)
+        ordinary_cursor = ordinary.structured_content["next_cursor"]
+        anomaly_cursor = anomalies.structured_content["next_cursor"]
+        self.assertIsNotNone(ordinary_cursor)
+        self.assertIsNotNone(anomaly_cursor)
+
+        async def wrong_scope():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "sessions.anomalies",
+                    {"limit": 5, "cursor": ordinary_cursor},
+                )
+
+        wrong = _run(wrong_scope())
+        self.assertTrue(wrong.is_error)
+
+        changed = RuntimeProjection(
+            sessions=(
+                replace(self.runtime.sessions[0], event_count=999),
+                *self.runtime.sessions[1:],
+            ),
+            changes=self.runtime.changes,
+        )
+        _build_context(self.data_dir, changed)
+
+        async def stale_generation():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "sessions.anomalies",
+                    {"limit": 5, "cursor": anomaly_cursor},
+                )
+
+        stale = _run(stale_generation())
+        self.assertTrue(stale.is_error)
+        rendered = json.dumps(
+            [
+                block.model_dump(mode="json", by_alias=True, exclude_none=True)
+                for block in stale.content
+            ],
+            ensure_ascii=False,
+        )
+        self.assertIn("Invalid BizMan read request", rendered)
+        self.assertNotIn("generation", rendered.casefold())
+        self.assertNotIn("Traceback", rendered)
+        self.assertNotIn(str(self.data_dir), rendered)
+
+        _build_context(self.data_dir, self.runtime)
+
     def test_invalid_inputs_fail_without_internal_details(self):
         from mcp import Client
         from bizman.mcp import build_server
