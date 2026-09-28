@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "policy": "Historical runtime source bytes remain external to Git; only sanitized derived observations and stable provenance identity are committed.",
+  "sources": [
+    {
+      "source_id": "live-cdp-2026-09-07",
+      "runtime_session_id": "01a07d18-cf20-7207-bbf7-d5fa8a87f103",
+      "started_at": "2026-09-07T18:19:33Z",
+      "event_count": 32128,
+      "raw_source_committed": false,
+      "privacy": "external sanitized collector evidence; promoted derived observations committed"
+    }
+  ]
+}
