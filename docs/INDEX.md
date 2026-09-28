@@ -12,7 +12,9 @@
 - `docs/architecture/storage.md` — разделение raw/derived и правила хранения.
 - `docs/architecture/provenance.md` — provenance, evidence и уровни уверенности.
 - `docs/research/captures.md` — сведения об исходных захватах.
-- `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные.
+- `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные HAR.
+- `knowledge/sources/promoted-sessions.json` — machine-readable provenance identity исторических promoted collector sessions.
+- `bizman.core.trace_evidence` / MCP `evidence.trace` — bounded provenance resolution без доступа к raw HAR/JSONL.
 - `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов; P2 завершён, P3 read-only MCP является текущим этапом.
 
 ## Agent Index / read model
