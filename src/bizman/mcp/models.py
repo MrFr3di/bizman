@@ -15,6 +15,7 @@ from bizman.core import (
     KnowledgeResolveResult,
     KnowledgeSearchResult,
     SessionAnomalyPage as CoreSessionAnomalyPage,
+    SessionAnomalyRecord as CoreSessionAnomalyRecord,
     SessionCompareResult as CoreSessionCompareResult,
     SessionComparison as CoreSessionComparison,
     SessionGetResult as CoreSessionGetResult,
@@ -254,7 +255,7 @@ def _session_comparison(value: CoreSessionComparison) -> SessionComparisonItem:
     )
 
 
-def _session_anomaly(value: object) -> SessionAnomalyItem:
+def _session_anomaly(value: CoreSessionAnomalyRecord) -> SessionAnomalyItem:
     return SessionAnomalyItem(
         **{
             field: getattr(value, field)
