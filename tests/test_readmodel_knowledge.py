@@ -17,6 +17,7 @@ from bizman.readmodel import (
     RefKind,
     SearchQuery,
     evaluate_retrieval,
+    evaluation_cases_from_document,
     project_curated_knowledge,
     rebuild_knowledge_index,
 )
@@ -339,11 +340,11 @@ class KnowledgeIndexTests(unittest.TestCase):
 
 
 class RetrievalEvaluationTests(unittest.TestCase):
-    def _assert_eval_fixture_is_perfect(self, fixture: str) -> None:
+    def _evaluate_fixture(self, fixture: str):
         document = json.loads(
             (REPO_ROOT / "tests/fixtures" / fixture).read_text(encoding="utf-8")
         )
-        cases = tuple(EvaluationCase(**case) for case in document["cases"])
+        cases = evaluation_cases_from_document(document)
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "agent-index.sqlite3"
             rebuild_knowledge_index(
@@ -353,18 +354,67 @@ class RetrievalEvaluationTests(unittest.TestCase):
             )
             with KnowledgeIndex(path) as index:
                 metrics = evaluate_retrieval(index, cases)
+        return cases, metrics
 
+    def _assert_positive_eval_fixture_is_perfect(self, fixture: str) -> None:
+        cases, metrics = self._evaluate_fixture(fixture)
         self.assertEqual(metrics.cases, len(cases))
+        self.assertEqual(metrics.positive_cases, len(cases))
+        self.assertEqual(metrics.negative_cases, 0)
         self.assertEqual(metrics.recall_at_1, 1.0)
         self.assertEqual(metrics.recall_at_5, 1.0)
         self.assertEqual(metrics.mrr, 1.0)
         self.assertEqual(metrics.evidence_correctness, 1.0)
+        self.assertIsNone(metrics.no_match_accuracy)
+        self.assertEqual(metrics.overall_accuracy, 1.0)
 
     def test_v1_curated_eval_remains_perfect(self):
-        self._assert_eval_fixture_is_perfect("retrieval_eval_v1.json")
+        self._assert_positive_eval_fixture_is_perfect("retrieval_eval_v1.json")
 
     def test_v2_extended_eval_is_perfect(self):
-        self._assert_eval_fixture_is_perfect("retrieval_eval_v2.json")
+        self._assert_positive_eval_fixture_is_perfect("retrieval_eval_v2.json")
+
+    def test_v3_eval_covers_ambiguity_filters_fts_and_negative_queries(self):
+        cases, metrics = self._evaluate_fixture("retrieval_eval_v3.json")
+        self.assertEqual(metrics.cases, len(cases))
+        self.assertEqual(metrics.positive_cases, 5)
+        self.assertEqual(metrics.negative_cases, 2)
+        self.assertEqual(metrics.recall_at_1, 1.0)
+        self.assertEqual(metrics.recall_at_5, 1.0)
+        self.assertEqual(metrics.mrr, 1.0)
+        self.assertEqual(metrics.evidence_correctness, 1.0)
+        self.assertEqual(metrics.no_match_accuracy, 1.0)
+        self.assertEqual(metrics.overall_accuracy, 1.0)
+        by_category = {item.category: item for item in metrics.by_category}
+        self.assertEqual(
+            set(by_category),
+            {
+                "ambiguous_title",
+                "fts_required",
+                "kind_filtered",
+                "natural_language",
+                "negative",
+                "negative_kind_filtered",
+            },
+        )
+        self.assertEqual(by_category["negative"].no_match_accuracy, 1.0)
+        self.assertEqual(by_category["ambiguous_title"].recall_at_1, 1.0)
+
+    def test_eval_fixture_loader_rejects_invalid_negative_evidence(self):
+        with self.assertRaisesRegex(ValueError, "negative evaluation"):
+            evaluation_cases_from_document(
+                {
+                    "schema_version": 3,
+                    "cases": [
+                        {
+                            "query": "missing",
+                            "expected_ref": None,
+                            "expected_evidence_ref": "src.invalid#1",
+                            "category": "negative",
+                        }
+                    ],
+                }
+            )
 
 
 if __name__ == "__main__":

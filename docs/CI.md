@@ -115,12 +115,24 @@ The E2E fixture deliberately uses only loopback services and synthetic secrets. 
 
 The collector is terminated by SIGINT after the bounded E2E observation window, so `cancelled` is an accepted and schema-valid terminal session status for this test. The verifier still requires contiguous event sequencing and complete evidence for the expected fixture traffic before accepting the run.
 
-### 4. `benchmark` — storage gating, detector performance non-gating
+### 4. `benchmark` — storage gating, detector/read-model performance non-gating
 
-The benchmark job publishes two families of measurements:
+The benchmark job publishes three families of measurements:
 
 - the existing A/B/C collector storage flush benchmark;
+- the Agent Index/Core benchmark from `tools/benchmarks/readmodel_core.py`;
 - the Change Detector benchmark from `tools/benchmarks/detector_stream.py`.
+
+The P2-E Agent Index/Core benchmark reports:
+
+- v1/v2/v3 retrieval metrics by corpus/category, including negative/no-match accuracy;
+- fresh Core-call latency versus warm `KnowledgeIndex` latency (p50/p95/min/max);
+- explicit fresh-open integrity-validation cost;
+- deterministic rebuild time, SQLite bytes and peak `tracemalloc` memory for curated-only plus small/large synthetic runtime projections;
+- representative serialized Core result sizes;
+- `EXPLAIN QUERY PLAN` details for exact knowledge/session/change reads, keyset pages and FTS.
+
+Its JSON output is uploaded as the short-lived `readmodel-benchmark` artifact and a concise table is appended to the Actions summary. Shared-runner timing remains `continue-on-error`/non-gating; retrieval correctness itself is gating through the v1/v2/v3 unit evaluation corpus.
 
 The detector benchmark uses at least 100,000 deterministic synthetic events by default and compares:
 
@@ -130,7 +142,7 @@ The detector benchmark uses at least 100,000 deterministic synthetic events by d
 
 A/B/C matcher outputs must be semantically equivalent before timing is reported. The benchmark records median requests/s, then runs the real validated `EvidenceReader + ObservationExtractor` path and reports source events/s, effective validation events/s and peak `tracemalloc` memory. Integrity checks are never disabled for benchmark speed.
 
-Detector performance is intentionally `continue-on-error`/non-gating initially because shared GitHub runners are noisy. Correctness remains gating through the unit/integration suite; benchmark results are evidence for future optimization, not a reason to weaken validation.
+Detector and Agent Index/Core performance are intentionally `continue-on-error`/non-gating initially because shared GitHub runners are noisy. Correctness, deterministic generation/integrity and retrieval evaluation remain gating through the unit/integration suite; benchmark results are evidence for future optimization, not a reason to weaken validation.
 
 ## Local commands
 
