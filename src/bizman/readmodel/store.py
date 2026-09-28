@@ -795,6 +795,45 @@ class KnowledgeIndex:
             ) from exc
         return values[:page_limit], len(values) > page_limit
 
+    def session_signal_page(
+        self,
+        *,
+        limit: int = 20,
+        after: tuple[str, str] | None = None,
+    ) -> tuple[tuple[SessionSummary, ...], bool]:
+        page_limit = self._page_limit(limit)
+        after_key = self._after_key(after, name="session signal after key")
+        clauses = [
+            "(warning_count > 0 OR anomaly_count > 0 "
+            "OR uncorrelated_action_count > 0)"
+        ]
+        parameters: list[object] = []
+        if after_key is not None:
+            clauses.append(
+                "(started_at > ? OR (started_at = ? AND session_id > ?))"
+            )
+            parameters.extend((after_key[0], after_key[0], after_key[1]))
+        parameters.append(page_limit + 1)
+        rows = tuple(
+            self._connection.execute(
+                f"""
+                SELECT *
+                FROM session_summary
+                WHERE {" AND ".join(clauses)}
+                ORDER BY started_at, session_id
+                LIMIT ?
+                """,
+                tuple(parameters),
+            )
+        )
+        try:
+            values = tuple(_session_from_row(row) for row in rows)
+        except (TypeError, ValueError) as exc:
+            raise ReadModelIntegrityError(
+                "read-model session signal page violates projection invariants"
+            ) from exc
+        return values[:page_limit], len(values) > page_limit
+
     def change_record(
         self,
         analysis_profile_sha256: str,

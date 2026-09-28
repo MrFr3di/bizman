@@ -17,13 +17,17 @@ from bizman.core import (
     KnowledgeResolveRequest,
     KnowledgeSearchRequest,
     RepositoryAssets,
+    SessionAnomalyListRequest,
+    SessionCompareRequest,
     SessionGetRequest,
     SessionListRequest,
     SystemUtcClock,
+    compare_sessions,
     get_change,
     get_knowledge,
     get_session,
     list_changes,
+    list_session_anomalies,
     list_sessions,
     resolve_knowledge,
     search_knowledge,
@@ -66,7 +70,7 @@ def _session(index: int) -> SessionSummary:
         correlation_probable_count=1,
         correlation_temporal_count=1,
         correlation_exact_count=0,
-        uncorrelated_action_count=0,
+        uncorrelated_action_count=1 if index % 6 == 0 else 0,
         warning_count=index % 3,
         anomaly_count=index % 2,
     )
@@ -170,6 +174,8 @@ class MCPProtocolTests(unittest.TestCase):
                 "evidence.trace",
                 "sessions.list",
                 "sessions.summary",
+                "sessions.compare",
+                "sessions.anomalies",
                 "changes.list",
                 "changes.get",
             },
@@ -183,7 +189,12 @@ class MCPProtocolTests(unittest.TestCase):
                 self.assertEqual(tool["annotations"]["openWorldHint"], False)
                 self.assertEqual(tool["annotations"]["idempotentHint"], True)
 
-        for name in ("evidence.search", "sessions.list", "changes.list"):
+        for name in (
+            "evidence.search",
+            "sessions.list",
+            "sessions.anomalies",
+            "changes.list",
+        ):
             schema = tools[name]["inputSchema"]
             self.assertEqual(schema["properties"]["limit"]["default"], 10)
             self.assertEqual(schema["properties"]["limit"]["minimum"], 1)
@@ -373,6 +384,129 @@ class MCPProtocolTests(unittest.TestCase):
         self.assertLessEqual(_encoded_size(sessions.structured_content), 8 * 1024)
         self.assertLessEqual(_encoded_size(changes.structured_content), 8 * 1024)
 
+    def test_session_intelligence_tools_equal_core_and_keep_signed_deltas(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+        from bizman.mcp.models import (
+            session_anomaly_list_result,
+            session_compare_result,
+        )
+
+        before = self.runtime.sessions[0]
+        after = self.runtime.sessions[1]
+        expected_compare = session_compare_result(
+            compare_sessions(
+                self.context,
+                SessionCompareRequest(
+                    from_session_id=before.session_id,
+                    to_session_id=after.session_id,
+                ),
+            )
+        ).model_dump(mode="json")
+        expected_anomalies = session_anomaly_list_result(
+            list_session_anomalies(
+                self.context,
+                SessionAnomalyListRequest(limit=10),
+            )
+        ).model_dump(mode="json")
+
+        async def scenario():
+            async with Client(build_server(self.context)) as client:
+                return (
+                    await client.call_tool(
+                        "sessions.compare",
+                        {
+                            "from_session_id": before.session_id,
+                            "to_session_id": after.session_id,
+                        },
+                    ),
+                    await client.call_tool("sessions.anomalies", {}),
+                )
+
+        compared, anomalies = _run(scenario())
+        self.assertFalse(compared.is_error)
+        self.assertFalse(anomalies.is_error)
+        self.assertEqual(compared.structured_content, expected_compare)
+        self.assertEqual(anomalies.structured_content, expected_anomalies)
+        self.assertEqual(
+            compared.structured_content["comparison"]["event_count_delta"],
+            1,
+        )
+        self.assertEqual(
+            compared.structured_content["comparison"]["warning_count_delta"],
+            1,
+        )
+        self.assertEqual(
+            compared.structured_content["comparison"][
+                "uncorrelated_action_count_delta"
+            ],
+            -1,
+        )
+        self.assertEqual(len(anomalies.structured_content["items"]), 10)
+        self.assertLessEqual(_encoded_size(compared.structured_content), 8 * 1024)
+        self.assertLessEqual(_encoded_size(anomalies.structured_content), 8 * 1024)
+
+    def test_session_compare_missing_side_is_explicit(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+
+        missing_id = _session_id(99)
+
+        async def scenario():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "sessions.compare",
+                    {
+                        "from_session_id": self.runtime.sessions[0].session_id,
+                        "to_session_id": missing_id,
+                    },
+                )
+
+        result = _run(scenario())
+        self.assertFalse(result.is_error)
+        self.assertIsNone(result.structured_content["comparison"])
+        self.assertEqual(
+            result.structured_content["missing_session_ids"],
+            [missing_id],
+        )
+
+    def test_session_anomaly_pagination_has_no_duplicates_or_gaps(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+
+        async def scenario():
+            collected: list[str] = []
+            cursor = None
+            async with Client(build_server(self.context)) as client:
+                while True:
+                    arguments = {"limit": 5}
+                    if cursor is not None:
+                        arguments["cursor"] = cursor
+                    page = await client.call_tool(
+                        "sessions.anomalies",
+                        arguments,
+                    )
+                    self.assertFalse(page.is_error)
+                    collected.extend(
+                        item["session_id"]
+                        for item in page.structured_content["items"]
+                    )
+                    cursor = page.structured_content.get("next_cursor")
+                    if cursor is None:
+                        return collected
+
+        collected = _run(scenario())
+        expected = [
+            item.session_id
+            for item in list_session_anomalies(
+                self.context,
+                SessionAnomalyListRequest(limit=50),
+            ).items
+        ]
+        self.assertEqual(collected, expected)
+        self.assertEqual(len(collected), 12)
+        self.assertEqual(len(collected), len(set(collected)))
+
     def test_session_pagination_has_no_duplicates_or_gaps(self):
         from mcp import Client
         from bizman.mcp import build_server
@@ -494,6 +628,72 @@ class MCPProtocolTests(unittest.TestCase):
 
         _build_context(self.data_dir, self.runtime)
 
+    def test_session_anomaly_cursor_is_scoped_and_generation_bound(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+
+        async def first_pages():
+            async with Client(build_server(self.context)) as client:
+                ordinary = await client.call_tool(
+                    "sessions.list",
+                    {"limit": 5},
+                )
+                anomalies = await client.call_tool(
+                    "sessions.anomalies",
+                    {"limit": 5},
+                )
+                return ordinary, anomalies
+
+        ordinary, anomalies = _run(first_pages())
+        self.assertFalse(ordinary.is_error)
+        self.assertFalse(anomalies.is_error)
+        ordinary_cursor = ordinary.structured_content["next_cursor"]
+        anomaly_cursor = anomalies.structured_content["next_cursor"]
+        self.assertIsNotNone(ordinary_cursor)
+        self.assertIsNotNone(anomaly_cursor)
+
+        async def wrong_scope():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "sessions.anomalies",
+                    {"limit": 5, "cursor": ordinary_cursor},
+                )
+
+        wrong = _run(wrong_scope())
+        self.assertTrue(wrong.is_error)
+
+        changed = RuntimeProjection(
+            sessions=(
+                replace(self.runtime.sessions[0], event_count=999),
+                *self.runtime.sessions[1:],
+            ),
+            changes=self.runtime.changes,
+        )
+        _build_context(self.data_dir, changed)
+
+        async def stale_generation():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "sessions.anomalies",
+                    {"limit": 5, "cursor": anomaly_cursor},
+                )
+
+        stale = _run(stale_generation())
+        self.assertTrue(stale.is_error)
+        rendered = json.dumps(
+            [
+                block.model_dump(mode="json", by_alias=True, exclude_none=True)
+                for block in stale.content
+            ],
+            ensure_ascii=False,
+        )
+        self.assertIn("Invalid BizMan read request", rendered)
+        self.assertNotIn("generation", rendered.casefold())
+        self.assertNotIn("Traceback", rendered)
+        self.assertNotIn(str(self.data_dir), rendered)
+
+        _build_context(self.data_dir, self.runtime)
+
     def test_invalid_inputs_fail_without_internal_details(self):
         from mcp import Client
         from bizman.mcp import build_server
@@ -512,6 +712,17 @@ class MCPProtocolTests(unittest.TestCase):
                     await client.call_tool(
                         "sessions.summary",
                         {"session_id": "not-a-uuid"},
+                    ),
+                    await client.call_tool(
+                        "sessions.compare",
+                        {
+                            "from_session_id": "not-a-uuid",
+                            "to_session_id": self.runtime.sessions[0].session_id,
+                        },
+                    ),
+                    await client.call_tool(
+                        "sessions.anomalies",
+                        {"limit": 51},
                     ),
                     await client.call_tool(
                         "changes.list",
@@ -597,12 +808,8 @@ class MCPStdioSmokeTests(unittest.TestCase):
                 async with Client(server) as client:
                     listed = await client.list_tools()
                     result = await client.call_tool(
-                        "evidence.trace",
-                        {
-                            "evidence_ref": (
-                                "live-cdp-2026-09-07#seq-25730"
-                            )
-                        },
+                        "sessions.anomalies",
+                        {},
                     )
                     return listed, result
 
@@ -617,15 +824,15 @@ class MCPStdioSmokeTests(unittest.TestCase):
                 "evidence.trace",
                 "sessions.list",
                 "sessions.summary",
+                "sessions.compare",
+                "sessions.anomalies",
                 "changes.list",
                 "changes.get",
             },
         )
         self.assertFalse(result.is_error)
-        self.assertEqual(
-            result.structured_content["trace"]["evidence_ref"],
-            "live-cdp-2026-09-07#seq-25730",
-        )
+        self.assertEqual(len(result.structured_content["items"]), 10)
+        self.assertLessEqual(_encoded_size(result.structured_content), 8 * 1024)
 
 
 if __name__ == "__main__":
