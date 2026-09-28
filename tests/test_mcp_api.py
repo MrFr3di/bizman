@@ -12,6 +12,7 @@ from bizman.core import (
     ChangeGetRequest,
     ChangeListRequest,
     CoreContext,
+    EvidenceTraceRequest,
     KnowledgeGetRequest,
     KnowledgeResolveRequest,
     KnowledgeSearchRequest,
@@ -26,6 +27,7 @@ from bizman.core import (
     list_sessions,
     resolve_knowledge,
     search_knowledge,
+    trace_evidence,
 )
 from bizman.readmodel import (
     ChangeIndexRecord,
@@ -165,6 +167,7 @@ class MCPProtocolTests(unittest.TestCase):
                 "evidence.resolve",
                 "evidence.search",
                 "evidence.get",
+                "evidence.trace",
                 "sessions.list",
                 "sessions.summary",
                 "changes.list",
@@ -192,6 +195,12 @@ class MCPProtocolTests(unittest.TestCase):
         self.assertIn(
             "pattern",
             change_schema["properties"]["analysis_profile_sha256"],
+        )
+        trace_schema = tools["evidence.trace"]["inputSchema"]
+        self.assertIn("pattern", trace_schema["properties"]["evidence_ref"])
+        self.assertEqual(
+            trace_schema["properties"]["evidence_ref"]["maxLength"],
+            512,
         )
 
     def test_evidence_tools_remain_equal_to_core_results(self):
@@ -243,6 +252,48 @@ class MCPProtocolTests(unittest.TestCase):
         self.assertEqual(resolved.structured_content, expected_resolve)
         self.assertEqual(searched.structured_content, expected_search)
         self.assertEqual(fetched.structured_content, expected_get)
+
+    def test_evidence_trace_equals_direct_core_result_and_is_compact(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+        from bizman.mcp.models import trace_result
+
+        evidence_ref = "src.har.bizmania.2026-09-06.01#entry-224"
+        expected = trace_result(
+            trace_evidence(
+                self.context,
+                EvidenceTraceRequest(evidence_ref=evidence_ref),
+            )
+        ).model_dump(mode="json")
+
+        async def scenario():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "evidence.trace",
+                    {"evidence_ref": evidence_ref},
+                )
+
+        result = _run(scenario())
+        self.assertFalse(result.is_error)
+        self.assertEqual(result.structured_content, expected)
+        self.assertLessEqual(_encoded_size(result.structured_content), 8 * 1024)
+        self.assertFalse(result.structured_content["trace"]["raw_source_committed"])
+        self.assertNotIn("Path", json.dumps(result.structured_content))
+
+    def test_evidence_trace_unknown_source_returns_null(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+
+        async def scenario():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "evidence.trace",
+                    {"evidence_ref": "unknown.source#entry-1"},
+                )
+
+        result = _run(scenario())
+        self.assertFalse(result.is_error)
+        self.assertIsNone(result.structured_content["trace"])
 
     def test_session_and_change_tools_equal_direct_core_results(self):
         from mcp import Client
@@ -466,6 +517,10 @@ class MCPProtocolTests(unittest.TestCase):
                         "changes.list",
                         {"analysis_profile_sha256": "not-a-profile"},
                     ),
+                    await client.call_tool(
+                        "evidence.trace",
+                        {"evidence_ref": "../raw.har#entry-1"},
+                    ),
                 )
 
         results = _run(scenario())
@@ -541,7 +596,14 @@ class MCPStdioSmokeTests(unittest.TestCase):
             async def scenario():
                 async with Client(server) as client:
                     listed = await client.list_tools()
-                    result = await client.call_tool("sessions.list", {})
+                    result = await client.call_tool(
+                        "evidence.trace",
+                        {
+                            "evidence_ref": (
+                                "live-cdp-2026-09-07#seq-25730"
+                            )
+                        },
+                    )
                     return listed, result
 
             listed, result = _run(asyncio.wait_for(scenario(), timeout=30))
@@ -552,6 +614,7 @@ class MCPStdioSmokeTests(unittest.TestCase):
                 "evidence.resolve",
                 "evidence.search",
                 "evidence.get",
+                "evidence.trace",
                 "sessions.list",
                 "sessions.summary",
                 "changes.list",
@@ -559,7 +622,10 @@ class MCPStdioSmokeTests(unittest.TestCase):
             },
         )
         self.assertFalse(result.is_error)
-        self.assertEqual(len(result.structured_content["items"]), 10)
+        self.assertEqual(
+            result.structured_content["trace"]["evidence_ref"],
+            "live-cdp-2026-09-07#seq-25730",
+        )
 
 
 if __name__ == "__main__":
