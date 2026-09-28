@@ -16,10 +16,11 @@ Completed foundations include:
 - deterministic Change Detector with versioned rules, analysis profiles, SQLite checkpoints/outbox and Promotion Bundles;
 - installable `src/bizman` package and stable `bizman.core` application boundary;
 - deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
+- bounded path-free `bizman.core` read API for knowledge, sessions and profile-scoped changes;
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
 
-Current delivery stage is **P2 — Agent Index + Session Intelligence**. P2-A knowledge retrieval, P2-B curated corpus coverage and P2-C session/change intelligence are complete. The next slices are **P2-D — Core Read API** and **P2-E — Evaluation + hardening**, followed by **P3 — read-only MCP**. See `docs/ROADMAP.md`.
+Current delivery stage is **P2 — Agent Index + Session Intelligence**. P2-A knowledge retrieval, P2-B curated corpus coverage, P2-C session/change intelligence and P2-D Core Read API are complete. The current slice is **P2-E — Evaluation + hardening** (#22), followed by **P3 — read-only MCP**. See `docs/ROADMAP.md`.
 
 ## Current corpus
 
@@ -131,13 +132,16 @@ Operational sessions/events/CAS, browser profiles, detector SQLite state and Pro
 
 ## Application Core boundary
 
-`bizman.core` is the supported adapter boundary for application use cases. It currently exposes typed repository assets/configuration, UTC clock injection, stable Core errors, immutable request/result DTOs, and three use cases:
+`bizman.core` is the supported adapter boundary for application use cases. It exposes typed repository assets/configuration, UTC clock injection, stable Core errors, immutable request/result DTOs, and bounded use cases for:
 
 - collection;
 - change detection;
-- repository validation.
+- repository validation;
+- knowledge resolve/search/get;
+- session list/get;
+- profile-scoped change list/get.
 
-CLI code consumes Core rather than lower implementation packages. The derived Agent Index now lives below Core in `bizman.readmodel`; P2-D will expose bounded immutable read operations through `bizman.core`. Future MCP adapters must consume that Core surface rather than importing `readmodel` directly. Current State, analytics and write automation remain later stages.
+CLI code consumes Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation. Future MCP adapters must consume this Core surface rather than importing `readmodel` directly. Current State, analytics and write automation remain later stages.
 
 ## Change detection
 
@@ -191,7 +195,7 @@ The stable sequence is:
 ```text
 D1  deterministic Change Detector        completed
 P1  Python package + Core boundary       completed
-P2  Agent Index + Session Intelligence   current (A/B/C complete; D/E next)
+P2  Agent Index + Session Intelligence   current (A/B/C/D complete; E current)
 P3  read-only MCP                        after P2
 P4  replayable Current State
 P5  Parquet history + deterministic analytics

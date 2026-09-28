@@ -232,21 +232,41 @@ This split keeps per-session evidence aggregates separate from detector change s
 
 ### P2-D — Core Read API
 
-Only after the read model works, expose bounded immutable Core operations for resolve/search/get/session/change queries. Introduce query budgets/cursors with the first real list consumer; do not expose arbitrary paths or SQL.
+Status: completed.
+
+P2-D exposes the Agent Index through the stable application boundary without leaking SQLite, paths or `readmodel` implementation types:
+
+- bounded Core operations for knowledge resolve/search/get, session list/get and profile-scoped change list/get;
+- frozen/slotted, path-free Core-owned request/result DTOs;
+- default list/search limit 20 and hard maximum 50;
+- Agent Index location derived internally from `CoreContext.data_dir`;
+- stable Core error translation for missing, incompatible, corrupt or operationally unreadable indexes;
+- exact and bounded keyset query primitives in `KnowledgeIndex` rather than full-table loading in Core;
+- opaque canonical/versioned cursors bound to operation/scope and semantic Agent Index generation, so pagination cannot silently continue across a changed rebuild;
+- CLI and future MCP remain forbidden from importing `readmodel` directly.
+
+P2-D also hardened persisted-index trust without changing SQLite schema v2 / projection v3: opening an index verifies the persisted curated-knowledge source fingerprint, FTS projection, foreign keys and runtime fingerprint. Knowledge integrity reconstruction is bulk-loaded to avoid an N+1 validation path.
 
 ### P2-E — Evaluation and hardening
 
-Measure:
+Status: current. Tracking issue: #22.
+
+P2-E measures and hardens the completed P2 surface before MCP:
 
 ```text
 Recall@1
 Recall@5
 MRR
 evidence correctness
-query latency
+cold Core query p50/p95
+warm KnowledgeIndex query p50/p95
 rebuild time
+integrity-validation cost
 database size
+serialized result size
 ```
+
+The existing v1/v2 retrieval corpora remain regression baselines. A v3 corpus adds ambiguous, natural-language lexical, negative/no-match, kind-filtered and FTS-required cases. Query plans and open-time integrity cost are measured explicitly; timing stays non-gating on shared runners until evidence supports a stable threshold.
 
 Resolution policy remains:
 
@@ -258,11 +278,13 @@ canonical ref
   -> optional fuzzy/embedding experiment only if eval proves needed
 ```
 
+Fuzzy/embedding retrieval becomes a separate experiment only if the expanded evaluation demonstrates a reproducible lexical gap.
+
 ### P2 acceptance gate
 
 - index is fully rebuildable from curated knowledge + sanitized evidence + detector outputs;
 - identical semantic inputs produce the same generation fingerprint;
-- common lookup/session questions require zero raw repository/JSONL scans by the agent;
+- common knowledge/session/change questions are answerable through bounded Core reads with zero raw repository/JSONL or direct SQLite scans by the agent;
 - deterministic retrieval corpus reports Recall@1/5, MRR and evidence correctness;
 - lexical/structured retrieval meets the agreed target or produces evidence for a later embedding experiment;
 - projection metadata includes schema/projection version, source fingerprint and completion time;
@@ -597,7 +619,7 @@ F2  passive CDP collector                 completed
 F3  action context/correlation            completed
 D1  deterministic Change Detector         completed
 P1  Python package + Core boundary        completed
-P2  Agent Index + Session Intelligence    current (A/B/C complete; D/E next)
+P2  Agent Index + Session Intelligence    current (A/B/C/D complete; E current)
 P3  read-only MCP v1                      after P2
 P4  replayable Current State
 P5  Parquet history + analytics
@@ -627,8 +649,7 @@ BizMan reaches the intended agent-toolchain milestone when:
 The shortest path from the current stage is therefore:
 
 ```text
-P2-D Core Read API
-  -> P2-E Evaluation + hardening
+P2-E Evaluation + hardening
   -> P3 read-only MCP
   -> P4 Current State
   -> P5 History/Analytics
