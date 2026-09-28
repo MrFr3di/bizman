@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, NoReturn
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -43,7 +43,7 @@ _READ_ONLY = ToolAnnotations(
 )
 
 
-def _raise_tool_error(exc: Exception) -> None:
+def _raise_tool_error(exc: Exception) -> NoReturn:
     if isinstance(exc, ConfigurationError):
         raise ToolError(
             "Agent Index is unavailable; rebuild it before using BizMan read tools."
@@ -107,7 +107,6 @@ def build_server(context: CoreContext) -> MCPServer:
             ValueError,
         ) as exc:
             _raise_tool_error(exc)
-            raise AssertionError("unreachable")
 
     @server.tool(
         name="evidence.search",
@@ -143,7 +142,6 @@ def build_server(context: CoreContext) -> MCPServer:
             ValueError,
         ) as exc:
             _raise_tool_error(exc)
-            raise AssertionError("unreachable")
 
     @server.tool(
         name="evidence.get",
@@ -168,7 +166,6 @@ def build_server(context: CoreContext) -> MCPServer:
             ValueError,
         ) as exc:
             _raise_tool_error(exc)
-            raise AssertionError("unreachable")
 
     return server
 
