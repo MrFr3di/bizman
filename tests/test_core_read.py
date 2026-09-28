@@ -20,6 +20,7 @@ PROFILE_B = "b" * 64
 SESSION_A = "01991c7d-a400-7000-8000-000000000011"
 SESSION_B = "01991c7d-a400-7000-8000-000000000012"
 SESSION_C = "01991c7d-a400-7000-8000-000000000013"
+SESSION_D = "01991c7d-a400-7000-8000-000000000014"
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,6 +187,18 @@ class CoreReadApiTests(unittest.TestCase):
             KnowledgeResolveResult,
             KnowledgeSearchRequest,
             KnowledgeSearchResult,
+            SessionAnomalyListRequest,
+            SessionAnomalyPage,
+            SessionAnomalyRecord,
+            SessionCompareRequest,
+            SessionCompareResult,
+            SessionComparison,
+            SessionAnomalyListRequest,
+            SessionAnomalyPage,
+            SessionAnomalyRecord,
+            SessionCompareRequest,
+            SessionCompareResult,
+            SessionComparison,
             SessionGetRequest,
             SessionGetResult,
             SessionListRequest,
@@ -329,6 +342,242 @@ class CoreReadApiTests(unittest.TestCase):
                     context,
                     SessionListRequest(limit=1, cursor=first.next_cursor),
                 )
+
+    def test_session_comparison_uses_signed_to_minus_from_deltas(self):
+        from bizman.core import SessionCompareRequest, compare_sessions
+
+        original = _runtime_projection()
+        before = replace(
+            original.sessions[0],
+            event_count=20,
+            action_count=5,
+            http_request_count=10,
+            http_response_count=9,
+            correlation_strong_count=2,
+            correlation_probable_count=1,
+            correlation_temporal_count=1,
+            correlation_exact_count=1,
+            uncorrelated_action_count=1,
+            warning_count=2,
+            anomaly_count=3,
+        )
+        after = replace(
+            original.sessions[1],
+            event_count=14,
+            action_count=7,
+            http_request_count=8,
+            http_response_count=11,
+            correlation_strong_count=4,
+            correlation_probable_count=0,
+            correlation_temporal_count=2,
+            correlation_exact_count=1,
+            uncorrelated_action_count=2,
+            warning_count=1,
+            anomaly_count=5,
+        )
+        runtime = RuntimeProjection(
+            sessions=(before, after, original.sessions[2]),
+            changes=original.changes,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            _build_index(data_dir, runtime)
+            result = compare_sessions(
+                _context(data_dir),
+                SessionCompareRequest(
+                    from_session_id=before.session_id,
+                    to_session_id=after.session_id,
+                ),
+            )
+
+        self.assertEqual(result.missing_session_ids, ())
+        self.assertIsNotNone(result.comparison)
+        assert result.comparison is not None
+        comparison = result.comparison
+        self.assertEqual(comparison.from_session_id, before.session_id)
+        self.assertEqual(comparison.to_session_id, after.session_id)
+        self.assertEqual(comparison.event_count_delta, -6)
+        self.assertEqual(comparison.action_count_delta, 2)
+        self.assertEqual(comparison.http_request_count_delta, -2)
+        self.assertEqual(comparison.http_response_count_delta, 2)
+        self.assertEqual(comparison.correlation_strong_count_delta, 2)
+        self.assertEqual(comparison.correlation_probable_count_delta, -1)
+        self.assertEqual(comparison.correlation_temporal_count_delta, 1)
+        self.assertEqual(comparison.correlation_exact_count_delta, 0)
+        self.assertEqual(comparison.uncorrelated_action_count_delta, 1)
+        self.assertEqual(comparison.warning_count_delta, -1)
+        self.assertEqual(comparison.anomaly_count_delta, 2)
+
+    def test_same_session_comparison_is_zero_and_missing_side_is_explicit(self):
+        from bizman.core import SessionCompareRequest, compare_sessions
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            _build_index(data_dir)
+            context = _context(data_dir)
+
+            same = compare_sessions(
+                context,
+                SessionCompareRequest(
+                    from_session_id=SESSION_A,
+                    to_session_id=SESSION_A,
+                ),
+            )
+            missing = compare_sessions(
+                context,
+                SessionCompareRequest(
+                    from_session_id=SESSION_A,
+                    to_session_id=SESSION_D,
+                ),
+            )
+
+        self.assertIsNotNone(same.comparison)
+        assert same.comparison is not None
+        delta_fields = (
+            "event_count_delta",
+            "action_count_delta",
+            "http_request_count_delta",
+            "http_response_count_delta",
+            "correlation_strong_count_delta",
+            "correlation_probable_count_delta",
+            "correlation_temporal_count_delta",
+            "correlation_exact_count_delta",
+            "uncorrelated_action_count_delta",
+            "warning_count_delta",
+            "anomaly_count_delta",
+        )
+        self.assertTrue(
+            all(getattr(same.comparison, field) == 0 for field in delta_fields)
+        )
+        self.assertIsNone(missing.comparison)
+        self.assertEqual(missing.missing_session_ids, (SESSION_D,))
+
+    def test_session_anomalies_filter_and_paginate_without_gaps(self):
+        from bizman.core import (
+            SessionAnomalyListRequest,
+            list_session_anomalies,
+        )
+
+        base = _runtime_projection()
+        zero = _session(
+            SESSION_D,
+            started_at="2026-09-25T10:04:00Z",
+            ended_at="2026-09-25T10:05:00Z",
+            event_count=40,
+        )
+        runtime = RuntimeProjection(
+            sessions=(
+                replace(base.sessions[0], warning_count=1),
+                replace(base.sessions[1], anomaly_count=2),
+                replace(
+                    base.sessions[2],
+                    action_count=2,
+                    uncorrelated_action_count=1,
+                ),
+                zero,
+            ),
+            changes=base.changes,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            _build_index(data_dir, runtime)
+            context = _context(data_dir)
+
+            first = list_session_anomalies(
+                context,
+                SessionAnomalyListRequest(limit=2),
+            )
+            self.assertIsNotNone(first.next_cursor)
+            second = list_session_anomalies(
+                context,
+                SessionAnomalyListRequest(
+                    limit=2,
+                    cursor=first.next_cursor,
+                ),
+            )
+
+        combined = (*first.items, *second.items)
+        self.assertEqual(
+            [item.session_id for item in combined],
+            [SESSION_A, SESSION_B, SESSION_C],
+        )
+        self.assertEqual(len({item.session_id for item in combined}), 3)
+        self.assertIsNone(second.next_cursor)
+        self.assertEqual(first.items[0].warning_count, 1)
+        self.assertEqual(first.items[1].anomaly_count, 2)
+        self.assertEqual(second.items[0].uncorrelated_action_count, 1)
+        self.assertNotIn(SESSION_D, {item.session_id for item in combined})
+
+    def test_session_anomaly_cursor_is_operation_scoped_and_generation_bound(self):
+        from bizman.core import (
+            SessionAnomalyListRequest,
+            SessionListRequest,
+            list_session_anomalies,
+            list_sessions,
+        )
+
+        base = _runtime_projection()
+        runtime = RuntimeProjection(
+            sessions=tuple(
+                replace(item, warning_count=1)
+                for item in base.sessions
+            ),
+            changes=base.changes,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            _build_index(data_dir, runtime)
+            context = _context(data_dir)
+
+            ordinary = list_sessions(context, SessionListRequest(limit=1))
+            assert ordinary.next_cursor is not None
+            with self.assertRaisesRegex(ValueError, "does not belong"):
+                SessionAnomalyListRequest(
+                    limit=1,
+                    cursor=ordinary.next_cursor,
+                )
+
+            first = list_session_anomalies(
+                context,
+                SessionAnomalyListRequest(limit=1),
+            )
+            assert first.next_cursor is not None
+
+            changed = RuntimeProjection(
+                sessions=(
+                    replace(runtime.sessions[0], event_count=999),
+                    *runtime.sessions[1:],
+                ),
+                changes=runtime.changes,
+            )
+            _build_index(data_dir, changed)
+
+            with self.assertRaisesRegex(ValueError, "generation"):
+                list_session_anomalies(
+                    context,
+                    SessionAnomalyListRequest(
+                        limit=1,
+                        cursor=first.next_cursor,
+                    ),
+                )
+
+    def test_session_intelligence_limits_are_bounded(self):
+        from bizman.core import SessionAnomalyListRequest, SessionCompareRequest
+
+        for invalid in (0, 51, -1, True):
+            with self.subTest(limit=invalid), self.assertRaises(
+                (TypeError, ValueError)
+            ):
+                SessionAnomalyListRequest(limit=invalid)
+
+        with self.assertRaises(ValueError):
+            SessionCompareRequest(
+                from_session_id="not-a-uuid",
+                to_session_id=SESSION_A,
+            )
 
     def test_change_pagination_preserves_profile_scope(self):
         from bizman.core import ChangeListRequest, list_changes
