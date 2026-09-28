@@ -10,6 +10,30 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = REPO_ROOT / "src" / "bizman"
 
 
+def _direct_internal_import_violations(
+    package: str,
+    forbidden: set[str],
+) -> list[str]:
+    violations: list[str] = []
+    for path in sorted((SRC_ROOT / package).rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            modules: list[str] = []
+            if isinstance(node, ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                modules.append(node.module)
+            for module in modules:
+                if any(
+                    module == root or module.startswith(root + ".")
+                    for root in forbidden
+                ):
+                    violations.append(
+                        f"{path.relative_to(REPO_ROOT)}:{node.lineno}:{module}"
+                    )
+    return violations
+
+
 class PackageDependencyArchitectureTests(unittest.TestCase):
     def test_src_package_never_imports_tools_namespace(self):
         violations: list[str] = []
@@ -42,6 +66,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.core",
                     "bizman.cli",
                     "bizman.readmodel",
+                    "bizman.mcp",
                 ],
             },
             "Sessions do not depend on higher layers": {
@@ -52,6 +77,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.core",
                     "bizman.cli",
                     "bizman.readmodel",
+                    "bizman.mcp",
                 ],
             },
             "Collector is independent from detector and application layers": {
@@ -62,6 +88,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.core",
                     "bizman.cli",
                     "bizman.readmodel",
+                    "bizman.mcp",
                 ],
             },
             "Changes do not depend on collector or application layers": {
@@ -71,6 +98,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.core",
                     "bizman.cli",
                     "bizman.readmodel",
+                    "bizman.mcp",
                 ],
             },
             "Read model is independent from collector and application layers": {
@@ -79,11 +107,12 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.collector",
                     "bizman.core",
                     "bizman.cli",
+                    "bizman.mcp",
                 ],
             },
-            "Core does not depend on CLI": {
+            "Core does not depend on adapters": {
                 "source_modules": ["bizman.core"],
-                "forbidden_modules": ["bizman.cli"],
+                "forbidden_modules": ["bizman.cli", "bizman.mcp"],
             },
             "CLI directly consumes Core only": {
                 "source_modules": ["bizman.cli"],
@@ -93,6 +122,19 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.collector",
                     "bizman.changes",
                     "bizman.readmodel",
+                    "bizman.mcp",
+                ],
+                "allow_indirect_imports": True,
+            },
+            "MCP directly consumes Core only": {
+                "source_modules": ["bizman.mcp"],
+                "forbidden_modules": [
+                    "bizman.foundation",
+                    "bizman.sessions",
+                    "bizman.collector",
+                    "bizman.changes",
+                    "bizman.readmodel",
+                    "bizman.cli",
                 ],
                 "allow_indirect_imports": True,
             },
@@ -105,28 +147,36 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                 self.assertEqual(value, contract[key], f"{name}: {key}")
 
     def test_cli_has_no_direct_internal_package_imports(self):
-        forbidden = {
-            "bizman.foundation",
-            "bizman.sessions",
-            "bizman.collector",
-            "bizman.changes",
-            "bizman.readmodel",
-        }
-        violations: list[str] = []
-        for path in sorted((SRC_ROOT / "cli").rglob("*.py")):
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-            for node in ast.walk(tree):
-                modules: list[str] = []
-                if isinstance(node, ast.Import):
-                    modules.extend(alias.name for alias in node.names)
-                elif isinstance(node, ast.ImportFrom) and node.module:
-                    modules.append(node.module)
-                for module in modules:
-                    if any(module == root or module.startswith(root + ".") for root in forbidden):
-                        violations.append(
-                            f"{path.relative_to(REPO_ROOT)}:{node.lineno}:{module}"
-                        )
-        self.assertEqual(violations, [])
+        self.assertEqual(
+            _direct_internal_import_violations(
+                "cli",
+                {
+                    "bizman.foundation",
+                    "bizman.sessions",
+                    "bizman.collector",
+                    "bizman.changes",
+                    "bizman.readmodel",
+                    "bizman.mcp",
+                },
+            ),
+            [],
+        )
+
+    def test_mcp_has_no_direct_lower_layer_or_cli_imports(self):
+        self.assertEqual(
+            _direct_internal_import_violations(
+                "mcp",
+                {
+                    "bizman.foundation",
+                    "bizman.sessions",
+                    "bizman.collector",
+                    "bizman.changes",
+                    "bizman.readmodel",
+                    "bizman.cli",
+                },
+            ),
+            [],
+        )
 
 
 if __name__ == "__main__":

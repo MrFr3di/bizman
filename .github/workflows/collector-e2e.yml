@@ -120,6 +120,7 @@ jobs:
       - name: Run Python floor contract smoke
         run: |
           uv run python -m unittest discover -s tests -p "test_core_*.py" -v
+          uv run python -m unittest discover -s tests -p "test_mcp_*.py" -v
           uv run python -m unittest discover -s tests -p "test_package_migration_contract.py" -v
           uv run python -m unittest discover -s tests -p "test_cli_parity.py" -v
       - name: Import and CLI smoke
@@ -130,11 +131,13 @@ jobs:
           import bizman.collector
           import bizman.core
           import bizman.foundation
+          import bizman.mcp
           import bizman.readmodel
           import bizman.sessions
           print(bizman.__file__)
           PY
           uv run bizman --help
+          uv run bizman-mcp --help
 
   collector-e2e:
     needs: [validate, compatibility]

@@ -50,11 +50,19 @@ class DistributionContractTests(unittest.TestCase):
         project = value["project"]
         self.assertEqual(project["name"], "bizman")
         self.assertEqual(project["requires-python"], ">=3.11")
-        self.assertEqual(project["scripts"], {"bizman": "bizman.cli.main:main"})
+        self.assertEqual(
+            project["scripts"],
+            {
+                "bizman": "bizman.cli.main:main",
+                "bizman-mcp": "bizman.mcp.__main__:main",
+            },
+        )
         self.assertEqual(
             project["dependencies"],
             [
                 "jsonschema[format]>=4.26,<5",
+                "mcp>=2.2,<3",
+                "pydantic>=2.12,<3",
                 "websockets>=17.1,<18",
             ],
         )
@@ -84,6 +92,8 @@ class DistributionContractTests(unittest.TestCase):
         self.assertEqual(lock["requires-python"], ">=3.11")
         packages = {item["name"]: item for item in lock["package"]}
         self.assertEqual(packages["jsonschema"]["version"], "4.26.0")
+        self.assertEqual(packages["mcp"]["version"], "2.2.0")
+        self.assertIn("pydantic", packages)
         self.assertEqual(packages["websockets"]["version"], "17.1")
         self.assertEqual(packages["ruff"]["version"], "0.16.3")
         self.assertEqual(packages["import-linter"]["version"], "2.15")
@@ -151,6 +161,9 @@ class DistributionContractTests(unittest.TestCase):
             )
             python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
             console = venv / ("Scripts/bizman.exe" if os.name == "nt" else "bin/bizman")
+            mcp_console = venv / (
+                "Scripts/bizman-mcp.exe" if os.name == "nt" else "bin/bizman-mcp"
+            )
             subprocess.run(
                 [uv, "pip", "install", "--python", str(python), str(wheel)],
                 cwd=root,
@@ -169,7 +182,8 @@ class DistributionContractTests(unittest.TestCase):
                     "-c",
                     (
                         "import pathlib, bizman, bizman.foundation, bizman.sessions, "
-                        "bizman.collector, bizman.changes, bizman.readmodel, bizman.core; "
+                        "bizman.collector, bizman.changes, bizman.readmodel, bizman.core, "
+                        "bizman.mcp; "
                         "print(pathlib.Path(bizman.__file__).resolve())"
                     ),
                 ],
@@ -193,6 +207,17 @@ class DistributionContractTests(unittest.TestCase):
             self.assertIn("collect", help_result.stdout)
             self.assertIn("detect", help_result.stdout)
             self.assertIn("validate", help_result.stdout)
+
+            mcp_help = subprocess.run(
+                [str(mcp_console), "--help"],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("--repo-root", mcp_help.stdout)
+            self.assertIn("--data-dir", mcp_help.stdout)
 
 
 if __name__ == "__main__":

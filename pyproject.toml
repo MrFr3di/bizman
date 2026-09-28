@@ -6,11 +6,14 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "jsonschema[format]>=4.26,<5",
+    "mcp>=2.2,<3",
+    "pydantic>=2.12,<3",
     "websockets>=17.1,<18",
 ]
 
 [project.scripts]
 bizman = "bizman.cli.main:main"
+bizman-mcp = "bizman.mcp.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13"]
@@ -64,6 +67,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.mcp",
 ]
 
 [[tool.importlinter.contracts]]
@@ -76,6 +80,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.mcp",
 ]
 
 [[tool.importlinter.contracts]]
@@ -88,6 +93,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.mcp",
 ]
 
 [[tool.importlinter.contracts]]
@@ -99,6 +105,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.mcp",
 ]
 
 [[tool.importlinter.contracts]]
@@ -109,13 +116,14 @@ forbidden_modules = [
     "bizman.collector",
     "bizman.core",
     "bizman.cli",
+    "bizman.mcp",
 ]
 
 [[tool.importlinter.contracts]]
-name = "Core does not depend on CLI"
+name = "Core does not depend on adapters"
 type = "forbidden"
 source_modules = ["bizman.core"]
-forbidden_modules = ["bizman.cli"]
+forbidden_modules = ["bizman.cli", "bizman.mcp"]
 
 [[tool.importlinter.contracts]]
 name = "CLI directly consumes Core only"
@@ -127,5 +135,19 @@ forbidden_modules = [
     "bizman.collector",
     "bizman.changes",
     "bizman.readmodel",
+    "bizman.mcp",
+]
+allow_indirect_imports = true
+[[tool.importlinter.contracts]]
+name = "MCP directly consumes Core only"
+type = "forbidden"
+source_modules = ["bizman.mcp"]
+forbidden_modules = [
+    "bizman.foundation",
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.readmodel",
+    "bizman.cli",
 ]
 allow_indirect_imports = true
