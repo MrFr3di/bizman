@@ -20,12 +20,16 @@ from bizman.core import (
     KnowledgeResolveRequest,
     KnowledgeSearchRequest,
     OperationError,
+    SessionAnomalyListRequest,
+    SessionCompareRequest,
     SessionGetRequest,
     SessionListRequest,
     get_change,
     get_knowledge,
+    compare_sessions,
     get_session,
     list_changes,
+    list_session_anomalies,
     list_sessions,
     resolve_knowledge,
     search_knowledge,
@@ -39,6 +43,8 @@ from bizman.mcp.models import (
     EvidenceSearchResult,
     EvidenceTraceResult,
     KnowledgeKind,
+    SessionAnomalyListResult,
+    SessionCompareResult,
     SessionListResult,
     SessionSummaryResult,
     change_get_result,
@@ -46,6 +52,8 @@ from bizman.mcp.models import (
     get_result,
     resolve_result,
     search_result,
+    session_anomaly_list_result,
+    session_compare_result,
     session_list_result,
     trace_result,
     session_summary_result,
@@ -238,6 +246,76 @@ def build_server(context: CoreContext) -> MCPServer:
                 SessionGetRequest(session_id=session_id),
             )
             return session_summary_result(value)
+        except (
+            AssetError,
+            ConfigurationError,
+            ContractMismatchError,
+            DataIntegrityError,
+            OperationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            _raise_tool_error(exc)
+
+    @server.tool(
+        name="sessions.compare",
+        title="Compare BizMan session summaries",
+        description=(
+            "Compare two verified session summaries using deterministic signed "
+            "deltas where every numeric delta is to_session minus from_session."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=True,
+    )
+    def sessions_compare(
+        from_session_id: SessionId,
+        to_session_id: SessionId,
+    ) -> SessionCompareResult:
+        try:
+            return session_compare_result(
+                compare_sessions(
+                    context,
+                    SessionCompareRequest(
+                        from_session_id=from_session_id,
+                        to_session_id=to_session_id,
+                    ),
+                )
+            )
+        except (
+            AssetError,
+            ConfigurationError,
+            ContractMismatchError,
+            DataIntegrityError,
+            OperationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            _raise_tool_error(exc)
+
+    @server.tool(
+        name="sessions.anomalies",
+        title="List BizMan session anomaly signals",
+        description=(
+            "List sessions with observed warnings, normalized anomalies, or "
+            "uncorrelated actions. No severity score or causal inference is applied."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=True,
+    )
+    def sessions_anomalies(
+        limit: PageLimit = 10,
+        cursor: Cursor | None = None,
+    ) -> SessionAnomalyListResult:
+        try:
+            return session_anomaly_list_result(
+                list_session_anomalies(
+                    context,
+                    SessionAnomalyListRequest(
+                        limit=limit,
+                        cursor=cursor,
+                    ),
+                )
+            )
         except (
             AssetError,
             ConfigurationError,
