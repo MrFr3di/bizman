@@ -53,6 +53,9 @@ class CorePublicApiTests(unittest.TestCase):
                 "CoreContext",
                 "DataIntegrityError",
                 "DetectionRequest",
+                "EvidenceTrace",
+                "EvidenceTraceRequest",
+                "EvidenceTraceResult",
                 "DetectorRunSummary",
                 "KnowledgeGetRequest",
                 "KnowledgeGetResult",
@@ -81,6 +84,7 @@ class CorePublicApiTests(unittest.TestCase):
                 "list_sessions",
                 "resolve_knowledge",
                 "search_knowledge",
+                "trace_evidence",
                 "validate_repository",
             ),
         )

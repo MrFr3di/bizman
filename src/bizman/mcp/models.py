@@ -8,6 +8,7 @@ from bizman.core import (
     ChangeGetResult as CoreChangeGetResult,
     ChangePage as CoreChangePage,
     ChangeRecord as CoreChangeRecord,
+    EvidenceTraceResult as CoreEvidenceTraceResult,
     KnowledgeGetResult,
     KnowledgeHit,
     KnowledgeItem,
@@ -70,6 +71,30 @@ class EvidenceGetResult(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     item: EvidenceItem | None
+
+
+class EvidenceTraceItem(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    evidence_ref: str
+    source_id: str
+    source_kind: Literal["har_capture", "promoted_session"]
+    locator_kind: Literal["entry", "sequence"]
+    ordinal: int
+    source_record_count: int
+    raw_source_committed: bool
+    source_sha256: str | None
+    runtime_session_id: str | None
+    observed_from: str
+    observed_to: str | None
+    privacy: str
+    provenance_policy: str
+
+
+class EvidenceTraceResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    trace: EvidenceTraceItem | None
 
 
 class SessionSummaryItem(BaseModel):
@@ -192,6 +217,21 @@ def get_result(value: KnowledgeGetResult) -> EvidenceGetResult:
     )
 
 
+def trace_result(value: CoreEvidenceTraceResult) -> EvidenceTraceResult:
+    return EvidenceTraceResult(
+        trace=(
+            EvidenceTraceItem(
+                **{
+                    field: getattr(value.trace, field)
+                    for field in EvidenceTraceItem.model_fields
+                }
+            )
+            if value.trace is not None
+            else None
+        )
+    )
+
+
 def session_list_result(value: CoreSessionPage) -> SessionListResult:
     return SessionListResult(
         items=tuple(_session(item) for item in value.items),
@@ -227,6 +267,8 @@ __all__ = [
     "EvidenceItem",
     "EvidenceResolveResult",
     "EvidenceSearchResult",
+    "EvidenceTraceItem",
+    "EvidenceTraceResult",
     "KnowledgeKind",
     "SessionListResult",
     "SessionSummaryItem",

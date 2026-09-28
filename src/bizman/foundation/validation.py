@@ -264,6 +264,10 @@ def _validate_known_instances(root: Path, result: ValidationResult) -> None:
             root / "config/redaction-policy.json",
             root / "schemas/redaction-policy.schema.json",
         ),
+        (
+            root / "knowledge/sources/promoted-sessions.json",
+            root / "schemas/promoted-session-index.schema.json",
+        ),
     )
     for instance_path, schema_path in pairs:
         if instance_path.exists() and schema_path.exists():
@@ -331,6 +335,29 @@ def _validate_source_identity(root: Path, result: ValidationResult) -> None:
             if alias in aliases or alias in canonical_ids:
                 result.errors.append(f"{captures_path}: duplicate source alias {alias}")
             aliases.add(alias)
+
+    promoted_path = source_dir / "promoted-sessions.json"
+    if not promoted_path.exists():
+        return
+    promoted = _load_json(promoted_path, result)
+    if not isinstance(promoted, dict) or not isinstance(promoted.get("sources"), list):
+        return
+    promoted_ids: set[str] = set()
+    for item in promoted["sources"]:
+        if not isinstance(item, dict):
+            continue
+        source_id = item.get("source_id")
+        if not isinstance(source_id, str) or not source_id:
+            continue
+        if (
+            source_id in promoted_ids
+            or source_id in canonical_ids
+            or source_id in aliases
+        ):
+            result.errors.append(
+                f"{promoted_path}: duplicate provenance source id {source_id}"
+            )
+        promoted_ids.add(source_id)
 
 
 def _scan_for_forbidden_files(root: Path, result: ValidationResult) -> None:

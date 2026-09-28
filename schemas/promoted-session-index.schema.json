@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/bizman/promoted-session-index.schema.json",
+  "title": "BizMan promoted historical session source index",
+  "type": "object",
+  "required": ["schema_version", "policy", "sources"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "policy": {"type": "string", "minLength": 1},
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "runtime_session_id",
+          "started_at",
+          "event_count",
+          "raw_source_committed",
+          "privacy"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9.-]*$"
+          },
+          "runtime_session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "event_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "raw_source_committed": {
+            "const": false
+          },
+          "privacy": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
