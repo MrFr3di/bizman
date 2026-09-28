@@ -58,11 +58,19 @@ class EvidenceTrace:
     provenance_policy: str
 
     def __post_init__(self) -> None:
+        evidence_match = _EVIDENCE_REF_RE.fullmatch(self.evidence_ref)
+        if evidence_match is None:
+            raise ValueError("evidence_ref has unsupported provenance syntax")
+        if evidence_match.group("source") != self.source_id:
+            raise ValueError("evidence_ref source does not match source_id")
         if self.source_kind not in {"har_capture", "promoted_session"}:
             raise ValueError("unsupported evidence source_kind")
         expected_locator = "entry" if self.source_kind == "har_capture" else "sequence"
         if self.locator_kind != expected_locator:
             raise ValueError("locator_kind does not match source_kind")
+        expected_ref_locator = "entry" if self.locator_kind == "entry" else "seq"
+        if evidence_match.group("locator") != expected_ref_locator:
+            raise ValueError("evidence_ref locator does not match locator_kind")
         if (
             isinstance(self.ordinal, bool)
             or not isinstance(self.ordinal, int)
@@ -77,6 +85,15 @@ class EvidenceTrace:
             raise ValueError("source_record_count must be a positive integer")
         if self.ordinal >= self.source_record_count:
             raise ValueError("ordinal must be inside source record range")
+        if int(evidence_match.group("ordinal")) != self.ordinal:
+            raise ValueError("evidence_ref ordinal does not match ordinal")
+        _instant(self.observed_from, source="EvidenceTrace", field="observed_from")
+        if self.observed_to is not None:
+            _instant(self.observed_to, source="EvidenceTrace", field="observed_to")
+        if not isinstance(self.privacy, str) or not self.privacy:
+            raise ValueError("privacy must be non-empty")
+        if not isinstance(self.provenance_policy, str) or not self.provenance_policy:
+            raise ValueError("provenance_policy must be non-empty")
         if self.raw_source_committed is not False:
             raise ValueError("trace sources must not claim raw bytes are committed")
         if self.source_kind == "har_capture":
