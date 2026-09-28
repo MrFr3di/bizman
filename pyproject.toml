@@ -115,6 +115,7 @@ forbidden_modules = [
     "bizman.collector",
     "bizman.core",
     "bizman.cli",
+    "bizman.mcp",
 ]
 
 [[tool.importlinter.contracts]]
@@ -134,5 +135,18 @@ forbidden_modules = [
     "bizman.changes",
     "bizman.readmodel",
     "bizman.mcp",
+]
+allow_indirect_imports = true
+[[tool.importlinter.contracts]]
+name = "MCP directly consumes Core only"
+type = "forbidden"
+source_modules = ["bizman.mcp"]
+forbidden_modules = [
+    "bizman.foundation",
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.readmodel",
+    "bizman.cli",
 ]
 allow_indirect_imports = true
