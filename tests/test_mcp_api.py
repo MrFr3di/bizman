@@ -70,7 +70,7 @@ def _session(index: int) -> SessionSummary:
         correlation_probable_count=1,
         correlation_temporal_count=1,
         correlation_exact_count=0,
-        uncorrelated_action_count=0,
+        uncorrelated_action_count=1 if index % 6 == 0 else 0,
         warning_count=index % 3,
         anomaly_count=index % 2,
     )
