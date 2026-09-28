@@ -1,6 +1,6 @@
 # BizMan unified roadmap
 
-Status: stable delivery-stage roadmap, updated 2026-09-25.
+Status: stable delivery-stage roadmap, updated 2026-09-28.
 
 BizMan evolves from deterministic evidence collection into a read-optimized agent platform and only later into guarded automation. Delivery stages use stable identifiers (`D1`, `P1`, `P2`, ...) rather than GitHub pull-request numbers. PR numbers are implementation history, not architecture.
 
@@ -146,7 +146,7 @@ P1 exit gate:
 - no unresolved blocker review threads or security/runtime artifacts;
 - branch is current with target branch before merge.
 
-## 5. Current stage: P2 — Agent Index + Session Intelligence
+## 5. Completed stage: P2 — Agent Index + Session Intelligence
 
 Goal: stop agents and future adapters from scanning raw repository files/session JSONL for ordinary read tasks.
 
@@ -249,7 +249,7 @@ P2-D also hardened persisted-index trust without changing SQLite schema v2 / pro
 
 ### P2-E — Evaluation and hardening
 
-Status: current. Tracking issue: #22.
+Status: completed. Tracking issue: #22. Durable baseline: `docs/benchmarks/p2e-readmodel-baseline-2026-09-28.md`.
 
 P2-E measures and hardens the completed P2 surface before MCP:
 
@@ -278,7 +278,7 @@ canonical ref
   -> optional fuzzy/embedding experiment only if eval proves needed
 ```
 
-Fuzzy/embedding retrieval becomes a separate experiment only if the expanded evaluation demonstrates a reproducible lexical gap.
+The v3 evaluation retained Recall@1/5, MRR, evidence correctness and no-match accuracy at 1.0 on the measured baseline, so lexical retrieval remains the production stack. Fuzzy/embedding retrieval is not justified by current evidence. Cold Core reads are dominated by deliberate integrity validation while warm index reads remain sub-millisecond; P2-E therefore preserves integrity checks and avoids a premature process-global cache or schema/index bump.
 
 ### P2 acceptance gate
 
@@ -290,7 +290,7 @@ Fuzzy/embedding retrieval becomes a separate experiment only if the expanded eva
 - projection metadata includes schema/projection version, source fingerprint and completion time;
 - no arbitrary SQL/path read API is introduced.
 
-## 6. P3 — Read-only MCP v1
+## 6. Current stage: P3 — Read-only MCP v1
 
 Goal: expose the P2/Core read surface through a small bounded MCP adapter.
 
@@ -595,7 +595,7 @@ collector-e2e
   real Chrome/CDP fixture after correctness lanes
 
 benchmark
-  storage evidence + non-gating detector performance
+  storage evidence + non-gating Agent Index/Core and detector performance
 ```
 
 Later split by ownership when P2/P3 grow:
@@ -619,8 +619,8 @@ F2  passive CDP collector                 completed
 F3  action context/correlation            completed
 D1  deterministic Change Detector         completed
 P1  Python package + Core boundary        completed
-P2  Agent Index + Session Intelligence    current (A/B/C/D complete; E current)
-P3  read-only MCP v1                      after P2
+P2  Agent Index + Session Intelligence    completed
+P3  read-only MCP v1                      current
 P4  replayable Current State
 P5  Parquet history + analytics
 P6  experiment framework
@@ -649,8 +649,7 @@ BizMan reaches the intended agent-toolchain milestone when:
 The shortest path from the current stage is therefore:
 
 ```text
-P2-E Evaluation + hardening
-  -> P3 read-only MCP
+P3 read-only MCP
   -> P4 Current State
   -> P5 History/Analytics
   -> P6 Experiments
