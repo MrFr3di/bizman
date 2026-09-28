@@ -220,11 +220,13 @@ class MCPStdioSmokeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
             _build_context(data_dir)
+            console = Path(sys.executable).parent / (
+                "bizman-mcp.exe" if sys.platform == "win32" else "bizman-mcp"
+            )
+            self.assertTrue(console.is_file(), "installed bizman-mcp entry point is required")
             server = StdioServerParameters(
-                command=sys.executable,
+                command=str(console),
                 args=[
-                    "-m",
-                    "bizman.mcp",
                     "--repo-root",
                     str(REPO_ROOT),
                     "--data-dir",
