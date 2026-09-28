@@ -13,7 +13,7 @@
 - `docs/architecture/provenance.md` — provenance, evidence и уровни уверенности.
 - `docs/research/captures.md` — сведения об исходных захватах.
 - `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные.
-- `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов.
+- `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов; P2 завершён, P3 read-only MCP является текущим этапом.
 
 ## Agent Index / read model
 

@@ -20,7 +20,7 @@ Completed foundations include:
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
 
-Current delivery stage is **P2 — Agent Index + Session Intelligence**. P2-A knowledge retrieval, P2-B curated corpus coverage, P2-C session/change intelligence and P2-D Core Read API are complete. The current slice is **P2-E — Evaluation + hardening** (#22), followed by **P3 — read-only MCP**. See `docs/ROADMAP.md`.
+**P2 — Agent Index + Session Intelligence is complete.** P2-A through P2-E delivered the 590-record Agent Index, verified session/change intelligence, bounded Core reads and a measured retrieval/performance baseline. The current delivery stage is **P3 — read-only MCP v1**. See `docs/ROADMAP.md`.
 
 ## Current corpus
 
@@ -184,7 +184,7 @@ Relevant pull requests run:
 - machine-enforced package dependency contracts;
 - wheel/sdist build and isolated wheel-install proof;
 - real Chrome for Testing CDP E2E against loopback fixtures;
-- storage benchmark plus non-gating detector performance evidence.
+- storage benchmark plus non-gating Agent Index/Core and detector performance evidence.
 
 See `docs/CI.md` for the exact policy.
 
@@ -195,8 +195,8 @@ The stable sequence is:
 ```text
 D1  deterministic Change Detector        completed
 P1  Python package + Core boundary       completed
-P2  Agent Index + Session Intelligence   current (A/B/C/D complete; E current)
-P3  read-only MCP                        after P2
+P2  Agent Index + Session Intelligence   completed
+P3  read-only MCP                        current
 P4  replayable Current State
 P5  Parquet history + deterministic analytics
 P6  experiment framework
