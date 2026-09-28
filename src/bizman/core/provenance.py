@@ -24,6 +24,18 @@ _UUID7_RE = re.compile(
 _MAX_EVIDENCE_REF_LENGTH = 512
 
 
+def _require_rfc3339(value: object, *, name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{name} must be a non-empty RFC3339 string")
+    try:
+        instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{name} must be RFC3339") from exc
+    if instant.tzinfo is None or instant.utcoffset() is None:
+        raise ValueError(f"{name} must include a timezone offset")
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class EvidenceTraceRequest:
     evidence_ref: str
@@ -87,9 +99,14 @@ class EvidenceTrace:
             raise ValueError("ordinal must be inside source record range")
         if int(evidence_match.group("ordinal")) != self.ordinal:
             raise ValueError("evidence_ref ordinal does not match ordinal")
-        _instant(self.observed_from, source="EvidenceTrace", field="observed_from")
+        _require_rfc3339(self.observed_from, name="observed_from")
         if self.observed_to is not None:
-            _instant(self.observed_to, source="EvidenceTrace", field="observed_to")
+            _require_rfc3339(self.observed_to, name="observed_to")
+        if self.source_kind == "har_capture":
+            if _HAR_SOURCE_ID_RE.fullmatch(self.source_id) is None:
+                raise ValueError("HAR trace requires canonical source_id")
+        elif _PROMOTED_SOURCE_ID_RE.fullmatch(self.source_id) is None:
+            raise ValueError("promoted session trace requires canonical source_id")
         if not isinstance(self.privacy, str) or not self.privacy:
             raise ValueError("privacy must be non-empty")
         if not isinstance(self.provenance_policy, str) or not self.provenance_policy:
