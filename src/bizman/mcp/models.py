@@ -14,6 +14,9 @@ from bizman.core import (
     KnowledgeItem,
     KnowledgeResolveResult,
     KnowledgeSearchResult,
+    SessionAnomalyPage as CoreSessionAnomalyPage,
+    SessionCompareResult as CoreSessionCompareResult,
+    SessionComparison as CoreSessionComparison,
     SessionGetResult as CoreSessionGetResult,
     SessionPage as CoreSessionPage,
     SessionRecord as CoreSessionRecord,
@@ -132,6 +135,56 @@ class SessionSummaryResult(BaseModel):
     summary: SessionSummaryItem | None
 
 
+class SessionComparisonItem(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    from_session_id: str
+    from_started_at: str
+    from_ended_at: str
+    from_status: str
+    to_session_id: str
+    to_started_at: str
+    to_ended_at: str
+    to_status: str
+    event_count_delta: int
+    action_count_delta: int
+    http_request_count_delta: int
+    http_response_count_delta: int
+    correlation_strong_count_delta: int
+    correlation_probable_count_delta: int
+    correlation_temporal_count_delta: int
+    correlation_exact_count_delta: int
+    uncorrelated_action_count_delta: int
+    warning_count_delta: int
+    anomaly_count_delta: int
+
+
+class SessionCompareResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    comparison: SessionComparisonItem | None
+    missing_session_ids: tuple[str, ...]
+
+
+class SessionAnomalyItem(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    session_id: str
+    started_at: str
+    ended_at: str
+    status: str
+    warning_count: int
+    anomaly_count: int
+    uncorrelated_action_count: int
+
+
+class SessionAnomalyListResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    items: tuple[SessionAnomalyItem, ...]
+    next_cursor: str | None = None
+
+
 class ChangeItem(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -192,6 +245,24 @@ def _session(value: CoreSessionRecord) -> SessionSummaryItem:
     )
 
 
+def _session_comparison(value: CoreSessionComparison) -> SessionComparisonItem:
+    return SessionComparisonItem(
+        **{
+            field: getattr(value, field)
+            for field in SessionComparisonItem.model_fields
+        }
+    )
+
+
+def _session_anomaly(value: object) -> SessionAnomalyItem:
+    return SessionAnomalyItem(
+        **{
+            field: getattr(value, field)
+            for field in SessionAnomalyItem.model_fields
+        }
+    )
+
+
 def _change(value: CoreChangeRecord) -> ChangeItem:
     return ChangeItem(
         **{
@@ -245,6 +316,26 @@ def session_summary_result(value: CoreSessionGetResult) -> SessionSummaryResult:
     )
 
 
+def session_compare_result(value: CoreSessionCompareResult) -> SessionCompareResult:
+    return SessionCompareResult(
+        comparison=(
+            _session_comparison(value.comparison)
+            if value.comparison is not None
+            else None
+        ),
+        missing_session_ids=value.missing_session_ids,
+    )
+
+
+def session_anomaly_list_result(
+    value: CoreSessionAnomalyPage,
+) -> SessionAnomalyListResult:
+    return SessionAnomalyListResult(
+        items=tuple(_session_anomaly(item) for item in value.items),
+        next_cursor=value.next_cursor,
+    )
+
+
 def change_list_result(value: CoreChangePage) -> ChangeListResult:
     return ChangeListResult(
         items=tuple(_change(item) for item in value.items),
@@ -270,6 +361,10 @@ __all__ = [
     "EvidenceTraceItem",
     "EvidenceTraceResult",
     "KnowledgeKind",
+    "SessionAnomalyItem",
+    "SessionAnomalyListResult",
+    "SessionCompareResult",
+    "SessionComparisonItem",
     "SessionListResult",
     "SessionSummaryItem",
     "SessionSummaryResult",
