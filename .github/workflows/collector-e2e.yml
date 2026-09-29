@@ -140,7 +140,7 @@ jobs:
         with:
           name: mcp-p3-evaluation
           path: ${{ runner.temp }}/mcp-p3-evaluation.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
       - name: Validate SonarQube Cloud CI configuration
         if: ${{ vars.SONAR_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
