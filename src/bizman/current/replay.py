@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+import sqlite3
 from typing import Mapping
 
 from bizman.changes.profile import compile_default_analysis_profile
@@ -20,7 +21,12 @@ from bizman.current.model import (
     UnitState,
     build_current_snapshot,
 )
-from bizman.current.state import CurrentStateIntegrityError, CurrentStateStore
+from bizman.current.state import (
+    APPLICATION_ID,
+    USER_VERSION,
+    CurrentStateIntegrityError,
+    CurrentStateStore,
+)
 from bizman.foundation.redaction import RedactionPolicy
 from bizman.sessions.evidence import EvidenceIdentity, EvidenceReader
 
@@ -168,6 +174,35 @@ def build_replay_snapshot(
     )
 
 
+def _discard_rebuildable_older_state(path: Path) -> None:
+    if not path.exists() or not path.is_file():
+        return
+    try:
+        if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
+            connection = sqlite3.connect(path, timeout=5.0, autocommit=True)
+        else:
+            connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
+        try:
+            application_id = int(
+                connection.execute("PRAGMA application_id").fetchone()[0]
+            )
+            user_version = int(
+                connection.execute("PRAGMA user_version").fetchone()[0]
+            )
+        finally:
+            connection.close()
+    except sqlite3.Error:
+        return
+
+    if (
+        application_id == APPLICATION_ID
+        and 0 < user_version < USER_VERSION
+    ):
+        path.unlink(missing_ok=True)
+        path.with_name(path.name + "-wal").unlink(missing_ok=True)
+        path.with_name(path.name + "-shm").unlink(missing_ok=True)
+
+
 def rebuild_current_state(
     repo_root: Path,
     data_dir: Path,
@@ -185,6 +220,7 @@ def rebuild_current_state(
         projection_version=projection_version,
     )
     state_path = data / "state" / "current.sqlite3"
+    _discard_rebuildable_older_state(state_path)
     with CurrentStateStore.open_rw(state_path) as store:
         store.replace_snapshot(snapshot)
         persisted = store.snapshot()
