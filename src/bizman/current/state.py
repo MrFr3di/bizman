@@ -123,8 +123,8 @@ def _connect_rw(path: Path) -> sqlite3.Connection:
         raise CurrentStateCompatibilityError(
             "Current State requires SQLite >= 3.37.0 for STRICT tables"
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
         if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
             connection = sqlite3.connect(path, timeout=5.0, autocommit=True)
         else:  # Python 3.11 compatibility.
@@ -314,6 +314,11 @@ class CurrentStateStore:
                     f"expected {USER_VERSION}"
                 )
 
+            tables = _user_tables(self._connection)
+            if tables != _EXPECTED_TABLES:
+                raise CurrentStateCompatibilityError(
+                    "Current State database user tables do not match schema v1"
+                )
             strict = {
                 str(row[1]): int(row[5])
                 for row in self._connection.execute("PRAGMA table_list")
@@ -489,12 +494,16 @@ class CurrentStateStore:
                     meta.last_sequence,
                 ),
             )
-
-        persisted = self.snapshot()
-        if persisted != snapshot:
-            raise CurrentStateIntegrityError(
-                "persisted Current State does not match requested snapshot"
-            )
+            try:
+                persisted = self._snapshot_unchecked()
+            except (TypeError, ValueError) as exc:
+                raise CurrentStateIntegrityError(
+                    "persisted Current State violates semantic invariants"
+                ) from exc
+            if persisted != snapshot:
+                raise CurrentStateIntegrityError(
+                    "persisted Current State does not match requested snapshot"
+                )
 
     def mark_stale(self, reason: str) -> CurrentStateSnapshot:
         if not isinstance(reason, str) or not reason:
