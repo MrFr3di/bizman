@@ -8,7 +8,11 @@ from urllib.parse import parse_qs
 
 from jsonschema import Draft202012Validator, FormatChecker
 
+from bizman.current import rebuild_current_state
+from bizman.foundation.redaction import load_redaction_policy
+
 ACTION_POST_PATH = "/api/action-post"
+COMPANY_ROSTER_PATH = "/company/"
 
 
 def _load_json(path: Path):
@@ -104,9 +108,48 @@ def main() -> int:
         for event in events
         if event.get("event_type") == "http.request"
     }
-    for required in {"/api/get", "/api/post", "/redirect", ACTION_POST_PATH}:
+    for required in {
+        "/api/get",
+        "/api/post",
+        "/redirect",
+        ACTION_POST_PATH,
+        COMPANY_ROSTER_PATH,
+    }:
         if required not in request_paths:
             raise AssertionError(f"missing expected request path {required}; got {sorted(request_paths)}")
+
+    roster_bodies = [
+        event
+        for event in events
+        if event.get("event_type") == "http.response_body"
+        and event.get("url_path") == COMPANY_ROSTER_PATH
+        and event.get("query", {}).get("id") == ["13393"]
+        and event.get("query", {}).get("tab") == ["units"]
+    ]
+    if len(roster_bodies) != 1:
+        raise AssertionError(
+            f"expected one company roster body event, found {len(roster_bodies)}"
+        )
+    roster_ref = roster_bodies[0].get("response_body_ref")
+    if not isinstance(roster_ref, str):
+        raise AssertionError("company roster response artifact is missing")
+    roster_artifact = json.loads(
+        _artifact_path(data_dir, roster_ref).read_text(encoding="utf-8")
+    )
+    if roster_artifact.get("sanitizer_version") != 1:
+        raise AssertionError("unexpected company roster sanitizer version")
+    roster_text = roster_artifact.get("text")
+    if not isinstance(roster_text, str):
+        raise AssertionError("company roster sanitized text is missing")
+    for required_text in (
+        "Компания Paradise",
+        "Детский магазин #33670",
+        "Аптека #33676",
+    ):
+        if required_text not in roster_text:
+            raise AssertionError(
+                f"sanitized company roster is missing {required_text!r}"
+            )
 
     post_event = _request_for_path(events, "/api/post")
     body_ref = post_event.get("request_body_ref")
@@ -164,6 +207,8 @@ def main() -> int:
         "TOP_SECRET_WS_PAYLOAD",
         "TOP_SECRET_ACTION_QUERY",
         "TOP_SECRET_INPUT_VALUE",
+        "TOP_SECRET_ROSTER_INPUT",
+        "TOP_SECRET_ROSTER_SCRIPT",
         "clientSecret",
         "accessToken",
     )
@@ -175,6 +220,47 @@ def main() -> int:
         value for value in forbidden if value.startswith("TOP_SECRET_")
     )
     _assert_no_artifact_secrets(data_dir, synthetic_secrets)
+
+    redaction = load_redaction_policy(
+        args.repo_root / "config" / "redaction-policy.json"
+    )
+    first_snapshot = rebuild_current_state(
+        args.repo_root,
+        data_dir,
+        redaction,
+    )
+    if [
+        (item.company_id, item.name)
+        for item in first_snapshot.companies
+    ] != [("13393", "Paradise")]:
+        raise AssertionError(
+            f"unexpected company projection: {first_snapshot.companies}"
+        )
+    if [
+        (item.unit_id, item.company_id, item.city_name, item.level)
+        for item in first_snapshot.units
+    ] != [
+        ("33670", "13393", "Анкара", 1),
+        ("33676", "13393", "Анкара", 1),
+    ]:
+        raise AssertionError(
+            f"unexpected unit projection: {first_snapshot.units}"
+        )
+
+    state_path = data_dir / "state" / "current.sqlite3"
+    first_fingerprint = first_snapshot.metadata.state_fingerprint
+    state_path.unlink()
+    state_path.with_name(state_path.name + "-wal").unlink(missing_ok=True)
+    state_path.with_name(state_path.name + "-shm").unlink(missing_ok=True)
+    second_snapshot = rebuild_current_state(
+        args.repo_root,
+        data_dir,
+        redaction,
+    )
+    if second_snapshot != first_snapshot:
+        raise AssertionError("Current State delete/replay changed semantic snapshot")
+    if second_snapshot.metadata.state_fingerprint != first_fingerprint:
+        raise AssertionError("Current State delete/replay changed state fingerprint")
 
     websocket_types = {
         event.get("event_type")
@@ -196,6 +282,9 @@ def main() -> int:
                 "correlation_status": link.get("correlation_status"),
                 "correlation_score": link.get("correlation_score"),
                 "websocket_types": sorted(websocket_types),
+                "current_state_companies": len(first_snapshot.companies),
+                "current_state_units": len(first_snapshot.units),
+                "current_state_fingerprint": first_fingerprint,
             },
             indent=2,
         )
