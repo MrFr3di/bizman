@@ -78,7 +78,6 @@ P4-B добавляет первый узко allowlisted путь для respon
 Тело ограничивается по размеру и санитизируется до durable persistence. CAS artifact содержит только детерминированный UTF-8 JSON:
 
 - version схемы и sanitizer;
-- SHA-256 исходного response body как provenance identity;
 - текст title;
 - видимые текстовые узлы страницы.
 
