@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import hashlib
+from html.parser import HTMLParser
 import json
 from pathlib import Path
 from typing import Any
@@ -14,6 +17,105 @@ from bizman.foundation.redaction import RedactionPolicy, redact_headers, redact_
 from bizman.foundation.session import new_uuid7
 
 _MAX_FIELDS = 4096
+_MAX_RESPONSE_BODY_BYTES = 4 * 1024 * 1024
+_COMPANY_ROSTER_PATH = "/company/"
+_PAGE_ARTIFACT_SCHEMA_VERSION = "1.0"
+_PAGE_SANITIZER_VERSION = 1
+_EXCLUDED_PAGE_TAGS = frozenset({"script", "style", "template", "noscript", "textarea"})
+
+
+class ResponseBodyCaptureError(ValueError):
+    """An allowlisted response body could not be captured safely."""
+
+
+class _VisibleHtmlTextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._excluded_depth = 0
+        self._title_depth = 0
+        self._title_parts: list[str] = []
+        self._text_parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        del attrs
+        normalized = tag.casefold()
+        if normalized in _EXCLUDED_PAGE_TAGS:
+            self._excluded_depth += 1
+        if normalized == "title":
+            self._title_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        normalized = tag.casefold()
+        if normalized == "title" and self._title_depth:
+            self._title_depth -= 1
+        if normalized in _EXCLUDED_PAGE_TAGS and self._excluded_depth:
+            self._excluded_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._excluded_depth:
+            return
+        value = " ".join(data.split())
+        if not value:
+            return
+        if self._title_depth:
+            self._title_parts.append(value)
+            return
+        self._text_parts.append(value)
+
+    @property
+    def title(self) -> str | None:
+        value = " ".join(self._title_parts).strip()
+        return value or None
+
+    @property
+    def text(self) -> str:
+        return "\n".join(self._text_parts)
+
+
+def _decode_response_body(
+    body: object,
+    *,
+    base64_encoded: object,
+    max_bytes: int,
+) -> bytes:
+    if not isinstance(body, str):
+        raise ResponseBodyCaptureError("CDP response body must be a string")
+    if not isinstance(base64_encoded, bool):
+        raise ResponseBodyCaptureError("CDP base64Encoded flag must be boolean")
+    try:
+        raw = (
+            base64.b64decode(body, validate=True)
+            if base64_encoded
+            else body.encode("utf-8")
+        )
+    except (ValueError, UnicodeError) as exc:
+        raise ResponseBodyCaptureError("CDP response body encoding is invalid") from exc
+    if len(raw) > max_bytes:
+        raise ResponseBodyCaptureError("CDP response body exceeds capture size limit")
+    return raw
+
+
+def _sanitize_html_page(raw: bytes) -> bytes:
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ResponseBodyCaptureError("company roster response is not UTF-8") from exc
+    parser = _VisibleHtmlTextParser()
+    try:
+        parser.feed(text)
+        parser.close()
+    except Exception as exc:
+        raise ResponseBodyCaptureError("company roster HTML cannot be sanitized") from exc
+    return canonical_json_bytes(
+        {
+            "schema_version": _PAGE_ARTIFACT_SCHEMA_VERSION,
+            "sanitizer_version": _PAGE_SANITIZER_VERSION,
+            "media_type": "text/html",
+            "raw_sha256": hashlib.sha256(raw).hexdigest(),
+            "title": parser.title,
+            "text": parser.text,
+        }
+    )
 
 
 def _utc_now_iso() -> str:
@@ -109,6 +211,7 @@ class NetworkNormalizer:
         artifacts: ArtifactStore,
         sequencer: EventSequencer | None = None,
         clock: CollectorClock | None = None,
+        max_response_body_bytes: int = _MAX_RESPONSE_BODY_BYTES,
     ) -> None:
         self.session_id = session_id
         self.first_party = first_party
@@ -116,6 +219,9 @@ class NetworkNormalizer:
         self.artifacts = artifacts
         self.sequencer = sequencer or EventSequencer()
         self.clock = clock or CollectorClock()
+        if max_response_body_bytes <= 0:
+            raise ValueError("max_response_body_bytes must be positive")
+        self.max_response_body_bytes = int(max_response_body_bytes)
         self._requests: dict[str, dict[str, Any]] = {}
         self._websockets: dict[str, dict[str, Any]] = {}
 
@@ -297,6 +403,9 @@ class NetworkNormalizer:
             "url": url,
             "method": request_method if isinstance(request_method, str) else None,
             "redirect_index": redirect_index,
+            "query": self._query(url),
+            "status_code": None,
+            "mime_type": None,
         }
         self._requests[request_id] = state
 
@@ -347,6 +456,12 @@ class NetworkNormalizer:
             self._requests.pop(request_id, None)
             return None
         headers = response.get("headers")
+        state["status_code"] = _status_code(response.get("status"))
+        state["mime_type"] = (
+            response.get("mimeType")
+            if isinstance(response.get("mimeType"), str)
+            else None
+        )
         event = self._base_event(
             event_type="http.response",
             params=params,
@@ -359,13 +474,81 @@ class NetworkNormalizer:
                 "method": state["method"],
                 "url_path": self._path(url),
                 "route_pattern": None,
-                "status_code": _status_code(response.get("status")),
+                "status_code": state["status_code"],
                 "query": self._query(url),
                 "headers": redact_headers(headers, self.redaction) if isinstance(headers, dict) else {},
                 "request_body_ref": None,
                 "response_body_ref": None,
-                "mime_type": response.get("mimeType") if isinstance(response.get("mimeType"), str) else None,
+                "mime_type": state["mime_type"],
                 "protocol": response.get("protocol") if isinstance(response.get("protocol"), str) else None,
+            }
+        )
+        return self._finish_event(event)
+
+    def response_body_capture_candidate(self, request_id: object) -> bool:
+        if not isinstance(request_id, str):
+            return False
+        state = self._requests.get(request_id)
+        if state is None:
+            return False
+        if state.get("method") != "GET":
+            return False
+        if self._path(str(state.get("url", ""))) != _COMPANY_ROSTER_PATH:
+            return False
+        if state.get("status_code") != 200:
+            return False
+        if str(state.get("mime_type", "")).split(";", 1)[0].casefold() != "text/html":
+            return False
+        query = state.get("query")
+        if not isinstance(query, dict):
+            return False
+        company_ids = query.get("id")
+        tabs = query.get("tab")
+        if (
+            not isinstance(company_ids, list)
+            or len(company_ids) != 1
+            or not isinstance(company_ids[0], str)
+            or not company_ids[0].isdigit()
+            or int(company_ids[0]) <= 0
+        ):
+            return False
+        return tabs == ["units"]
+
+    def normalize_response_body(
+        self,
+        *,
+        request_id: str,
+        body: object,
+        base64_encoded: object,
+        params: dict[str, Any],
+        target_id: str | None,
+    ) -> dict[str, Any] | None:
+        if not self.response_body_capture_candidate(request_id):
+            return None
+        state = self._requests[request_id]
+        raw = _decode_response_body(
+            body,
+            base64_encoded=base64_encoded,
+            max_bytes=self.max_response_body_bytes,
+        )
+        artifact_ref = self.artifacts.put_bytes(_sanitize_html_page(raw))
+        event = self._base_event(
+            event_type="http.response_body",
+            params=params,
+            target_id=target_id,
+            request_id=request_id,
+        )
+        event.update(
+            {
+                "redirect_index": state["redirect_index"],
+                "method": state["method"],
+                "url_path": self._path(str(state["url"])),
+                "route_pattern": None,
+                "status_code": state["status_code"],
+                "query": state["query"],
+                "mime_type": state["mime_type"],
+                "request_body_ref": None,
+                "response_body_ref": artifact_ref,
             }
         )
         return self._finish_event(event)
@@ -528,3 +711,10 @@ class NetworkNormalizer:
             }
         )
         return self._finish_event(event)
+
+
+__all__ = [
+    "FirstPartyPolicy",
+    "NetworkNormalizer",
+    "ResponseBodyCaptureError",
+]
