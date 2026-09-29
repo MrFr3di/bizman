@@ -142,6 +142,37 @@ jobs:
           path: ${{ runner.temp }}/mcp-p3-evaluation.json
           if-no-files-found: warn
           retention-days: 7
+      - name: Diagnose public SonarQube Cloud PR bugs
+        if: ${{ github.event_name == 'pull_request' }}
+        continue-on-error: true
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --get \
+            --data-urlencode "componentKeys=MrFr3di_bizman" \
+            --data-urlencode "pullRequest=$PR_NUMBER" \
+            --data-urlencode "resolved=false" \
+            --data-urlencode "types=BUG" \
+            --data-urlencode "ps=100" \
+            https://sonarcloud.io/api/issues/search \
+            | uv run python -c '
+          import json, sys
+          payload = json.load(sys.stdin)
+          print(json.dumps([
+              {
+                  "rule": item.get("rule"),
+                  "severity": item.get("severity"),
+                  "message": item.get("message"),
+                  "component": item.get("component"),
+                  "line": item.get("line"),
+                  "status": item.get("status"),
+              }
+              for item in payload.get("issues", [])
+          ], ensure_ascii=False, indent=2))
+          '
+
       - name: Validate SonarQube Cloud CI configuration
         if: ${{ vars.SONAR_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         env:
