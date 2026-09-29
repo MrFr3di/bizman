@@ -438,10 +438,35 @@ class CompanyUnitStoreTests(unittest.TestCase):
             connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
             connection.execute("PRAGMA user_version = 1")
             connection.execute(
-                "CREATE TABLE projection_meta(singleton INTEGER PRIMARY KEY) STRICT"
+                """
+                CREATE TABLE projection_meta(
+                    singleton INTEGER PRIMARY KEY,
+                    projection_name TEXT,
+                    projection_version INTEGER,
+                    analysis_profile_sha256 TEXT,
+                    input_fingerprint TEXT,
+                    state_fingerprint TEXT,
+                    status TEXT,
+                    stale_reason TEXT,
+                    session_count INTEGER,
+                    last_session_id TEXT,
+                    last_sequence INTEGER
+                ) STRICT
+                """
             )
             connection.execute(
-                "CREATE TABLE replayed_session(session_id TEXT PRIMARY KEY) STRICT"
+                """
+                CREATE TABLE replayed_session(
+                    session_id TEXT PRIMARY KEY,
+                    manifest_sha256 TEXT,
+                    evidence_sha256 TEXT,
+                    started_at TEXT,
+                    ended_at TEXT,
+                    status TEXT,
+                    event_count INTEGER,
+                    last_sequence INTEGER
+                ) STRICT
+                """
             )
             connection.commit()
             connection.close()
