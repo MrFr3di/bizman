@@ -73,7 +73,7 @@ The full test suite covers, among other invariants:
 - deterministic finalized-evidence replay, event-count/last-sequence checkpoints and delete/replay equivalence;
 - P4-B bounded/sanitized company-roster response evidence through passive `Network.getResponseBody`;
 - deterministic companies/units projection with latest-positive-observation semantics and UNKNOWN != deletion;
-- company/unit provenance, foreign keys, state-fingerprint tamper detection and parser-drift stale semantics;
+- company/unit provenance, foreign keys, state-fingerprint tamper detection, parser-drift stale semantics and crash-safe P4-A schema-v1 → P4-B schema-v2 replacement;
 - path-free Core Current State rebuild and stable error translation.
 
 ### Python coverage and SonarQube Cloud
