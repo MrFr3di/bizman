@@ -128,7 +128,8 @@ def main() -> int:
     ]
     if len(roster_bodies) != 1:
         raise AssertionError(
-            f"expected one company roster body event, found {len(roster_bodies)}"
+            "expected one company roster body event, "
+            f"found {len(roster_bodies)}; warnings={manifest.get('warnings', [])}"
         )
     roster_ref = roster_bodies[0].get("response_body_ref")
     if not isinstance(roster_ref, str):
