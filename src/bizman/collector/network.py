@@ -495,7 +495,9 @@ class NetworkNormalizer:
             return False
         if state.get("status_code") != 200:
             return False
-        if str(state.get("mime_type", "")).split(";", 1)[0].casefold() != "text/html":
+        mime_type = str(state.get("mime_type", ""))
+        mime_base, _separator, _parameters = mime_type.partition(";")
+        if mime_base.casefold() != "text/html":
             return False
         query = state.get("query")
         if not isinstance(query, dict):
