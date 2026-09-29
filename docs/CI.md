@@ -71,6 +71,9 @@ The full test suite covers, among other invariants:
 - sanitized MCP failures and real installed-stdio protocol cleanliness;
 - Current State SQLite identity/schema hardening, atomic replacement and fingerprint verification;
 - deterministic finalized-evidence replay, event-count/last-sequence checkpoints and delete/replay equivalence;
+- P4-B bounded/sanitized company-roster response evidence through passive `Network.getResponseBody`;
+- deterministic companies/units projection with latest-positive-observation semantics and UNKNOWN != deletion;
+- company/unit provenance, foreign keys, state-fingerprint tamper detection and parser-drift stale semantics;
 - path-free Core Current State rebuild and stable error translation.
 
 ### Python coverage and SonarQube Cloud
@@ -112,7 +115,8 @@ Python 3.11 is intentionally a lightweight compatibility lane rather than a dupl
 - locked `uv sync`;
 - compile of the installable `src` package;
 - Core API/use-case contract tests;
-- Current State replay/store contract tests;
+- Current State replay/store/company-unit contract tests;
+- P4-B response-evidence compatibility smoke;
 - MCP API/evaluation contract tests;
 - package-migration semantic contract;
 - unified CLI parity tests;
