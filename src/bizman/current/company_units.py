@@ -12,7 +12,6 @@ from bizman.sessions.evidence import EvidenceReader
 _ROSTER_PATH = "/company/"
 _PAGE_SCHEMA_VERSION = "1.0"
 _SANITIZER_VERSION = 1
-_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _UNIT_LINE_RE = re.compile(r"^(.+?) #([1-9][0-9]*)$", re.ASCII)
 _LEVEL_RE = re.compile(r"^[1-9][0-9]*$", re.ASCII)
 _COMPANY_RE = re.compile(r"^Компания\s+(.+)$")
@@ -94,9 +93,6 @@ def _load_page_artifact(reader: EvidenceReader, ref: object) -> dict[str, object
         raise CompanyUnitsArtifactError("unsupported company roster sanitizer version")
     if value.get("media_type") != "text/html":
         raise CompanyUnitsArtifactError("company roster artifact media_type must be text/html")
-    raw_sha256 = value.get("raw_sha256")
-    if not isinstance(raw_sha256, str) or _SHA256_RE.fullmatch(raw_sha256) is None:
-        raise CompanyUnitsArtifactError("company roster raw_sha256 is invalid")
     title = value.get("title")
     if title is not None and not isinstance(title, str):
         raise CompanyUnitsArtifactError("company roster artifact title is invalid")
