@@ -136,7 +136,9 @@ def _company_name(lines: tuple[str, ...], title: object) -> str:
             if name:
                 return name
     if isinstance(title, str) and title.startswith("Компания "):
-        name = title.removeprefix("Компания ").split(" · ", 1)[0].strip()
+        title_body = title.removeprefix("Компания ")
+        name, _separator, _suffix = title_body.partition(" · ")
+        name = name.strip()
         if name:
             return name
     raise CompanyUnitsParserIncompatible(
