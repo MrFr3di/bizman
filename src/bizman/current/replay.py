@@ -191,8 +191,12 @@ def _discard_rebuildable_older_state(path: Path) -> None:
             ).fetchone()
             if application_id_row is None or user_version_row is None:
                 return
-            application_id = int(application_id_row[0])
-            user_version = int(user_version_row[0])
+            application_id_raw = next(iter(application_id_row), None)
+            user_version_raw = next(iter(user_version_row), None)
+            if application_id_raw is None or user_version_raw is None:
+                return
+            application_id = int(application_id_raw)
+            user_version = int(user_version_raw)
             tables = {
                 str(row[0])
                 for row in connection.execute(
