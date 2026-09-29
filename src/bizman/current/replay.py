@@ -27,6 +27,7 @@ from bizman.current.state import (
     APPLICATION_ID,
     USER_VERSION,
     CurrentStateIntegrityError,
+    CurrentStateOperationError,
     CurrentStateStore,
 )
 from bizman.foundation.redaction import RedactionPolicy
@@ -273,17 +274,30 @@ def _fsync_directory(path: Path) -> None:
         os.close(directory_fd)
 
 
+def _best_effort_remove(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 def _replace_rebuildable_older_state(
     path: Path,
     snapshot: CurrentStateSnapshot,
 ) -> CurrentStateSnapshot:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{path.name}.p4b-",
-        suffix=".sqlite3",
-        dir=path.parent,
-    )
-    os.close(descriptor)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{path.name}.p4b-",
+            suffix=".sqlite3",
+            dir=path.parent,
+        )
+        os.close(descriptor)
+    except OSError as exc:
+        raise CurrentStateOperationError(
+            "cannot stage Current State schema replacement"
+        ) from exc
+
     temporary = Path(temporary_name)
     try:
         with CurrentStateStore.open_rw(temporary) as store:
@@ -294,13 +308,18 @@ def _replace_rebuildable_older_state(
                 "staged Current State does not match requested snapshot"
             )
 
-        with temporary.open("rb") as handle:
-            os.fsync(handle.fileno())
+        try:
+            with temporary.open("rb") as handle:
+                os.fsync(handle.fileno())
 
-        for suffix in ("-wal", "-shm"):
-            path.with_name(path.name + suffix).unlink(missing_ok=True)
-        os.replace(temporary, path)
-        _fsync_directory(path.parent)
+            for suffix in ("-wal", "-shm"):
+                path.with_name(path.name + suffix).unlink(missing_ok=True)
+            os.replace(temporary, path)
+            _fsync_directory(path.parent)
+        except OSError as exc:
+            raise CurrentStateOperationError(
+                "cannot atomically replace older Current State schema"
+            ) from exc
 
         with CurrentStateStore.open_read_only_if_exists(path) as store:
             if store is None:
@@ -314,9 +333,9 @@ def _replace_rebuildable_older_state(
             )
         return persisted
     finally:
-        temporary.unlink(missing_ok=True)
-        temporary.with_name(temporary.name + "-wal").unlink(missing_ok=True)
-        temporary.with_name(temporary.name + "-shm").unlink(missing_ok=True)
+        _best_effort_remove(temporary)
+        _best_effort_remove(temporary.with_name(temporary.name + "-wal"))
+        _best_effort_remove(temporary.with_name(temporary.name + "-shm"))
 
 
 def rebuild_current_state(
