@@ -711,9 +711,3 @@ class NetworkNormalizer:
         )
         return self._finish_event(event)
 
-
-__all__ = [
-    "FirstPartyPolicy",
-    "NetworkNormalizer",
-    "ResponseBodyCaptureError",
-]
