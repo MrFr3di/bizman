@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import hashlib
 from html.parser import HTMLParser
 import json
 from pathlib import Path
@@ -111,7 +110,6 @@ def _sanitize_html_page(raw: bytes) -> bytes:
             "schema_version": _PAGE_ARTIFACT_SCHEMA_VERSION,
             "sanitizer_version": _PAGE_SANITIZER_VERSION,
             "media_type": "text/html",
-            "raw_sha256": hashlib.sha256(raw).hexdigest(),
             "title": parser.title,
             "text": parser.text,
         }
