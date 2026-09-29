@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 import re
 
 from bizman.foundation.fingerprint import canonical_sha256
@@ -31,6 +32,18 @@ def _require_text(value: object, *, name: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError(f"{name} must be a non-empty string")
     return value
+
+
+def _canonical_instant(value: object, *, name: str) -> tuple[str, datetime]:
+    text = _require_text(value, name=name)
+    try:
+        instant = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{name} must be RFC3339") from exc
+    if instant.tzinfo is None or instant.utcoffset() is None:
+        raise ValueError(f"{name} must include a timezone offset")
+    utc = instant.astimezone(UTC)
+    return utc.isoformat().replace("+00:00", "Z"), utc
 
 
 def _non_negative_int(value: object, *, name: str) -> int:
@@ -71,11 +84,21 @@ class ReplaySession:
     last_sequence: int | None
 
     def __post_init__(self) -> None:
-        _require_text(self.started_at, name="started_at")
+        started_text, started = _canonical_instant(
+            self.started_at,
+            name="started_at",
+        )
+        ended_text, ended = _canonical_instant(
+            self.ended_at,
+            name="ended_at",
+        )
+        if ended < started:
+            raise ValueError("ended_at cannot precede started_at")
+        object.__setattr__(self, "started_at", started_text)
+        object.__setattr__(self, "ended_at", ended_text)
         _require_uuid7(self.session_id, name="session_id")
         _require_sha256(self.manifest_sha256, name="manifest_sha256")
         _require_sha256(self.evidence_sha256, name="evidence_sha256")
-        _require_text(self.ended_at, name="ended_at")
         if self.status not in {"completed", "cancelled"}:
             raise ValueError("replay session status must be completed or cancelled")
         event_count = _non_negative_int(self.event_count, name="event_count")
