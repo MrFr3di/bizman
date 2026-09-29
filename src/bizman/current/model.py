@@ -41,9 +41,9 @@ def _non_negative_int(value: object, *, name: str) -> int:
 
 @dataclass(frozen=True, slots=True)
 class CurrentProjectionSpec:
+    analysis_profile_sha256: str
     projection_name: str = PROJECTION_NAME
     projection_version: int = PROJECTION_VERSION
-    analysis_profile_sha256: str = ""
 
     def __post_init__(self) -> None:
         _require_text(self.projection_name, name="projection_name")
