@@ -183,12 +183,16 @@ def _discard_rebuildable_older_state(path: Path) -> None:
         else:
             connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
         try:
-            application_id = int(
-                connection.execute("PRAGMA application_id").fetchone()[0]
-            )
-            user_version = int(
-                connection.execute("PRAGMA user_version").fetchone()[0]
-            )
+            application_id_row = connection.execute(
+                "PRAGMA application_id"
+            ).fetchone()
+            user_version_row = connection.execute(
+                "PRAGMA user_version"
+            ).fetchone()
+            if application_id_row is None or user_version_row is None:
+                return
+            application_id = int(application_id_row[0])
+            user_version = int(user_version_row[0])
             tables = {
                 str(row[0])
                 for row in connection.execute(
