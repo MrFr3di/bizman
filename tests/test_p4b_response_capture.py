@@ -147,6 +147,42 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
             self.assertNotIn("TOP_SECRET_SCRIPT", serialized)
             self.assertNotIn("clientSecret", serialized)
 
+    def test_excluded_private_html_does_not_change_sanitized_artifact_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            normalizer = self._normalizer(Path(tmp))
+            self._prime_company_roster(normalizer)
+            first = normalizer.normalize_response_body(
+                request_id="r1",
+                body=(
+                    "<html><body><div>Компания Paradise</div>"
+                    "<div>Предприятия</div>"
+                    "<input value='SECRET_A'>"
+                    "<script>const token='SECRET_A'</script>"
+                    "</body></html>"
+                ),
+                base64_encoded=False,
+                params={"requestId": "r1", "timestamp": 1.2},
+                target_id="t1",
+            )
+            second = normalizer.normalize_response_body(
+                request_id="r1",
+                body=(
+                    "<html><body><div>Компания Paradise</div>"
+                    "<div>Предприятия</div>"
+                    "<input value='SECRET_B'>"
+                    "<script>const token='SECRET_B'</script>"
+                    "</body></html>"
+                ),
+                base64_encoded=False,
+                params={"requestId": "r1", "timestamp": 1.3},
+                target_id="t1",
+            )
+            assert first is not None and second is not None
+            self.assertEqual(
+                first["response_body_ref"],
+                second["response_body_ref"],
+            )
+
     def test_response_body_size_limit_fails_closed_without_artifact(self):
         with tempfile.TemporaryDirectory() as tmp:
             normalizer = self._normalizer(
