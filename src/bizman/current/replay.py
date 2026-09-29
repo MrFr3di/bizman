@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import os
 from pathlib import Path
 import sqlite3
+import tempfile
 from typing import Mapping
 
 from bizman.changes.profile import compile_default_analysis_profile
@@ -174,9 +176,9 @@ def build_replay_snapshot(
     )
 
 
-def _discard_rebuildable_older_state(path: Path) -> None:
+def _is_rebuildable_older_state(path: Path) -> bool:
     if not path.exists() or not path.is_file():
-        return
+        return False
     try:
         if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
             connection = sqlite3.connect(path, timeout=5.0, autocommit=True)
@@ -190,11 +192,11 @@ def _discard_rebuildable_older_state(path: Path) -> None:
                 "PRAGMA user_version"
             ).fetchone()
             if application_id_row is None or user_version_row is None:
-                return
+                return False
             application_id_raw = next(iter(application_id_row), None)
             user_version_raw = next(iter(user_version_row), None)
             if application_id_raw is None or user_version_raw is None:
-                return
+                return False
             application_id = int(application_id_raw)
             user_version = int(user_version_raw)
             tables = {
@@ -220,9 +222,9 @@ def _discard_rebuildable_older_state(path: Path) -> None:
         finally:
             connection.close()
     except sqlite3.Error:
-        return
+        return False
 
-    recognized_p4a_v1 = (
+    return (
         application_id == APPLICATION_ID
         and user_version == USER_VERSION - 1
         and tables == {"projection_meta", "replayed_session"}
@@ -253,10 +255,68 @@ def _discard_rebuildable_older_state(path: Path) -> None:
             "last_sequence",
         )
     )
-    if recognized_p4a_v1:
-        path.unlink(missing_ok=True)
-        path.with_name(path.name + "-wal").unlink(missing_ok=True)
-        path.with_name(path.name + "-shm").unlink(missing_ok=True)
+
+
+def _fsync_directory(path: Path) -> None:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    try:
+        directory_fd = os.open(path, flags)
+    except OSError:
+        return
+    try:
+        os.fsync(directory_fd)
+    except OSError:
+        pass
+    finally:
+        os.close(directory_fd)
+
+
+def _replace_rebuildable_older_state(
+    path: Path,
+    snapshot: CurrentStateSnapshot,
+) -> CurrentStateSnapshot:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.p4b-",
+        suffix=".sqlite3",
+        dir=path.parent,
+    )
+    os.close(descriptor)
+    temporary = Path(temporary_name)
+    try:
+        with CurrentStateStore.open_rw(temporary) as store:
+            store.replace_snapshot(snapshot)
+            staged = store.snapshot()
+        if staged != snapshot:
+            raise CurrentStateIntegrityError(
+                "staged Current State does not match requested snapshot"
+            )
+
+        with temporary.open("rb") as handle:
+            os.fsync(handle.fileno())
+
+        for suffix in ("-wal", "-shm"):
+            path.with_name(path.name + suffix).unlink(missing_ok=True)
+        os.replace(temporary, path)
+        _fsync_directory(path.parent)
+
+        with CurrentStateStore.open_read_only_if_exists(path) as store:
+            if store is None:
+                raise CurrentStateIntegrityError(
+                    "Current State disappeared after schema replacement"
+                )
+            persisted = store.snapshot()
+        if persisted != snapshot:
+            raise CurrentStateIntegrityError(
+                "replaced Current State does not match requested snapshot"
+            )
+        return persisted
+    finally:
+        temporary.unlink(missing_ok=True)
+        temporary.with_name(temporary.name + "-wal").unlink(missing_ok=True)
+        temporary.with_name(temporary.name + "-shm").unlink(missing_ok=True)
 
 
 def rebuild_current_state(
@@ -276,7 +336,9 @@ def rebuild_current_state(
         projection_version=projection_version,
     )
     state_path = data / "state" / "current.sqlite3"
-    _discard_rebuildable_older_state(state_path)
+    if _is_rebuildable_older_state(state_path):
+        return _replace_rebuildable_older_state(state_path, snapshot)
+
     with CurrentStateStore.open_rw(state_path) as store:
         store.replace_snapshot(snapshot)
         persisted = store.snapshot()
