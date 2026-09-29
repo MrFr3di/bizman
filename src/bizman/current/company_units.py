@@ -155,7 +155,12 @@ def _parse_units(
     results: list[UnitState] = []
     seen: set[str] = set()
 
-    for city_raw, line, level_raw in zip(lines, lines[1:], lines[2:]):
+    for city_raw, line, level_raw in zip(
+        lines,
+        lines[1:],
+        lines[2:],
+        strict=False,
+    ):
         match = _UNIT_LINE_RE.fullmatch(line)
         if match is None:
             continue
