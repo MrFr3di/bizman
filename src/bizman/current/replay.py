@@ -201,24 +201,30 @@ def _is_rebuildable_older_state(path: Path) -> bool:
             application_id = int(application_id_raw)
             user_version = int(user_version_raw)
             tables = {
-                str(row[0])
-                for row in connection.execute(
+                str(name)
+                for (name,) in connection.execute(
                     "SELECT name FROM sqlite_schema "
                     "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
                 )
             }
             strict = {
-                str(row[1]): int(row[5])
-                for row in connection.execute("PRAGMA table_list")
-                if str(row[1]) in {"projection_meta", "replayed_session"}
+                str(name): int(is_strict)
+                for name, is_strict in connection.execute(
+                    "SELECT name, strict FROM pragma_table_list "
+                    "WHERE name IN ('projection_meta', 'replayed_session')"
+                )
             }
             projection_columns = tuple(
-                str(row[1])
-                for row in connection.execute("PRAGMA table_info(projection_meta)")
+                str(name)
+                for (name,) in connection.execute(
+                    "SELECT name FROM pragma_table_info('projection_meta')"
+                )
             )
             replay_columns = tuple(
-                str(row[1])
-                for row in connection.execute("PRAGMA table_info(replayed_session)")
+                str(name)
+                for (name,) in connection.execute(
+                    "SELECT name FROM pragma_table_info('replayed_session')"
+                )
             )
         finally:
             connection.close()
