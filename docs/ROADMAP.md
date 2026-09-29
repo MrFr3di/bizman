@@ -290,71 +290,73 @@ The v3 evaluation retained Recall@1/5, MRR, evidence correctness and no-match ac
 - projection metadata includes schema/projection version, source fingerprint and completion time;
 - no arbitrary SQL/path read API is introduced.
 
-## 6. Current stage: P3 — Read-only MCP v1
+## 6. P3 — Read-only MCP v1 (complete)
 
 Goal: expose the P2/Core read surface through a small bounded MCP adapter.
 
-Policy:
+Delivered by P3-A through P3-E:
 
-- official MCP Python SDK current tested `2.x` at implementation time;
-- stdio first;
-- no HTTP/OAuth/remote deployment in P3;
-- no MCP Tasks dependency;
-- handlers contain adapter logic only;
-- stderr for logs; stdout reserved for protocol;
-- read-only process cannot import/execute future write automation.
-
-Initial capability profiles should remain small, for example:
-
-`research`:
+- official MCP Python SDK 2.x; measured completion run used 2.2.0;
+- local stdio transport only;
+- thin `bizman.mcp` adapter consuming Core and no lower implementation layers;
+- installed `bizman-mcp` console entry point;
+- exactly 10 read-only, closed-world tools:
 
 ```text
 evidence.resolve
 evidence.search
 evidence.get
 evidence.trace
-changes.list
-changes.get
-```
-
-`logs`:
-
-```text
 sessions.list
 sessions.summary
 sessions.compare
 sessions.anomalies
 changes.list
 changes.get
-evidence.trace
 ```
 
-Tool count is finalized by evaluation, not aesthetics. Default active profile target is roughly 8–10 tools or fewer.
-
-### Result budgets
-
-Initial targets:
+Result policy:
 
 ```text
 compact default result <= 8 KiB
-standard hard target   <= 16 KiB
-default items          <= 20
-bounded evidence refs
-bounded nesting depth
+standard ordinary result <= 16 KiB
+MCP list default = 10
+Core hard limit = 50
+bounded evidence refs / aliases / result arrays
+no silent truncation
 ```
 
-Large immutable objects can additionally be resources, while bounded tool fallbacks remain available for hosts with weaker resource support.
+P3-E replayed the P2-E v1/v2/v3 retrieval corpora through the actual MCP protocol surface and retained 1.0 for every applicable Recall@1/5, MRR, evidence-correctness and no-match metric. All 11 current action records resolved and traced in at most two MCP calls. The measured median for common evidence/session tasks was 1.0 call.
 
-### P3 acceptance gate
+Measured P3-E result sizes:
+
+- compact/default maximum: 6,230 bytes;
+- representative ordinary maximum: 11,670 bytes.
+
+The installed stdio process passed initialize, tools/list, tool call and close through the official SDK without stdout protocol corruption. Invalid UUID/limit/cursor/profile/evidence refs and a missing Agent Index all returned sanitized errors without traceback, SQLite detail or filesystem-path leakage.
+
+Durable evidence: `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
+
+### P3 acceptance gate — passed
 
 - no arbitrary path/SQL tools;
 - output schemas are explicit and bounded;
-- common evidence/session tasks require <=3 median calls in evaluation;
-- known action trace typically completes in <=1–2 calls;
+- common evidence/session tasks require <=3 median calls;
+- known action trace completes in <=2 calls;
 - stdout is protocol-clean;
-- evidence correctness is not lower than the pre-MCP baseline.
+- evidence correctness is not lower than the pre-MCP baseline;
+- compact/default and ordinary result budgets are satisfied.
 
-## 7. P4 — Replayable Current State
+Frozen P3 decisions:
+
+- keep the 10-tool default surface;
+- keep stdio as the only P3 transport;
+- do not add capability-profile switching without measured tool-discovery evidence;
+- do not add resources, Streamable HTTP/OAuth, MCP Tasks, sampling or elicitation in P3;
+- do not add fuzzy/embedding retrieval based on current evidence;
+- MCP remains read-only and is not a state engine or write-automation layer.
+
+## 7. Current stage: P4 — Replayable Current State
 
 Goal: project trustworthy current game state from immutable evidence.
 
