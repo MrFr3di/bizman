@@ -327,12 +327,13 @@ def _replace_rebuildable_older_state(
                 "cannot atomically replace older Current State schema"
             ) from exc
 
-        with CurrentStateStore.open_read_only_if_exists(path) as store:
-            if store is None:
-                raise CurrentStateIntegrityError(
-                    "Current State disappeared after schema replacement"
-                )
-            persisted = store.snapshot()
+        verified_store = CurrentStateStore.open_read_only_if_exists(path)
+        if verified_store is None:
+            raise CurrentStateIntegrityError(
+                "Current State disappeared after schema replacement"
+            )
+        with verified_store:
+            persisted = verified_store.snapshot()
         if persisted != snapshot:
             raise CurrentStateIntegrityError(
                 "replaced Current State does not match requested snapshot"
