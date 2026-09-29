@@ -6,6 +6,7 @@ import re
 from typing import Mapping
 
 from bizman.current.model import CompanyState, UnitState
+from bizman.foundation.fingerprint import canonical_json_bytes
 from bizman.sessions.evidence import EvidenceReader
 
 
@@ -87,6 +88,20 @@ def _load_page_artifact(reader: EvidenceReader, ref: object) -> dict[str, object
         ) from exc
     if not isinstance(value, dict):
         raise CompanyUnitsArtifactError("company roster page artifact must be an object")
+    if set(value) != {
+        "schema_version",
+        "sanitizer_version",
+        "media_type",
+        "title",
+        "text",
+    }:
+        raise CompanyUnitsArtifactError(
+            "company roster page artifact fields do not match schema v1"
+        )
+    if canonical_json_bytes(value) != payload:
+        raise CompanyUnitsArtifactError(
+            "company roster page artifact is not canonically encoded"
+        )
     if value.get("schema_version") != _PAGE_SCHEMA_VERSION:
         raise CompanyUnitsArtifactError("unsupported company roster page artifact schema")
     if value.get("sanitizer_version") != _SANITIZER_VERSION:
