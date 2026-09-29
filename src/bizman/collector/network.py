@@ -349,6 +349,7 @@ class NetworkNormalizer:
                 "initiator_type",
                 "has_user_gesture",
                 "request_body_ref",
+                "response_body_ref",
                 "websocket_opcode",
                 "error_text",
             )
