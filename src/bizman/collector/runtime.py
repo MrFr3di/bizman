@@ -11,6 +11,7 @@ from bizman.collector.actions import ActionNormalizer, ExecutionContextRegistry
 from bizman.collector.cdp import (
     CdpConnection,
     CdpConnectionClosed,
+    CdpError,
     CdpEvent,
     CdpTransport,
     open_cdp_transport,
@@ -22,7 +23,11 @@ from bizman.collector.discovery import (
     discover_browser,
 )
 from bizman.collector.events import CollectorClock, EventSequencer
-from bizman.collector.network import FirstPartyPolicy, NetworkNormalizer
+from bizman.collector.network import (
+    FirstPartyPolicy,
+    NetworkNormalizer,
+    ResponseBodyCaptureError,
+)
 from bizman.collector.storage import ArtifactStore, SessionWriter
 from bizman.collector.targets import TargetOrchestrator
 from bizman.foundation.redaction import RedactionPolicy
@@ -39,6 +44,7 @@ PASSIVE_CDP_METHODS = frozenset(
         "Target.attachToTarget",
         "Target.setAutoAttach",
         "Network.enable",
+        "Network.getResponseBody",
         "Runtime.enable",
         "Runtime.addBinding",
         "Page.addScriptToEvaluateOnNewDocument",
@@ -82,6 +88,7 @@ class CollectorEventPipeline:
         network_normalizer: NetworkNormalizer,
         correlator: ActionHttpCorrelator,
         writer: Any,
+        response_body_supported: bool,
     ) -> None:
         self.binding_name = binding_name
         self.observer_world_name = observer_world_name
@@ -91,6 +98,7 @@ class CollectorEventPipeline:
         self.network_normalizer = network_normalizer
         self.correlator = correlator
         self.writer = writer
+        self.response_body_supported = bool(response_body_supported)
 
     def _append_observation(self, event: dict[str, Any] | None) -> None:
         if event is None:
@@ -99,7 +107,39 @@ class CollectorEventPipeline:
         for link in self.correlator.observe(event):
             self.writer.append_event(link)
 
-    def handle_network(self, event: CdpEvent, *, target_id: str | None) -> None:
+    async def handle_network(
+        self,
+        event: CdpEvent,
+        *,
+        target_id: str | None,
+        cdp: CdpConnection,
+    ) -> None:
+        if (
+            event.method == "Network.loadingFinished"
+            and self.response_body_supported
+        ):
+            request_id = event.params.get("requestId")
+            if self.network_normalizer.response_body_capture_candidate(request_id):
+                try:
+                    result = await cdp.command(
+                        "Network.getResponseBody",
+                        {"requestId": request_id},
+                        session_id=event.session_id,
+                    )
+                    body_event = self.network_normalizer.normalize_response_body(
+                        request_id=str(request_id),
+                        body=result.get("body"),
+                        base64_encoded=result.get("base64Encoded"),
+                        params=event.params,
+                        target_id=target_id,
+                    )
+                    self._append_observation(body_event)
+                except (CdpError, ResponseBodyCaptureError) as exc:
+                    self.writer.add_warning(
+                        "company roster response body unavailable: "
+                        f"{type(exc).__name__}"
+                    )
+
         normalized = self.network_normalizer.normalize(
             method=event.method,
             params=event.params,
@@ -217,7 +257,11 @@ async def _consume_events(
             pipeline.handle_runtime(event, target_id=target_id)
             continue
         if event.method.startswith("Network."):
-            pipeline.handle_network(event, target_id=target_id)
+            await pipeline.handle_network(
+                event,
+                target_id=target_id,
+                cdp=cdp,
+            )
 
 
 def _action_instrumentation_issues(
@@ -320,6 +364,9 @@ async def run_collection(
         network_normalizer=network_normalizer,
         correlator=correlator,
         writer=writer,
+        response_body_supported=resolved_discovery.capabilities.has_command(
+            "Network.getResponseBody"
+        ),
     )
 
     action_issues = _action_instrumentation_issues(resolved_discovery.capabilities)
