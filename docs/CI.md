@@ -36,6 +36,7 @@ The package architecture gate enforces these dependency directions:
 - `collector` is independent from detector/read-model/application layers;
 - `changes` does not depend on collector/read-model/application layers;
 - `readmodel` may consume deterministic lower layers but not collector/Core/CLI;
+- `current` may consume deterministic foundation/session/change semantics but not collector/readmodel/Core/adapters;
 - `core` does not depend on CLI or MCP adapters;
 - CLI directly consumes Core rather than lower implementation packages, including `readmodel`;
 - MCP directly consumes Core and cannot import foundation/sessions/collector/changes/readmodel/CLI implementation layers.
@@ -67,7 +68,10 @@ The full test suite covers, among other invariants:
 - P2-E retrieval v1/v2/v3 replay through MCP with no metric regression;
 - all current action knowledge records resolve and trace in <=2 MCP calls;
 - common evidence/session task call budgets;
-- sanitized MCP failures and real installed-stdio protocol cleanliness.
+- sanitized MCP failures and real installed-stdio protocol cleanliness;
+- Current State SQLite identity/schema hardening, atomic replacement and fingerprint verification;
+- deterministic finalized-evidence replay, event-count/last-sequence checkpoints and delete/replay equivalence;
+- path-free Core Current State rebuild and stable error translation.
 
 ### Python coverage and SonarQube Cloud
 
@@ -95,7 +99,7 @@ The proof requires:
 - exactly one wheel and one sdist;
 - no tests/tools payload, operational DB/Parquet/HAR files, `.env`, CAS or browser-profile payloads in the distributions;
 - repository `config/`, `schemas` and `knowledge` assets are not silently duplicated into the wheel;
-- public `bizman` packages, including `bizman.mcp`, import from the installed wheel rather than the checkout;
+- public `bizman` packages, including `bizman.current` and `bizman.mcp`, import from the installed wheel rather than the checkout;
 - the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`;
 - the installed `bizman-mcp --help` entry point is present and the protocol contract is exercised separately by the MCP tests/evaluator.
 
@@ -108,6 +112,7 @@ Python 3.11 is intentionally a lightweight compatibility lane rather than a dupl
 - locked `uv sync`;
 - compile of the installable `src` package;
 - Core API/use-case contract tests;
+- Current State replay/store contract tests;
 - MCP API/evaluation contract tests;
 - package-migration semantic contract;
 - unified CLI parity tests;
