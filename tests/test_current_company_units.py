@@ -136,6 +136,47 @@ def _write_session(
 
 
 class CompanyUnitReplayTests(unittest.TestCase):
+    def test_parser_regresses_against_committed_real_company_roster(self):
+        pages = REPO_ROOT / "knowledge" / "pages" / "part-002.jsonl"
+        page = next(
+            json.loads(line)
+            for line in pages.read_text(encoding="utf-8").splitlines()
+            if line
+            and '"path":"/company/"' in line
+            and '"id":"13393"' in line
+            and '"tab":"units"' in line
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            ref = _put_artifact(
+                data_dir,
+                _artifact_bytes(page["text"], title=page["title"]),
+            )
+            _write_session(
+                data_dir,
+                session_id=SESSION_A,
+                started_at="2026-09-29T10:00:00Z",
+                ended_at="2026-09-29T10:01:00Z",
+                events=[
+                    _roster_event(
+                        SESSION_A,
+                        0,
+                        EVENT_A0,
+                        ref,
+                        observed_at="2026-09-29T10:00:30Z",
+                        page="2",
+                    )
+                ],
+            )
+            snapshot = build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
+
+        self.assertEqual(snapshot.companies[0].company_id, "13393")
+        self.assertEqual(snapshot.companies[0].name, "Paradise")
+        by_id = {item.unit_id: item for item in snapshot.units}
+        self.assertEqual((by_id["33670"].city_name, by_id["33670"].level), ("Анкара", 1))
+        self.assertEqual((by_id["33676"].city_name, by_id["33676"].level), ("Анкара", 1))
+
     def test_latest_positive_observation_wins_without_partial_page_deletion(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
