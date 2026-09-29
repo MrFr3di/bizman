@@ -67,6 +67,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.current",
     "bizman.mcp",
 ]
 
@@ -80,6 +81,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.current",
     "bizman.mcp",
 ]
 
@@ -93,6 +95,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.current",
     "bizman.mcp",
 ]
 
@@ -105,6 +108,7 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.readmodel",
+    "bizman.current",
     "bizman.mcp",
 ]
 
@@ -114,6 +118,19 @@ type = "forbidden"
 source_modules = ["bizman.readmodel"]
 forbidden_modules = [
     "bizman.collector",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.current",
+    "bizman.mcp",
+]
+
+[[tool.importlinter.contracts]]
+name = "Current State depends only on deterministic lower layers"
+type = "forbidden"
+source_modules = ["bizman.current"]
+forbidden_modules = [
+    "bizman.collector",
+    "bizman.readmodel",
     "bizman.core",
     "bizman.cli",
     "bizman.mcp",
@@ -135,6 +152,7 @@ forbidden_modules = [
     "bizman.collector",
     "bizman.changes",
     "bizman.readmodel",
+    "bizman.current",
     "bizman.mcp",
 ]
 allow_indirect_imports = true
@@ -148,6 +166,7 @@ forbidden_modules = [
     "bizman.collector",
     "bizman.changes",
     "bizman.readmodel",
+    "bizman.current",
     "bizman.cli",
 ]
 allow_indirect_imports = true
