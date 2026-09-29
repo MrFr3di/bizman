@@ -87,6 +87,8 @@ Collector выпускает отдельный immutable `http.response_body` e
 
 Current State разыменовывает artifact только через `EvidenceReader.read_verified_artifact`, поэтому CAS bytes проверяются по digest до company/unit parser. Отсутствующее response-body evidence означает UNKNOWN, а не пустой roster.
 
+Current State schema v2 остаётся rebuildable derived storage. При explicit rebuild существующий файл schema v1 автоматически заменяется только если он точно распознан как P4-A по application ID, user version, STRICT table set и column contract. Новая v2 сначала строится и полностью проверяется во временном sibling SQLite-файле; затем выполняется same-directory atomic replace. Ошибка staging/swap не должна превращаться в молчаливое частичное обновление, а foreign/unidentified/newer schema по-прежнему fail closed.
+
 ## Форматы
 
 - HAR: только первичное доказательство вне Git.
