@@ -22,6 +22,10 @@ BizManData/
     state.sqlite3
     state.sqlite3-wal          # transient when applicable
     state.sqlite3-shm          # transient when applicable
+  state/
+    current.sqlite3
+    current.sqlite3-wal        # transient when applicable
+    current.sqlite3-shm        # transient when applicable
   promotions/
     <analysis-profile-prefix>/<session-uuidv7>/promotion.<sha256>.json
   parquet/                     # future historical projection
@@ -66,6 +70,23 @@ Detector читает только finalized `completed`/`cancelled` sessions д
 Все evidence roots (`sessions/`, `events/`, `artifacts/sha256/`) обязаны после filesystem resolution оставаться внутри configured `BizManData`; path traversal и symlink escape fail closed.
 
 Отсутствующий `request_body_ref` означает **unknown evidence**, а не пустой body. Поэтому structural extraction сохраняет `body_keys=None`, и операция становится `INDETERMINATE`, если решение зависит от неизвестной body structure.
+
+## Current State P4-B evidence boundary
+
+P4-B добавляет первый узко allowlisted путь для response-body evidence. Для успешного first-party `GET /company/?id=...&tab=units...` collector после `Network.loadingFinished` может вызвать пассивный CDP `Network.getResponseBody`.
+
+Тело ограничивается по размеру и санитизируется до durable persistence. CAS artifact содержит только детерминированный UTF-8 JSON:
+
+- version схемы и sanitizer;
+- SHA-256 исходного response body как provenance identity;
+- текст title;
+- видимые текстовые узлы страницы.
+
+HTML attributes, значения input/form, scripts, styles, templates, noscript и textarea не сохраняются. Raw response body этим путём не хранится.
+
+Collector выпускает отдельный immutable `http.response_body` event со ссылкой на sanitized CAS artifact. Существующие `http.response` и `http.finished` не переписываются.
+
+Current State разыменовывает artifact только через `EvidenceReader.read_verified_artifact`, поэтому CAS bytes проверяются по digest до company/unit parser. Отсутствующее response-body evidence означает UNKNOWN, а не пустой roster.
 
 ## Форматы
 
