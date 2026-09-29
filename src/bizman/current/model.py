@@ -266,17 +266,6 @@ class CurrentStateSnapshot:
         if self.metadata.input_fingerprint != expected_input:
             raise ValueError("Current State input_fingerprint is inconsistent")
 
-        expected_state = current_state_fingerprint(
-            projection_name=self.metadata.projection_name,
-            projection_version=self.metadata.projection_version,
-            analysis_profile_sha256=self.metadata.analysis_profile_sha256,
-            input_fingerprint=self.metadata.input_fingerprint,
-            status=self.metadata.status,
-            stale_reason=self.metadata.stale_reason,
-            sessions=sessions,
-        )
-        if self.metadata.state_fingerprint != expected_state:
-            raise ValueError("Current State state_fingerprint is inconsistent")
         companies = tuple(self.companies)
         units = tuple(self.units)
         if not all(isinstance(item, CompanyState) for item in companies):
@@ -303,6 +292,20 @@ class CurrentStateSnapshot:
         for unit in units:
             if unit.company_id not in company_ids:
                 raise ValueError("unit references a company absent from Current State")
+
+        expected_state = current_state_fingerprint(
+            projection_name=self.metadata.projection_name,
+            projection_version=self.metadata.projection_version,
+            analysis_profile_sha256=self.metadata.analysis_profile_sha256,
+            input_fingerprint=self.metadata.input_fingerprint,
+            status=self.metadata.status,
+            stale_reason=self.metadata.stale_reason,
+            sessions=sessions,
+            companies=companies,
+            units=units,
+        )
+        if self.metadata.state_fingerprint != expected_state:
+            raise ValueError("Current State state_fingerprint is inconsistent")
 
         object.__setattr__(self, "sessions", sessions)
         object.__setattr__(self, "companies", companies)
