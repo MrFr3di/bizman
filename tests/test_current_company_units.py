@@ -12,6 +12,7 @@ from bizman.current import (
     USER_VERSION,
     CompanyState,
     CurrentProjectionSpec,
+    CurrentStateCompatibilityError,
     CurrentStateIntegrityError,
     CurrentStateStore,
     ReplaySession,
@@ -366,6 +367,27 @@ class CompanyUnitStoreTests(unittest.TestCase):
                 with self.assertRaises(CurrentStateIntegrityError):
                     store.snapshot()
 
+    def test_explicit_rebuild_does_not_adopt_unrecognized_schema_v1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            state_path = data_dir / "state" / "current.sqlite3"
+            state_path.parent.mkdir(parents=True)
+            connection = sqlite3.connect(state_path)
+            connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
+            connection.execute("PRAGMA user_version = 1")
+            connection.execute(
+                "CREATE TABLE foreign_data(value TEXT) STRICT"
+            )
+            connection.commit()
+            connection.close()
+
+            with self.assertRaises(CurrentStateCompatibilityError):
+                rebuild_current_state(
+                    REPO_ROOT,
+                    data_dir,
+                    _redaction(),
+                )
+
     def test_explicit_rebuild_replaces_recognized_schema_v1(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
@@ -375,7 +397,10 @@ class CompanyUnitStoreTests(unittest.TestCase):
             connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
             connection.execute("PRAGMA user_version = 1")
             connection.execute(
-                "CREATE TABLE projection_meta(singleton INTEGER PRIMARY KEY)"
+                "CREATE TABLE projection_meta(singleton INTEGER PRIMARY KEY) STRICT"
+            )
+            connection.execute(
+                "CREATE TABLE replayed_session(session_id TEXT PRIMARY KEY) STRICT"
             )
             connection.commit()
             connection.close()
