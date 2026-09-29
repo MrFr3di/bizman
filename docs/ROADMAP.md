@@ -434,7 +434,7 @@ P4-B rules:
 - known roster structure incompatible with parser v1 marks the projection `stale`;
 - company/unit rows and provenance participate in the full state fingerprint;
 - Current State advances to SQLite schema/user version 2 and projection version 2;
-- recognized schema v1 state is discarded only by an explicit rebuild because the database is derived from immutable evidence; foreign/unidentified/newer databases remain fail-closed.
+- an explicit rebuild recognizes the exact P4-A schema v1 contract, stages a fully verified v2 sibling database and atomically replaces the old derived store; a failed swap leaves v1 intact, while foreign/unidentified/newer databases remain fail-closed.
 
 P4-B exit proof extends P4-A:
 
