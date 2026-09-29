@@ -16,11 +16,12 @@ Completed foundations include:
 - deterministic Change Detector with versioned rules, analysis profiles, SQLite checkpoints/outbox and Promotion Bundles;
 - installable `src/bizman` package and stable `bizman.core` application boundary;
 - deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
-- bounded path-free `bizman.core` read API for knowledge, sessions and profile-scoped changes;
+- bounded path-free `bizman.core` read API for knowledge, provenance, sessions and profile-scoped changes;
+- read-only `bizman-mcp` stdio adapter with 10 bounded Core-backed tools;
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
 
-**P2 — Agent Index + Session Intelligence is complete.** P2-A through P2-E delivered the 590-record Agent Index, verified session/change intelligence, bounded Core reads and a measured retrieval/performance baseline. The current delivery stage is **P3 — read-only MCP v1**. See `docs/ROADMAP.md`.
+**P3 — read-only MCP v1 is complete.** P3-A through P3-E delivered the fixed 10-tool stdio surface, Core-owned provenance/session intelligence, explicit bounded schemas and a measured protocol completion baseline with no retrieval regression from P2-E. The current delivery stage is **P4 — Replayable Current State**. See `docs/ROADMAP.md` and `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
 
 ## Current corpus
 
@@ -120,6 +121,10 @@ uv run bizman collect \
 
 uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData"
 uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData" --dry-run
+
+uv run bizman-mcp \
+  --repo-root "$PWD" \
+  --data-dir "$HOME/BizManData"
 ```
 
 `--repo-root` is an explicit configuration boundary for curated repository assets; operational use-case DTOs do not accept arbitrary filesystem paths.
@@ -138,10 +143,13 @@ Operational sessions/events/CAS, browser profiles, detector SQLite state and Pro
 - change detection;
 - repository validation;
 - knowledge resolve/search/get;
-- session list/get;
+- evidence provenance trace;
+- session list/get, deterministic comparison and anomaly-signal listing;
 - profile-scoped change list/get.
 
-CLI code consumes Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation. Future MCP adapters must consume this Core surface rather than importing `readmodel` directly. Current State, analytics and write automation remain later stages.
+CLI and MCP adapters consume Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation.
+
+The completed P3 MCP adapter is read-only, local-stdio only and exposes exactly 10 bounded tools. It does not expose arbitrary paths/SQL, raw HAR/session bytes, HTTP/OAuth, resources, Tasks or write automation. Current State, analytics and writes remain later stages.
 
 ## Change detection
 
@@ -175,6 +183,7 @@ uv run python -m compileall -q src tools tests
 uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
 uv run --locked --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
+uv run python tools/evaluations/mcp_p3.py
 ```
 
 Relevant pull requests run:
@@ -184,6 +193,7 @@ Relevant pull requests run:
 - machine-enforced package dependency contracts;
 - wheel/sdist build and isolated wheel-install proof;
 - real Chrome for Testing CDP E2E against loopback fixtures;
+- gating P3 MCP protocol/completion evaluation with a machine-readable artifact;
 - storage benchmark plus non-gating Agent Index/Core and detector performance evidence.
 
 See `docs/CI.md` for the exact policy.
