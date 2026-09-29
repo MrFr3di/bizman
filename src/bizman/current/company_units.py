@@ -53,6 +53,20 @@ def _query_values(query: object, key: str) -> list[str] | None:
     return value
 
 
+def _company_id_from_event(event: Mapping[str, object]) -> str | None:
+    company_ids = _query_values(event.get("query"), "id")
+    if company_ids is None or len(company_ids) != 1:
+        return None
+    company_id = company_ids[0]
+    if (
+        not company_id.isascii()
+        or not company_id.isdigit()
+        or company_id.startswith("0")
+    ):
+        return None
+    return company_id
+
+
 def is_company_roster_event(event: Mapping[str, object]) -> bool:
     if event.get("event_type") != "http.response_body":
         return False
@@ -62,19 +76,15 @@ def is_company_roster_event(event: Mapping[str, object]) -> bool:
         return False
     if event.get("status_code") != 200:
         return False
-    company_ids = _query_values(event.get("query"), "id")
-    tabs = _query_values(event.get("query"), "tab")
-    return (
-        company_ids is not None
-        and len(company_ids) == 1
-        and company_ids[0].isascii()
-        and company_ids[0].isdigit()
-        and not company_ids[0].startswith("0")
-        and tabs == ["units"]
-    )
+    if _company_id_from_event(event) is None:
+        return False
+    return _query_values(event.get("query"), "tab") == ["units"]
 
 
-def _load_page_artifact(reader: EvidenceReader, ref: object) -> dict[str, object]:
+def _load_page_artifact(
+    reader: EvidenceReader,
+    ref: object,
+) -> tuple[str | None, str]:
     if not isinstance(ref, str):
         raise CompanyUnitsArtifactError(
             "company roster response_body_ref must be a verified CAS reference"
@@ -111,9 +121,10 @@ def _load_page_artifact(reader: EvidenceReader, ref: object) -> dict[str, object
     title = value.get("title")
     if title is not None and not isinstance(title, str):
         raise CompanyUnitsArtifactError("company roster artifact title is invalid")
-    if not isinstance(value.get("text"), str):
+    text = value.get("text")
+    if not isinstance(text, str):
         raise CompanyUnitsArtifactError("company roster artifact text is invalid")
-    return value
+    return title, text
 
 
 def _company_name(lines: tuple[str, ...], title: object) -> str:
@@ -192,9 +203,9 @@ def project_company_roster_event(
     if not is_company_roster_event(event):
         return None
 
-    company_ids = _query_values(event.get("query"), "id")
-    assert company_ids is not None
-    company_id = company_ids[0]
+    company_id = _company_id_from_event(event)
+    if company_id is None:
+        return None
 
     session_id = event.get("session_id")
     sequence = event.get("sequence")
@@ -210,8 +221,10 @@ def project_company_roster_event(
             "validated roster event lacks canonical provenance fields"
         )
 
-    artifact = _load_page_artifact(reader, event.get("response_body_ref"))
-    text = str(artifact["text"])
+    title, text = _load_page_artifact(
+        reader,
+        event.get("response_body_ref"),
+    )
     lines = tuple(
         value
         for raw in text.splitlines()
@@ -225,7 +238,7 @@ def project_company_roster_event(
 
     company = CompanyState(
         company_id=company_id,
-        name=_company_name(lines, artifact.get("title")),
+        name=_company_name(lines, title),
         source_session_id=session_id,
         source_sequence=sequence,
         observed_at=observed_at,
