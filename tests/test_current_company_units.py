@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from bizman.current import (
     APPLICATION_ID,
@@ -13,6 +14,7 @@ from bizman.current import (
     CurrentProjectionSpec,
     CurrentStateCompatibilityError,
     CurrentStateIntegrityError,
+    CurrentStateOperationError,
     CurrentStateStore,
     ReplaySession,
     UnitState,
@@ -359,6 +361,44 @@ class CompanyUnitReplayTests(unittest.TestCase):
                 build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
 
 
+def _write_p4a_v1_database(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path)
+    try:
+        connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
+        connection.execute("PRAGMA user_version = 1")
+        connection.executescript(
+            """
+            CREATE TABLE projection_meta(
+                singleton INTEGER PRIMARY KEY,
+                projection_name TEXT,
+                projection_version INTEGER,
+                analysis_profile_sha256 TEXT,
+                input_fingerprint TEXT,
+                state_fingerprint TEXT,
+                status TEXT,
+                stale_reason TEXT,
+                session_count INTEGER,
+                last_session_id TEXT,
+                last_sequence INTEGER
+            ) STRICT;
+            CREATE TABLE replayed_session(
+                session_id TEXT PRIMARY KEY,
+                manifest_sha256 TEXT,
+                evidence_sha256 TEXT,
+                started_at TEXT,
+                ended_at TEXT,
+                status TEXT,
+                event_count INTEGER,
+                last_sequence INTEGER
+            ) STRICT;
+            """
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
 class CompanyUnitStoreTests(unittest.TestCase):
     def _snapshot(self):
         session = ReplaySession(
@@ -427,47 +467,40 @@ class CompanyUnitStoreTests(unittest.TestCase):
                     _redaction(),
                 )
 
+    def test_failed_atomic_schema_replacement_preserves_p4a_v1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            state_path = data_dir / "state" / "current.sqlite3"
+            _write_p4a_v1_database(state_path)
+            before = state_path.read_bytes()
+
+            with patch(
+                "bizman.current.replay.os.replace",
+                side_effect=OSError("synthetic replace failure"),
+            ):
+                with self.assertRaises(CurrentStateOperationError):
+                    rebuild_current_state(
+                        REPO_ROOT,
+                        data_dir,
+                        _redaction(),
+                    )
+
+            self.assertEqual(state_path.read_bytes(), before)
+            connection = sqlite3.connect(state_path)
+            try:
+                version = connection.execute(
+                    "PRAGMA user_version"
+                ).fetchone()[0]
+            finally:
+                connection.close()
+
+        self.assertEqual(version, 1)
+
     def test_explicit_rebuild_replaces_recognized_schema_v1(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
             state_path = data_dir / "state" / "current.sqlite3"
-            state_path.parent.mkdir(parents=True)
-            connection = sqlite3.connect(state_path)
-            connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
-            connection.execute("PRAGMA user_version = 1")
-            connection.execute(
-                """
-                CREATE TABLE projection_meta(
-                    singleton INTEGER PRIMARY KEY,
-                    projection_name TEXT,
-                    projection_version INTEGER,
-                    analysis_profile_sha256 TEXT,
-                    input_fingerprint TEXT,
-                    state_fingerprint TEXT,
-                    status TEXT,
-                    stale_reason TEXT,
-                    session_count INTEGER,
-                    last_session_id TEXT,
-                    last_sequence INTEGER
-                ) STRICT
-                """
-            )
-            connection.execute(
-                """
-                CREATE TABLE replayed_session(
-                    session_id TEXT PRIMARY KEY,
-                    manifest_sha256 TEXT,
-                    evidence_sha256 TEXT,
-                    started_at TEXT,
-                    ended_at TEXT,
-                    status TEXT,
-                    event_count INTEGER,
-                    last_sequence INTEGER
-                ) STRICT
-                """
-            )
-            connection.commit()
-            connection.close()
+            _write_p4a_v1_database(state_path)
 
             rebuilt = rebuild_current_state(
                 REPO_ROOT,
