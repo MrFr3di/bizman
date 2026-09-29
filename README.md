@@ -22,7 +22,7 @@ Completed foundations include:
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
 
-**P3 — read-only MCP v1 is complete.** P4 is now active. **P4-A — Current State storage, identity and replay foundation is complete:** `BizManData/state/current.sqlite3` is a rebuildable derived store with deterministic evidence/profile fingerprints, an immutable replay ledger, atomic replacement and a path-free Core rebuild API. The next slice is **P4-B — companies/units projection**. See `docs/ROADMAP.md` and `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
+**P3 — read-only MCP v1 is complete.** P4 is now active. **P4-A — Current State storage, identity and replay foundation is complete. P4-B — companies/units projection is the current slice:** `BizManData/state/current.sqlite3` is a rebuildable derived store, and P4-B adds authoritative company/unit state from narrowly allowlisted sanitized company-roster response evidence. See `docs/ROADMAP.md` and `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
 
 ## Current corpus
 
@@ -209,8 +209,8 @@ The stable sequence is:
 D1  deterministic Change Detector        completed
 P1  Python package + Core boundary       completed
 P2  Agent Index + Session Intelligence   completed
-P3  read-only MCP                        current
-P4  replayable Current State
+P3  read-only MCP                        complete
+P4  replayable Current State              current
 P5  Parquet history + deterministic analytics
 P6  experiment framework
 P7  agent/retrieval evaluation and optimization
