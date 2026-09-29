@@ -122,10 +122,7 @@ class CollectorEventPipeline:
         target_id: str | None,
         cdp: CdpConnection,
     ) -> None:
-        if (
-            event.method == "Network.loadingFinished"
-            and self.response_body_supported
-        ):
+        if event.method == "Network.loadingFinished":
             request_id = event.params.get("requestId")
             encoded_length = event.params.get("encodedDataLength")
             encoded_too_large = (
@@ -136,7 +133,12 @@ class CollectorEventPipeline:
             candidate = self.network_normalizer.response_body_capture_candidate(
                 request_id
             )
-            if candidate and encoded_too_large:
+            if candidate and not self.response_body_supported:
+                self.writer.add_warning(
+                    "company roster response body unavailable: "
+                    "Network.getResponseBody unsupported"
+                )
+            elif candidate and encoded_too_large:
                 self.writer.add_warning(
                     "company roster response body skipped: encoded size exceeds limit"
                 )
