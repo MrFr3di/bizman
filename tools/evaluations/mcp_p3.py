@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from datetime import UTC, datetime, timedelta
+import hashlib
 import importlib.metadata
 import json
 from pathlib import Path
@@ -15,14 +17,14 @@ from mcp import Client, StdioServerParameters
 from bizman.core import CoreContext, RepositoryAssets, SystemUtcClock
 from bizman.mcp import build_server
 from bizman.readmodel import (
+    ChangeIndexRecord,
     EvaluationCase,
     RuntimeProjection,
+    SessionSummary,
     evaluation_cases_from_document,
     project_curated_knowledge,
     rebuild_agent_index,
 )
-from tools.benchmarks.readmodel_core import synthetic_runtime
-
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPLETED_AT = "2026-09-28T00:00:00Z"
@@ -50,6 +52,67 @@ FORBIDDEN_INPUT_TERMS = (
 )
 COMPACT_BYTES = 8 * 1024
 STANDARD_BYTES = 16 * 1024
+
+
+def _digest(label: str) -> str:
+    return hashlib.sha256(label.encode("utf-8")).hexdigest()
+
+
+def _session_id(index: int) -> str:
+    return f"01991c7d-a400-7000-8000-{index + 1:012x}"
+
+
+def _evaluation_runtime() -> RuntimeProjection:
+    base = datetime(2026, 9, 28, tzinfo=UTC)
+    sessions: list[SessionSummary] = []
+    for index in range(20):
+        started = base + timedelta(seconds=index * 2)
+        ended = started + timedelta(seconds=1)
+        sessions.append(
+            SessionSummary(
+                session_id=_session_id(index),
+                manifest_sha256=_digest(f"manifest-{index}"),
+                evidence_sha256=_digest(f"evidence-{index}"),
+                started_at=started.isoformat().replace("+00:00", "Z"),
+                ended_at=ended.isoformat().replace("+00:00", "Z"),
+                status="completed",
+                event_count=100 + index,
+                action_count=4,
+                http_request_count=8,
+                http_response_count=8,
+                correlation_strong_count=2,
+                correlation_probable_count=1,
+                correlation_temporal_count=1,
+                correlation_exact_count=0,
+                uncorrelated_action_count=1 if index % 6 == 0 else 0,
+                warning_count=index % 3,
+                anomaly_count=index % 2,
+            )
+        )
+
+    profiles = (_digest("profile-a"), _digest("profile-b"))
+    changes: list[ChangeIndexRecord] = []
+    for index in range(40):
+        session = sessions[index % len(sessions)]
+        changes.append(
+            ChangeIndexRecord(
+                analysis_profile_sha256=profiles[index % len(profiles)],
+                change_id=f"chg.{_digest(f'change-{index}')}",
+                rule_id=f"BM-EVAL-{index % 7:03d}",
+                rule_version=1,
+                kind=f"synthetic.kind.{index % 5}",
+                novelty_class="novel" if index % 2 == 0 else "known",
+                first_session_id=session.session_id,
+                first_seen_at=session.started_at,
+                last_session_id=session.session_id,
+                last_seen_at=session.ended_at,
+                occurrence_count=1,
+            )
+        )
+    return RuntimeProjection(
+        sessions=tuple(sessions),
+        changes=tuple(changes),
+    )
 
 
 def _json_size(value: object) -> int:
@@ -688,7 +751,7 @@ async def evaluate_mcp_p3(
 ) -> dict[str, Any]:
     root = Path(root).expanduser().resolve(strict=True)
     data_dir = Path(data_dir).expanduser().resolve(strict=False)
-    runtime = synthetic_runtime(sessions=20, changes=40)
+    runtime = _evaluation_runtime()
     projection = project_curated_knowledge(root)
     rebuild_agent_index(
         data_dir / "index" / "agent-index.sqlite3",
