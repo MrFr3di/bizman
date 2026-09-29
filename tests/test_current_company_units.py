@@ -47,7 +47,6 @@ def _artifact_bytes(text: str, *, title: str = "Компания Paradise · П�
             "schema_version": "1.0",
             "sanitizer_version": 1,
             "media_type": "text/html",
-            "raw_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
             "title": title,
             "text": text,
         }
