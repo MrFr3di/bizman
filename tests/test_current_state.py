@@ -6,6 +6,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from bizman.current import (
     APPLICATION_ID,
@@ -236,6 +237,12 @@ class CurrentStateModelTests(unittest.TestCase):
         self.assertEqual(normalized.started_at, "2026-09-07T12:00:00Z")
         self.assertEqual(normalized.ended_at, "2026-09-07T12:01:00Z")
 
+        with self.assertRaises(TypeError):
+            CurrentStateSnapshot(
+                metadata=_snapshot().metadata,
+                sessions=(object(),),  # type: ignore[arg-type]
+            )
+
         with self.assertRaisesRegex(ValueError, "last_sequence"):
             ReplaySession(
                 session_id=SESSION_A,
@@ -337,6 +344,16 @@ class CurrentStateStoreTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "state.sqlite3"
+            with CurrentStateStore.open_rw(path) as store:
+                store._connection.execute("CREATE TABLE extra_data(x INTEGER) STRICT")
+            with self.assertRaisesRegex(
+                CurrentStateCompatibilityError,
+                "do not match schema",
+            ):
+                CurrentStateStore.open_rw(path)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite3"
             connection = sqlite3.connect(path)
             connection.execute("CREATE TABLE foreign_data(x INTEGER)")
             connection.commit()
@@ -372,6 +389,21 @@ class CurrentStateStoreTests(unittest.TestCase):
                 with first._immediate_transaction():
                     first._connection.execute("DELETE FROM projection_meta")
                     raise RuntimeError("synthetic crash")
+            self.assertEqual(first.snapshot(), before)
+
+            replacement = build_current_snapshot(
+                CurrentProjectionSpec(
+                    analysis_profile_sha256="d" * 64,
+                ),
+                (_session_record(),),
+            )
+            with patch.object(
+                CurrentStateStore,
+                "_snapshot_unchecked",
+                return_value=None,
+            ):
+                with self.assertRaises(CurrentStateIntegrityError):
+                    first.replace_snapshot(replacement)
             self.assertEqual(first.snapshot(), before)
 
     def test_corrupted_fingerprint_and_orphan_ledger_fail_closed(self):
