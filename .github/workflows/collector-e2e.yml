@@ -307,6 +307,7 @@ jobs:
             ${{ runner.temp }}/bizman-fixture.log
             ${{ runner.temp }}/bizman-chrome.log
             ${{ runner.temp }}/bizman-collector.log
+            ${{ runner.temp }}/BizManData
           if-no-files-found: ignore
           retention-days: 3
 
