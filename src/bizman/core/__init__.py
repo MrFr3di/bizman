@@ -3,6 +3,11 @@
 from bizman.core.assets import AssetId, RepositoryAssets
 from bizman.core.collection import CollectionRequest, CollectionResult, collect
 from bizman.core.context import CoreContext
+from bizman.core.current import (
+    CurrentStateRebuildRequest,
+    CurrentStateRebuildResult,
+    rebuild_current_state,
+)
 from bizman.core.detection import DetectionRequest, DetectorRunSummary, detect_changes
 from bizman.core.errors import (
     AssetError,
@@ -71,6 +76,8 @@ __all__ = [
     "ConfigurationError",
     "ContractMismatchError",
     "CoreContext",
+    "CurrentStateRebuildRequest",
+    "CurrentStateRebuildResult",
     "DataIntegrityError",
     "DetectionRequest",
     "EvidenceTrace",
@@ -103,6 +110,7 @@ __all__ = [
     "ValidationResult",
     "collect",
     "compare_sessions",
+    "rebuild_current_state",
     "detect_changes",
     "get_change",
     "get_knowledge",
