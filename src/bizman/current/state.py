@@ -455,13 +455,19 @@ class CurrentStateStore:
 
         companies = tuple(
             CompanyState(
-                company_id=str(row[0]),
-                name=str(row[1]),
-                source_session_id=str(row[2]),
-                source_sequence=int(row[3]),
-                observed_at=str(row[4]),
+                company_id=str(company_id),
+                name=str(name),
+                source_session_id=str(source_session_id),
+                source_sequence=int(source_sequence),
+                observed_at=str(observed_at),
             )
-            for row in self._connection.execute(
+            for (
+                company_id,
+                name,
+                source_session_id,
+                source_sequence,
+                observed_at,
+            ) in self._connection.execute(
                 """
                 SELECT company_id, name, source_session_id,
                        source_sequence, observed_at
@@ -472,16 +478,25 @@ class CurrentStateStore:
         )
         units = tuple(
             UnitState(
-                unit_id=str(row[0]),
-                company_id=str(row[1]),
-                display_name=str(row[2]),
-                city_name=str(row[3]),
-                level=int(row[4]),
-                source_session_id=str(row[5]),
-                source_sequence=int(row[6]),
-                observed_at=str(row[7]),
+                unit_id=str(unit_id),
+                company_id=str(company_id),
+                display_name=str(display_name),
+                city_name=str(city_name),
+                level=int(level),
+                source_session_id=str(source_session_id),
+                source_sequence=int(source_sequence),
+                observed_at=str(observed_at),
             )
-            for row in self._connection.execute(
+            for (
+                unit_id,
+                company_id,
+                display_name,
+                city_name,
+                level,
+                source_session_id,
+                source_sequence,
+                observed_at,
+            ) in self._connection.execute(
                 """
                 SELECT unit_id, company_id, display_name, city_name, level,
                        source_session_id, source_sequence, observed_at
