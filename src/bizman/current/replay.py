@@ -201,6 +201,14 @@ def _discard_rebuildable_older_state(path: Path) -> None:
                 for row in connection.execute("PRAGMA table_list")
                 if str(row[1]) in {"projection_meta", "replayed_session"}
             }
+            projection_columns = tuple(
+                str(row[1])
+                for row in connection.execute("PRAGMA table_info(projection_meta)")
+            )
+            replay_columns = tuple(
+                str(row[1])
+                for row in connection.execute("PRAGMA table_info(replayed_session)")
+            )
         finally:
             connection.close()
     except sqlite3.Error:
@@ -211,6 +219,31 @@ def _discard_rebuildable_older_state(path: Path) -> None:
         and user_version == USER_VERSION - 1
         and tables == {"projection_meta", "replayed_session"}
         and strict == {"projection_meta": 1, "replayed_session": 1}
+        and projection_columns
+        == (
+            "singleton",
+            "projection_name",
+            "projection_version",
+            "analysis_profile_sha256",
+            "input_fingerprint",
+            "state_fingerprint",
+            "status",
+            "stale_reason",
+            "session_count",
+            "last_session_id",
+            "last_sequence",
+        )
+        and replay_columns
+        == (
+            "session_id",
+            "manifest_sha256",
+            "evidence_sha256",
+            "started_at",
+            "ended_at",
+            "status",
+            "event_count",
+            "last_sequence",
+        )
     )
     if recognized_p4a_v1:
         path.unlink(missing_ok=True)
