@@ -452,12 +452,14 @@ class NetworkNormalizer:
             self._requests.pop(request_id, None)
             return None
         headers = response.get("headers")
-        state["status_code"] = _status_code(response.get("status"))
-        state["mime_type"] = (
+        status_code = _status_code(response.get("status"))
+        mime_type = (
             response.get("mimeType")
             if isinstance(response.get("mimeType"), str)
             else None
         )
+        state["status_code"] = status_code
+        state["mime_type"] = mime_type
         event = self._base_event(
             event_type="http.response",
             params=params,
@@ -470,12 +472,12 @@ class NetworkNormalizer:
                 "method": state["method"],
                 "url_path": self._path(url),
                 "route_pattern": None,
-                "status_code": state["status_code"],
+                "status_code": status_code,
                 "query": self._query(url),
                 "headers": redact_headers(headers, self.redaction) if isinstance(headers, dict) else {},
                 "request_body_ref": None,
                 "response_body_ref": None,
-                "mime_type": state["mime_type"],
+                "mime_type": mime_type,
                 "protocol": response.get("protocol") if isinstance(response.get("protocol"), str) else None,
             }
         )
@@ -500,12 +502,14 @@ class NetworkNormalizer:
             return False
         company_ids = query.get("id")
         tabs = query.get("tab")
+        if not isinstance(company_ids, list) or len(company_ids) != 1:
+            return False
+        company_id = next(iter(company_ids), None)
         if (
-            not isinstance(company_ids, list)
-            or len(company_ids) != 1
-            or not isinstance(company_ids[0], str)
-            or not company_ids[0].isdigit()
-            or int(company_ids[0]) <= 0
+            not isinstance(company_id, str)
+            or not company_id.isascii()
+            or not company_id.isdigit()
+            or company_id.startswith("0")
         ):
             return False
         return tabs == ["units"]
