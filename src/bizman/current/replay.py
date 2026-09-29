@@ -291,6 +291,15 @@ def _replace_rebuildable_older_state(
     path: Path,
     snapshot: CurrentStateSnapshot,
 ) -> CurrentStateSnapshot:
+    older_sidecars = tuple(
+        path.with_name(path.name + suffix)
+        for suffix in ("-wal", "-shm")
+    )
+    if any(sidecar.exists() for sidecar in older_sidecars):
+        raise CurrentStateOperationError(
+            "cannot replace older Current State while SQLite sidecars exist"
+        )
+
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         descriptor, temporary_name = tempfile.mkstemp(
@@ -318,8 +327,6 @@ def _replace_rebuildable_older_state(
             with temporary.open("rb") as handle:
                 os.fsync(handle.fileno())
 
-            for suffix in ("-wal", "-shm"):
-                path.with_name(path.name + suffix).unlink(missing_ok=True)
             os.replace(temporary, path)
             _fsync_directory(path.parent)
         except OSError as exc:
