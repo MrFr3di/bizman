@@ -57,9 +57,10 @@ def _company_id_from_event(event: Mapping[str, object]) -> str | None:
     company_ids = _query_values(event.get("query"), "id")
     if company_ids is None or len(company_ids) != 1:
         return None
-    company_id = company_ids[0]
+    company_id = next(iter(company_ids), None)
     if (
-        not company_id.isascii()
+        company_id is None
+        or not company_id.isascii()
         or not company_id.isdigit()
         or company_id.startswith("0")
     ):
@@ -154,16 +155,12 @@ def _parse_units(
     results: list[UnitState] = []
     seen: set[str] = set()
 
-    for index, line in enumerate(lines):
+    for city_raw, line, level_raw in zip(lines, lines[1:], lines[2:]):
         match = _UNIT_LINE_RE.fullmatch(line)
         if match is None:
             continue
-        if index == 0 or index + 1 >= len(lines):
-            raise CompanyUnitsParserIncompatible(
-                "company roster unit row is missing city or level"
-            )
-        city_name = lines[index - 1].strip()
-        level_text = lines[index + 1].strip()
+        city_name = city_raw.strip()
+        level_text = level_raw.strip()
         if (
             not city_name
             or city_name in _HEADER_VALUES
