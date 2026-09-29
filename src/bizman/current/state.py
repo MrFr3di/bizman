@@ -6,17 +6,21 @@ import sqlite3
 from typing import Final, Iterator
 
 from bizman.current.model import (
+    CompanyState,
     CurrentProjectionSpec,
     CurrentStateSnapshot,
     ReplaySession,
+    UnitState,
     build_current_snapshot,
 )
 
 
 APPLICATION_ID: Final[int] = 0x424D4331
-USER_VERSION: Final[int] = 1
+USER_VERSION: Final[int] = 2
 _MIN_SQLITE_VERSION: Final[tuple[int, int, int]] = (3, 37, 0)
-_EXPECTED_TABLES = frozenset({"projection_meta", "replayed_session"})
+_EXPECTED_TABLES = frozenset(
+    {"projection_meta", "replayed_session", "company", "unit"}
+)
 
 
 class CurrentStateError(RuntimeError):
@@ -81,6 +85,36 @@ _SCHEMA = (
     """
     CREATE INDEX replayed_session_order_idx
     ON replayed_session(started_at, session_id)
+    """,
+    """
+    CREATE TABLE company (
+        company_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL CHECK (length(name) > 0),
+        source_session_id TEXT NOT NULL,
+        source_sequence INTEGER NOT NULL CHECK (source_sequence >= 0),
+        observed_at TEXT NOT NULL,
+        FOREIGN KEY (source_session_id)
+            REFERENCES replayed_session(session_id)
+    ) STRICT
+    """,
+    """
+    CREATE TABLE unit (
+        unit_id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL,
+        display_name TEXT NOT NULL CHECK (length(display_name) > 0),
+        city_name TEXT NOT NULL CHECK (length(city_name) > 0),
+        level INTEGER NOT NULL CHECK (level > 0),
+        source_session_id TEXT NOT NULL,
+        source_sequence INTEGER NOT NULL CHECK (source_sequence >= 0),
+        observed_at TEXT NOT NULL,
+        FOREIGN KEY (company_id) REFERENCES company(company_id),
+        FOREIGN KEY (source_session_id)
+            REFERENCES replayed_session(session_id)
+    ) STRICT
+    """,
+    """
+    CREATE INDEX unit_company_idx
+    ON unit(company_id, unit_id)
     """,
 )
 
@@ -343,13 +377,30 @@ class CurrentStateStore:
                     "SELECT count(*) FROM replayed_session"
                 ).fetchone()[0]
             )
+            company_count = int(
+                self._connection.execute(
+                    "SELECT count(*) FROM company"
+                ).fetchone()[0]
+            )
+            unit_count = int(
+                self._connection.execute(
+                    "SELECT count(*) FROM unit"
+                ).fetchone()[0]
+            )
             if meta_count not in {0, 1}:
                 raise CurrentStateIntegrityError(
                     "Current State must contain at most one metadata row"
                 )
-            if meta_count == 0 and ledger_count != 0:
+            if meta_count == 0 and (ledger_count or company_count or unit_count):
                 raise CurrentStateIntegrityError(
-                    "Current State replay ledger exists without metadata"
+                    "Current State rows exist without metadata"
+                )
+            foreign_key_violations = tuple(
+                self._connection.execute("PRAGMA foreign_key_check")
+            )
+            if foreign_key_violations:
+                raise CurrentStateIntegrityError(
+                    "Current State contains foreign-key violations"
                 )
             if meta_count == 1:
                 self._snapshot_unchecked()
@@ -402,6 +453,44 @@ class CurrentStateStore:
             )
         )
 
+        companies = tuple(
+            CompanyState(
+                company_id=str(row[0]),
+                name=str(row[1]),
+                source_session_id=str(row[2]),
+                source_sequence=int(row[3]),
+                observed_at=str(row[4]),
+            )
+            for row in self._connection.execute(
+                """
+                SELECT company_id, name, source_session_id,
+                       source_sequence, observed_at
+                FROM company
+                ORDER BY company_id
+                """
+            )
+        )
+        units = tuple(
+            UnitState(
+                unit_id=str(row[0]),
+                company_id=str(row[1]),
+                display_name=str(row[2]),
+                city_name=str(row[3]),
+                level=int(row[4]),
+                source_session_id=str(row[5]),
+                source_sequence=int(row[6]),
+                observed_at=str(row[7]),
+            )
+            for row in self._connection.execute(
+                """
+                SELECT unit_id, company_id, display_name, city_name, level,
+                       source_session_id, source_sequence, observed_at
+                FROM unit
+                ORDER BY unit_id
+                """
+            )
+        )
+
         from bizman.current.model import CurrentStateMetadata
 
         metadata = CurrentStateMetadata(
@@ -425,6 +514,8 @@ class CurrentStateStore:
         return CurrentStateSnapshot(
             metadata=metadata,
             sessions=sessions,
+            companies=companies,
+            units=units,
         )
 
     def snapshot(self) -> CurrentStateSnapshot | None:
@@ -448,6 +539,8 @@ class CurrentStateStore:
 
         meta = snapshot.metadata
         with self._immediate_transaction():
+            self._connection.execute("DELETE FROM unit")
+            self._connection.execute("DELETE FROM company")
             self._connection.execute("DELETE FROM replayed_session")
             self._connection.execute("DELETE FROM projection_meta")
             self._connection.executemany(
@@ -470,6 +563,45 @@ class CurrentStateStore:
                         item.last_sequence,
                     )
                     for item in snapshot.sessions
+                ),
+            )
+            self._connection.executemany(
+                """
+                INSERT INTO company(
+                    company_id, name, source_session_id,
+                    source_sequence, observed_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        item.company_id,
+                        item.name,
+                        item.source_session_id,
+                        item.source_sequence,
+                        item.observed_at,
+                    )
+                    for item in snapshot.companies
+                ),
+            )
+            self._connection.executemany(
+                """
+                INSERT INTO unit(
+                    unit_id, company_id, display_name, city_name, level,
+                    source_session_id, source_sequence, observed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        item.unit_id,
+                        item.company_id,
+                        item.display_name,
+                        item.city_name,
+                        item.level,
+                        item.source_session_id,
+                        item.source_sequence,
+                        item.observed_at,
+                    )
+                    for item in snapshot.units
                 ),
             )
             self._connection.execute(
@@ -521,6 +653,8 @@ class CurrentStateStore:
         stale = build_current_snapshot(
             spec,
             current.sessions,
+            companies=current.companies,
+            units=current.units,
             status="stale",
             stale_reason=reason,
         )
