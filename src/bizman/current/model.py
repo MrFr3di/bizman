@@ -167,7 +167,11 @@ class CurrentStateSnapshot:
     sessions: tuple[ReplaySession, ...]
 
     def __post_init__(self) -> None:
+        if not isinstance(self.metadata, CurrentStateMetadata):
+            raise TypeError("metadata must be CurrentStateMetadata")
         sessions = tuple(self.sessions)
+        if not all(isinstance(item, ReplaySession) for item in sessions):
+            raise TypeError("sessions must contain only ReplaySession values")
         if len({item.session_id for item in sessions}) != len(sessions):
             raise ValueError("Current State replay ledger contains duplicate sessions")
         ordered = tuple(sorted(sessions))
@@ -235,6 +239,8 @@ def current_input_fingerprint(
     if not isinstance(spec, CurrentProjectionSpec):
         raise TypeError("spec must be CurrentProjectionSpec")
     values = tuple(sessions)
+    if not all(isinstance(item, ReplaySession) for item in values):
+        raise TypeError("sessions must contain only ReplaySession values")
     if values != tuple(sorted(values)):
         raise ValueError("sessions must be ordered by started_at/session_id")
     if len({item.session_id for item in values}) != len(values):
@@ -280,6 +286,8 @@ def build_current_snapshot(
     stale_reason: str | None = None,
 ) -> CurrentStateSnapshot:
     values = tuple(sessions)
+    if not all(isinstance(item, ReplaySession) for item in values):
+        raise TypeError("sessions must contain only ReplaySession values")
     if values != tuple(sorted(values)):
         raise ValueError("sessions must be ordered by started_at/session_id")
     input_fingerprint = current_input_fingerprint(spec, values)
