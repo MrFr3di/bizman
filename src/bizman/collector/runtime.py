@@ -33,7 +33,7 @@ from bizman.collector.targets import TargetOrchestrator
 from bizman.foundation.redaction import RedactionPolicy
 from bizman.foundation.session import new_session_manifest
 
-COLLECTOR_VERSION = "0.2.1"
+COLLECTOR_VERSION = "0.3.0"
 ACTION_BINDING_NAME = "__bizmanActionV1"
 ACTION_WORLD_NAME = "bizman-action-observer-v1"
 
