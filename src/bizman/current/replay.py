@@ -13,15 +13,22 @@ from bizman.current.model import (
     ReplaySession,
     build_current_snapshot,
 )
-from bizman.current.state import CurrentStateStore
+from bizman.current.state import CurrentStateIntegrityError, CurrentStateStore
 from bizman.foundation.redaction import RedactionPolicy
 from bizman.sessions.evidence import EvidenceIdentity, EvidenceReader
 
 
 def _instant(value: str) -> datetime:
-    instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    try:
+        instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, ValueError) as exc:
+        raise CurrentStateIntegrityError(
+            "evidence timestamp is not valid RFC3339"
+        ) from exc
     if instant.tzinfo is None or instant.utcoffset() is None:
-        raise ValueError("evidence timestamp must include timezone")
+        raise CurrentStateIntegrityError(
+            "evidence timestamp must include timezone"
+        )
     return instant.astimezone(UTC)
 
 
@@ -59,20 +66,27 @@ def _replay_session(
         if isinstance(sequence, bool) or not isinstance(sequence, int):
             raise TypeError("validated evidence sequence must be an integer")
         if sequence != event_count:
-            raise ValueError("validated evidence sequence is not contiguous")
+            raise CurrentStateIntegrityError(
+                "validated evidence sequence is not contiguous"
+            )
         event_count += 1
         last_sequence = sequence
 
-    return ReplaySession(
-        started_at=identity.started_at,
-        session_id=identity.session_id,
-        manifest_sha256=identity.manifest_sha256,
-        evidence_sha256=identity.evidence_sha256,
-        ended_at=identity.ended_at,
-        status=identity.status,
-        event_count=event_count,
-        last_sequence=last_sequence,
-    )
+    try:
+        return ReplaySession(
+            started_at=identity.started_at,
+            session_id=identity.session_id,
+            manifest_sha256=identity.manifest_sha256,
+            evidence_sha256=identity.evidence_sha256,
+            ended_at=identity.ended_at,
+            status=identity.status,
+            event_count=event_count,
+            last_sequence=last_sequence,
+        )
+    except ValueError as exc:
+        raise CurrentStateIntegrityError(
+            "evidence identity is incompatible with Current State replay"
+        ) from exc
 
 
 def build_replay_snapshot(
