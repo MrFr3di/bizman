@@ -11,6 +11,7 @@ from bizman.changes.profile import compile_default_analysis_profile
 from bizman.core import (
     ContractMismatchError,
     CoreContext,
+    DataIntegrityError,
     CurrentStateRebuildRequest,
     CurrentStateRebuildResult,
     RepositoryAssets,
@@ -94,6 +95,29 @@ class CoreCurrentStateTests(unittest.TestCase):
             snapshot.metadata.state_fingerprint,
             result.state_fingerprint,
         )
+
+    def test_corrupted_current_state_maps_to_data_integrity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            context = _context(data_dir)
+            rebuild_current_state(
+                context,
+                CurrentStateRebuildRequest(),
+            )
+            state_path = data_dir / "state" / "current.sqlite3"
+            connection = sqlite3.connect(state_path)
+            connection.execute(
+                "UPDATE projection_meta SET state_fingerprint = ?",
+                ("0" * 64,),
+            )
+            connection.commit()
+            connection.close()
+
+            with self.assertRaises(DataIntegrityError):
+                rebuild_current_state(
+                    context,
+                    CurrentStateRebuildRequest(),
+                )
 
     def test_foreign_current_state_database_maps_to_contract_mismatch(self):
         with tempfile.TemporaryDirectory() as tmp:
