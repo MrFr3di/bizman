@@ -17,6 +17,15 @@
 - `bizman.core.trace_evidence` / MCP `evidence.trace` — bounded provenance resolution без доступа к raw HAR/JSONL.
 - `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов; P3 read-only MCP завершён, текущий этап — P4 Replayable Current State.
 
+## Current State
+
+- `src/bizman/current/` — deterministic replay model/store over finalized immutable evidence.
+- `BizManData/state/current.sqlite3` — external rebuildable Current State database; never source of truth and never committed.
+- P4-A establishes projection/profile identity, replay ledger, `input_fingerprint`, `state_fingerprint`, ready/stale state and atomic rebuild semantics.
+- `bizman.core.rebuild_current_state` — path-free Core rebuild use case; callers do not provide a DB path or arbitrary profile hash.
+- Delete/replay equivalence is a tested contract. The next slice is P4-B companies/units projection.
+- No Current State MCP/CLI surface exists yet.
+
 ## Agent Index / read model
 
 - `src/bizman/readmodel/` — детерминированная проекция curated knowledge и runtime intelligence.

@@ -366,17 +366,51 @@ Store:
 BizManData/state/current.sqlite3
 ```
 
-Target properties:
+### P4-A — storage, identity and replay foundation (complete)
+
+P4-A establishes the rebuildable Current State substrate before domain-specific state is introduced.
+
+Delivered:
+
+- independent `bizman.current` package and SQLite application/schema identity;
+- STRICT/WAL store with fail-closed compatibility and integrity checks;
+- deterministic projection metadata:
+  - `projection_name`;
+  - `projection_version`;
+  - `analysis_profile_sha256`;
+  - `input_fingerprint`;
+  - `state_fingerprint`;
+  - `ready/stale` status;
+  - session count and final session/sequence checkpoint;
+- immutable replay ledger over finalized EvidenceReader sessions;
+- deterministic ordering by `(started_at, session_id)`;
+- canonical UTC timestamps;
+- shared analysis-profile compiler used by Change Detector and Current State;
+- atomic full-snapshot replacement under `BEGIN IMMEDIATE`;
+- fingerprint verification on persisted reads;
+- path-free Core `rebuild_current_state` use case;
+- Python 3.11/3.14, distribution and architecture contracts.
+
+Acceptance proof:
 
 ```text
-projection_name
-projection_version
-input/evidence fingerprint
-last session
-last sequence
+build current.sqlite3
+snapshot A
+delete current.sqlite3
+replay identical immutable evidence/profile
+snapshot B
+
+A == B
+A.state_fingerprint == B.state_fingerprint
 ```
 
-Initial domain priority:
+P4-A intentionally contains no company/unit/product/inventory/price/production state tables and adds no CLI/MCP Current State surface.
+
+### P4-B — companies / units projection (next)
+
+The next slice adds the first domain projection on top of the P4-A replay contract. It must preserve the same input/state identity rules and prove deterministic rebuild from immutable evidence before additional domains are layered on.
+
+Remaining domain priority:
 
 1. companies/units;
 2. products;
@@ -386,15 +420,7 @@ Initial domain priority:
 6. production;
 7. finance only when evidence is sufficiently trustworthy.
 
-A projection must refuse or explicitly mark itself stale when D1 reports an incompatible/unknown structural change affecting parser assumptions.
-
-Acceptance requirement:
-
-```text
-delete current.sqlite3
-replay identical evidence/profile
-=> deterministic equivalent current state
-```
+A projection must refuse or explicitly mark itself stale when D1 reports an incompatible/unknown structural change affecting parser assumptions. P4-A provides the explicit stale-state storage contract; automatic D1 binding remains a later P4 slice.
 
 ## 8. P5 — History + deterministic analytics
 

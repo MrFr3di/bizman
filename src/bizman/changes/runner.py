@@ -6,13 +6,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from bizman.changes.baseline import BaselineCompiler, build_analysis_profile
+from bizman.changes.profile import compile_default_analysis_profile
 from bizman.changes.diff import SemanticDiff
 from bizman.sessions.evidence import EvidenceIdentity, EvidenceReader
 from bizman.changes.extract import ObservationExtractor
 from bizman.changes.model import AnalysisProfile, DiffFact, MatchState
 from bizman.changes.promotion import PromotionBundleBuilder, PromotionMaterializer
-from bizman.changes.rules import RULE_DESCRIPTORS, RuleEngine
+from bizman.changes.rules import RuleEngine
 from bizman.changes.state import DetectorState, TransactionResult
 from bizman.foundation.redaction import RedactionPolicy
 
@@ -130,13 +130,13 @@ class DetectorRunner:
         if not isinstance(redaction, RedactionPolicy):
             raise TypeError("redaction must be RedactionPolicy")
 
-        compilation = BaselineCompiler.compile(root, redaction)
-        profile = build_analysis_profile(compilation, RULE_DESCRIPTORS)
+        compilation = compile_default_analysis_profile(root, redaction)
+        profile = compilation.profile
         reader = EvidenceReader(root, data)
-        extractor = ObservationExtractor(compilation.contract, reader, redaction)
-        semantic_diff = SemanticDiff(compilation.contract)
+        extractor = ObservationExtractor(compilation.baseline.contract, reader, redaction)
+        semantic_diff = SemanticDiff(compilation.baseline.contract)
         rule_engine = RuleEngine(
-            RULE_DESCRIPTORS,
+            profile.rules,
             normalization_version=profile.normalization_version,
             extraction_version=profile.extraction_version,
         )

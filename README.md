@@ -18,10 +18,11 @@ Completed foundations include:
 - deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
 - bounded path-free `bizman.core` read API for knowledge, provenance, sessions and profile-scoped changes;
 - read-only `bizman-mcp` stdio adapter with 10 bounded Core-backed tools;
+- deterministic `bizman.current` replay foundation over immutable evidence;
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
 
-**P3 — read-only MCP v1 is complete.** P3-A through P3-E delivered the fixed 10-tool stdio surface, Core-owned provenance/session intelligence, explicit bounded schemas and a measured protocol completion baseline with no retrieval regression from P2-E. The current delivery stage is **P4 — Replayable Current State**. See `docs/ROADMAP.md` and `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
+**P3 — read-only MCP v1 is complete.** P4 is now active. **P4-A — Current State storage, identity and replay foundation is complete:** `BizManData/state/current.sqlite3` is a rebuildable derived store with deterministic evidence/profile fingerprints, an immutable replay ledger, atomic replacement and a path-free Core rebuild API. The next slice is **P4-B — companies/units projection**. See `docs/ROADMAP.md` and `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
 
 ## Current corpus
 
@@ -64,6 +65,7 @@ src/bizman/
   sessions/                     immutable evidence/session boundary
   collector/                    passive CDP collector
   changes/                      detector/diff/rules/state/promotion
+  current/                      replayable Current State identity/store/replay
   readmodel/                    rebuildable Agent Index + runtime intelligence
   core/                         stable application use-case boundary
   cli/                          thin command-line adapter over Core
@@ -133,7 +135,7 @@ The collector should run against a dedicated Chrome profile exposing a local Dev
 
 Legacy commands `tools/collect_live.py`, `tools/detect_changes.py` and `tools/validate_repo.py` remain available as compatibility delegates during the compatibility window. New integrations should use the installed `bizman` CLI or `bizman.core` rather than importing `tools.*`.
 
-Operational sessions/events/CAS, browser profiles, detector SQLite state and Promotion Bundles stay under the external `BizManData` root and are never package assets or intended Git content.
+Operational sessions/events/CAS, browser profiles, detector SQLite state, Current State SQLite and Promotion Bundles stay under the external `BizManData` root and are never package assets or intended Git content.
 
 ## Application Core boundary
 
@@ -145,11 +147,12 @@ Operational sessions/events/CAS, browser profiles, detector SQLite state and Pro
 - knowledge resolve/search/get;
 - evidence provenance trace;
 - session list/get, deterministic comparison and anomaly-signal listing;
-- profile-scoped change list/get.
+- profile-scoped change list/get;
+- deterministic Current State rebuild from immutable finalized evidence.
 
-CLI and MCP adapters consume Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation.
+CLI and MCP adapters consume Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation. Current State similarly derives its fixed database path internally as `BizManData/state/current.sqlite3`; callers do not provide a database path or arbitrary analysis-profile hash.
 
-The completed P3 MCP adapter is read-only, local-stdio only and exposes exactly 10 bounded tools. It does not expose arbitrary paths/SQL, raw HAR/session bytes, HTTP/OAuth, resources, Tasks or write automation. Current State, analytics and writes remain later stages.
+The completed P3 MCP adapter is read-only, local-stdio only and exposes exactly 10 bounded tools. It does not expose arbitrary paths/SQL, raw HAR/session bytes, HTTP/OAuth, resources, Tasks or write automation. P4-A adds Current State only as an internal/Core capability; no new MCP or CLI Current State command is introduced yet. Analytics and writes remain later stages.
 
 ## Change detection
 
