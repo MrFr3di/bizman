@@ -5,12 +5,19 @@ from pathlib import Path
 from typing import Mapping
 
 from bizman.changes.profile import compile_default_analysis_profile
+from bizman.current.company_units import (
+    CompanyUnitsArtifactError,
+    CompanyUnitsParserIncompatible,
+    project_company_roster_event,
+)
 from bizman.current.model import (
     PROJECTION_NAME,
     PROJECTION_VERSION,
+    CompanyState,
     CurrentProjectionSpec,
     CurrentStateSnapshot,
     ReplaySession,
+    UnitState,
     build_current_snapshot,
 )
 from bizman.current.state import CurrentStateIntegrityError, CurrentStateStore
@@ -53,9 +60,13 @@ def _ordered_identities(
 def _replay_session(
     reader: EvidenceReader,
     identity: EvidenceIdentity,
-) -> ReplaySession:
+    *,
+    companies: dict[str, CompanyState],
+    units: dict[str, UnitState],
+) -> tuple[ReplaySession, bool]:
     event_count = 0
     last_sequence: int | None = None
+    parser_incompatible = False
     for event in reader.iter_events(
         identity.session_id,
         expected_identity=identity,
@@ -69,11 +80,27 @@ def _replay_session(
             raise CurrentStateIntegrityError(
                 "validated evidence sequence is not contiguous"
             )
+
+        try:
+            projection = project_company_roster_event(reader, event)
+        except CompanyUnitsParserIncompatible:
+            parser_incompatible = True
+            projection = None
+        except CompanyUnitsArtifactError as exc:
+            raise CurrentStateIntegrityError(
+                "company/unit evidence artifact violates Current State contract"
+            ) from exc
+
+        if projection is not None:
+            companies[projection.company.company_id] = projection.company
+            for unit in projection.units:
+                units[unit.unit_id] = unit
+
         event_count += 1
         last_sequence = sequence
 
     try:
-        return ReplaySession(
+        replay = ReplaySession(
             started_at=identity.started_at,
             session_id=identity.session_id,
             manifest_sha256=identity.manifest_sha256,
@@ -87,6 +114,7 @@ def _replay_session(
         raise CurrentStateIntegrityError(
             "evidence identity is incompatible with Current State replay"
         ) from exc
+    return replay, parser_incompatible
 
 
 def build_replay_snapshot(
@@ -109,11 +137,35 @@ def build_replay_snapshot(
         projection_version=projection_version,
     )
     reader = EvidenceReader(root, data)
-    sessions = tuple(
-        _replay_session(reader, identity)
-        for identity in _ordered_identities(reader)
+    companies: dict[str, CompanyState] = {}
+    units: dict[str, UnitState] = {}
+    sessions: list[ReplaySession] = []
+    parser_incompatible = False
+
+    for identity in _ordered_identities(reader):
+        replay, incompatible = _replay_session(
+            reader,
+            identity,
+            companies=companies,
+            units=units,
+        )
+        sessions.append(replay)
+        parser_incompatible = parser_incompatible or incompatible
+
+    return build_current_snapshot(
+        spec,
+        tuple(sessions),
+        companies=tuple(
+            sorted(companies.values(), key=lambda item: item.company_id)
+        ),
+        units=tuple(sorted(units.values(), key=lambda item: item.unit_id)),
+        status="stale" if parser_incompatible else "ready",
+        stale_reason=(
+            "company_units_parser_v1_incompatible"
+            if parser_incompatible
+            else None
+        ),
     )
-    return build_current_snapshot(spec, sessions)
 
 
 def rebuild_current_state(
