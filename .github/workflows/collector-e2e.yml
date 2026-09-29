@@ -192,7 +192,8 @@ jobs:
       - name: Run Python floor contract smoke
         run: |
           uv run python -m unittest discover -s tests -p "test_core_*.py" -v
-          uv run python -m unittest discover -s tests -p "test_current_state.py" -v
+          uv run python -m unittest discover -s tests -p "test_current_*.py" -v
+          uv run python -m unittest discover -s tests -p "test_p4b_response_capture.py" -v
           uv run python -m unittest discover -s tests -p "test_mcp_*.py" -v
           uv run python -m unittest discover -s tests -p "test_package_migration_contract.py" -v
           uv run python -m unittest discover -s tests -p "test_cli_parity.py" -v
