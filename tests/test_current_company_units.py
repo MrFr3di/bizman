@@ -468,6 +468,29 @@ class CompanyUnitStoreTests(unittest.TestCase):
                     _redaction(),
                 )
 
+    def test_schema_replacement_refuses_existing_sqlite_sidecars(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            state_path = data_dir / "state" / "current.sqlite3"
+            _write_p4a_v1_database(state_path)
+            before = state_path.read_bytes()
+            shm_path = state_path.with_name(state_path.name + "-shm")
+            shm_path.write_bytes(b"synthetic-active-sidecar")
+
+            with patch(
+                "bizman.current.replay._is_rebuildable_older_state",
+                return_value=True,
+            ):
+                with self.assertRaises(CurrentStateOperationError):
+                    rebuild_current_state(
+                        REPO_ROOT,
+                        data_dir,
+                        _redaction(),
+                    )
+
+            self.assertEqual(state_path.read_bytes(), before)
+            self.assertTrue(shm_path.exists())
+
     def test_failed_atomic_schema_replacement_preserves_p4a_v1(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
