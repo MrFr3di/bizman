@@ -150,6 +150,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.collector",
                     "bizman.changes",
                     "bizman.readmodel",
+                    "bizman.current",
                     "bizman.cli",
                 ],
                 "allow_indirect_imports": True,
