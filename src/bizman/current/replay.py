@@ -189,15 +189,30 @@ def _discard_rebuildable_older_state(path: Path) -> None:
             user_version = int(
                 connection.execute("PRAGMA user_version").fetchone()[0]
             )
+            tables = {
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_schema "
+                    "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                )
+            }
+            strict = {
+                str(row[1]): int(row[5])
+                for row in connection.execute("PRAGMA table_list")
+                if str(row[1]) in {"projection_meta", "replayed_session"}
+            }
         finally:
             connection.close()
     except sqlite3.Error:
         return
 
-    if (
+    recognized_p4a_v1 = (
         application_id == APPLICATION_ID
-        and 0 < user_version < USER_VERSION
-    ):
+        and user_version == USER_VERSION - 1
+        and tables == {"projection_meta", "replayed_session"}
+        and strict == {"projection_meta": 1, "replayed_session": 1}
+    )
+    if recognized_p4a_v1:
         path.unlink(missing_ok=True)
         path.with_name(path.name + "-wal").unlink(missing_ok=True)
         path.with_name(path.name + "-shm").unlink(missing_ok=True)
