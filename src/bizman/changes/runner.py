@@ -136,7 +136,7 @@ class DetectorRunner:
         extractor = ObservationExtractor(compilation.baseline.contract, reader, redaction)
         semantic_diff = SemanticDiff(compilation.baseline.contract)
         rule_engine = RuleEngine(
-            RULE_DESCRIPTORS,
+            profile.rules,
             normalization_version=profile.normalization_version,
             extraction_version=profile.extraction_version,
         )
