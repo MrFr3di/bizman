@@ -52,7 +52,8 @@ actionForm.addEventListener('submit', (event) => {{
 }});
 
 async function exerciseNetwork() {{
-  await fetch('/company/?id=13393&tab=units&p=1');
+  const rosterResponse = await fetch('/company/?id=13393&tab=units&p=1');
+  await rosterResponse.text();
   await fetch('/api/get?safe=1&accessToken=TOP_SECRET_QUERY');
   await fetch('/api/post', {{
     method: 'POST',
