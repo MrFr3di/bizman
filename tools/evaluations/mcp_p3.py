@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from dataclasses import asdict
 import importlib.metadata
 import json
 from pathlib import Path
@@ -330,20 +329,22 @@ async def _evaluate_common_tasks(
     representative["evidence.search"] = searched[0]
     representative["evidence.get"] = searched[1]
 
+    resolve_trace_calls = 0
     resolved = await _call(
         client,
         "evidence.resolve",
         {"query": PRODUCT_REF},
     )
+    resolve_trace_calls += 1
     evidence_ref = resolved["hit"]["evidence_refs"][0]
-    traced = await task(
-        "evidence.resolve_trace",
-        [
-            ("evidence.resolve", {"query": PRODUCT_REF}),
-            ("evidence.trace", {"evidence_ref": evidence_ref}),
-        ],
+    trace_value = await _call(
+        client,
+        "evidence.trace",
+        {"evidence_ref": evidence_ref},
     )
-    representative["evidence.trace"] = traced[-1]
+    resolve_trace_calls += 1
+    results["evidence.resolve_trace"] = {"calls": resolve_trace_calls}
+    representative["evidence.trace"] = trace_value
 
     sessions = await task(
         "sessions.list",
@@ -688,9 +689,10 @@ async def evaluate_mcp_p3(
     root = Path(root).expanduser().resolve(strict=True)
     data_dir = Path(data_dir).expanduser().resolve(strict=False)
     runtime = synthetic_runtime(sessions=20, changes=40)
+    projection = project_curated_knowledge(root)
     rebuild_agent_index(
         data_dir / "index" / "agent-index.sqlite3",
-        project_curated_knowledge(root),
+        projection,
         runtime,
         completed_at=COMPLETED_AT,
     )
@@ -739,7 +741,7 @@ async def evaluate_mcp_p3(
     return {
         "evaluation_version": 1,
         "mcp_sdk_version": importlib.metadata.version("mcp"),
-        "knowledge_records": 590,
+        "knowledge_records": len(projection.records),
         "runtime_fixture": {
             "sessions": len(runtime.sessions),
             "changes": len(runtime.changes),
