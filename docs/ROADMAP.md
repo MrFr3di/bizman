@@ -1,6 +1,6 @@
 # BizMan unified roadmap
 
-Status: stable delivery-stage roadmap, updated 2026-09-28.
+Status: stable delivery-stage roadmap, updated 2026-09-29.
 
 BizMan evolves from deterministic evidence collection into a read-optimized agent platform and only later into guarded automation. Delivery stages use stable identifiers (`D1`, `P1`, `P2`, ...) rather than GitHub pull-request numbers. PR numbers are implementation history, not architecture.
 
@@ -406,11 +406,51 @@ A.state_fingerprint == B.state_fingerprint
 
 P4-A intentionally contains no company/unit/product/inventory/price/production state tables and adds no CLI/MCP Current State surface.
 
-### P4-B — companies / units projection (next)
+### P4-B — companies / units projection (current)
 
-The next slice adds the first domain projection on top of the P4-A replay contract. It must preserve the same input/state identity rules and prove deterministic rebuild from immutable evidence before additional domains are layered on.
+P4-B is the first end-to-end domain projection. The existing passive collector does not persist generic response bodies, so the slice first adds a deliberately narrow evidence capability for authoritative company roster pages rather than inferring current state from request intent or historical curated pages.
 
-Remaining domain priority:
+Target path:
+
+```text
+GET /company/?id=<company>&tab=units...
+  -> bounded Network.getResponseBody
+  -> capture-time sanitized text/title artifact in SHA-256 CAS
+  -> immutable http.response_body event
+  -> verified EvidenceReader replay
+  -> deterministic company/unit parser
+  -> latest-positive-observation reducer
+  -> current.sqlite3 schema v2
+```
+
+P4-B rules:
+
+- response-body capture is allowlisted to the company roster surface; generic HTML capture remains out of scope;
+- scripts, styles, form values and HTML attributes are not persisted in the page artifact;
+- historical `knowledge/pages/*` remains parser-regression evidence, never Current State input;
+- company/unit identity is derived from one authoritative roster observation, never joined by display name;
+- a successful write request does not mutate resulting state without a subsequent authoritative read;
+- partial/paginated omission is UNKNOWN and never interpreted as deletion;
+- known roster structure incompatible with parser v1 marks the projection `stale`;
+- company/unit rows and provenance participate in the full state fingerprint;
+- Current State advances to SQLite schema/user version 2 and projection version 2;
+- recognized schema v1 state is discarded only by an explicit rebuild because the database is derived from immutable evidence; foreign/unidentified/newer databases remain fail-closed.
+
+P4-B exit proof extends P4-A:
+
+```text
+collect synthetic authoritative company roster
+replay -> company/unit Current State
+snapshot A
+delete current.sqlite3
+replay identical immutable evidence
+snapshot B
+
+A == B
+A.state_fingerprint == B.state_fingerprint
+```
+
+Remaining domain priority after P4-B:
 
 1. companies/units;
 2. products;
@@ -648,8 +688,8 @@ F3  action context/correlation            completed
 D1  deterministic Change Detector         completed
 P1  Python package + Core boundary        completed
 P2  Agent Index + Session Intelligence    completed
-P3  read-only MCP v1                      current
-P4  replayable Current State
+P3  read-only MCP v1                      completed
+P4  replayable Current State              current
 P5  Parquet history + analytics
 P6  experiment framework
 P7  retrieval/agent eval + optimization
@@ -677,8 +717,7 @@ BizMan reaches the intended agent-toolchain milestone when:
 The shortest path from the current stage is therefore:
 
 ```text
-P3 read-only MCP
-  -> P4 Current State
+P4 Current State
   -> P5 History/Analytics
   -> P6 Experiments
   -> P7 Agent Evals/Optimization
