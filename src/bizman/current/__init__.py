@@ -3,10 +3,12 @@
 from bizman.current.model import (
     PROJECTION_NAME,
     PROJECTION_VERSION,
+    CompanyState,
     CurrentProjectionSpec,
     CurrentStateMetadata,
     CurrentStateSnapshot,
     ReplaySession,
+    UnitState,
     build_current_snapshot,
     current_input_fingerprint,
     current_state_fingerprint,
@@ -25,6 +27,7 @@ from bizman.current.state import (
 
 __all__ = [
     "APPLICATION_ID",
+    "CompanyState",
     "PROJECTION_NAME",
     "PROJECTION_VERSION",
     "USER_VERSION",
@@ -37,6 +40,7 @@ __all__ = [
     "CurrentStateSnapshot",
     "CurrentStateStore",
     "ReplaySession",
+    "UnitState",
     "build_current_snapshot",
     "build_replay_snapshot",
     "current_input_fingerprint",
