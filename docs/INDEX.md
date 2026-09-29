@@ -15,7 +15,7 @@
 - `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные HAR.
 - `knowledge/sources/promoted-sessions.json` — machine-readable provenance identity исторических promoted collector sessions.
 - `bizman.core.trace_evidence` / MCP `evidence.trace` — bounded provenance resolution без доступа к raw HAR/JSONL.
-- `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов; P2 завершён, P3 read-only MCP является текущим этапом.
+- `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов; P3 read-only MCP завершён, текущий этап — P4 Replayable Current State.
 
 ## Agent Index / read model
 
@@ -24,7 +24,9 @@
 - P2-A/P2-B индексируют 590 curated records; P2-C добавляет verified `session_summary` и profile-scoped `change_index`.
 - P2-D предоставляет bounded path-free read API через `bizman.core`: knowledge resolve/search/get, session list/get и profile-scoped change list/get.
 - `docs/benchmarks/p2e-readmodel-baseline-2026-09-28.md` — durable P2-E baseline: v1/v2/v3 retrieval quality, cold/warm latency, rebuild scaling, result budgets and query-plan decisions.
-- Обычные agent/read запросы и будущий MCP должны идти через Core, а не читать repository JSON/JSONL, detector SQLite или Agent Index напрямую.
+- `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md` — durable P3-E baseline: retrieval parity, action provenance, call budgets, bounded schemas/results, sanitized errors and installed stdio proof.
+- `src/bizman/mcp/` — завершённый read-only stdio adapter из 10 Core-backed tools.
+- Обычные agent/read/MCP запросы должны идти через Core, а не читать repository JSON/JSONL, detector SQLite или Agent Index напрямую.
 
 ## HTTP / протокол
 
@@ -70,9 +72,10 @@ uv run python -m compileall -q src tools tests
 uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
 uv run --locked --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
+uv run python tools/evaluations/mcp_p3.py
 ```
 
-GitHub workflow `.github/workflows/collector-e2e.yml` запускается для релевантных pull request и вручную через `workflow_dispatch`. Он включает Python 3.14 full validation, Python 3.11 compatibility, real Chrome E2E и benchmark jobs. Актуальная политика описана в `docs/CI.md`, этапы развития — в `docs/ROADMAP.md`.
+GitHub workflow `.github/workflows/collector-e2e.yml` запускается для релевантных pull request и вручную через `workflow_dispatch`. Он включает Python 3.14 full validation, Python 3.11 compatibility, gating P3 MCP completion evaluation, real Chrome E2E и benchmark jobs. Актуальная политика описана в `docs/CI.md`, этапы развития — в `docs/ROADMAP.md`.
 
 ## Правило для агентов
 

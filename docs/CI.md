@@ -26,7 +26,8 @@ The full lane runs:
 5. Full `unittest` discovery under exact-version-pinned Coverage.py `7.16.1`.
 6. Generate `coverage.xml` for the installable `bizman` package and upload it as a short-lived CI artifact.
 7. `tools/validate_repo.py` for committed structured knowledge and schemas.
-8. When explicitly activated, run CI-based SonarQube Cloud analysis and import that exact coverage report.
+8. Gating P3 MCP completion evaluation through the official SDK, including the installed stdio entry point, with a machine-readable `mcp-p3-evaluation` artifact.
+9. When explicitly activated, run CI-based SonarQube Cloud analysis and import that exact coverage report.
 
 The package architecture gate enforces these dependency directions:
 
@@ -35,8 +36,9 @@ The package architecture gate enforces these dependency directions:
 - `collector` is independent from detector/read-model/application layers;
 - `changes` does not depend on collector/read-model/application layers;
 - `readmodel` may consume deterministic lower layers but not collector/Core/CLI;
-- `core` does not depend on CLI;
-- CLI directly consumes Core rather than lower implementation packages, including `readmodel`.
+- `core` does not depend on CLI or MCP adapters;
+- CLI directly consumes Core rather than lower implementation packages, including `readmodel`;
+- MCP directly consumes Core and cannot import foundation/sessions/collector/changes/readmodel/CLI implementation layers.
 
 A source scan also prevents the installable `src/bizman` package from importing the legacy `tools.*` namespace.
 
@@ -60,7 +62,12 @@ The full test suite covers, among other invariants:
 - deterministic curated read-model projection, SQLite identity/rebuild and bounded FTS retrieval;
 - 590-record curated read-model coverage across actions/products/entities/endpoints/operations/forms/Wiki;
 - versioned retrieval evals with Recall@1/5, MRR and evidence correctness;
-- regression proof that expanded corpora do not reduce the earlier P2-A retrieval metrics.
+- regression proof that expanded corpora do not reduce the earlier P2-A retrieval metrics;
+- exact 10-tool MCP surface, explicit bounded protocol schemas and result budgets;
+- P2-E retrieval v1/v2/v3 replay through MCP with no metric regression;
+- all current action knowledge records resolve and trace in <=2 MCP calls;
+- common evidence/session task call budgets;
+- sanitized MCP failures and real installed-stdio protocol cleanliness.
 
 ### Python coverage and SonarQube Cloud
 
@@ -88,8 +95,9 @@ The proof requires:
 - exactly one wheel and one sdist;
 - no tests/tools payload, operational DB/Parquet/HAR files, `.env`, CAS or browser-profile payloads in the distributions;
 - repository `config/`, `schemas` and `knowledge` assets are not silently duplicated into the wheel;
-- public `bizman` packages import from the installed wheel rather than the checkout;
-- the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`.
+- public `bizman` packages, including `bizman.mcp`, import from the installed wheel rather than the checkout;
+- the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`;
+- the installed `bizman-mcp --help` entry point is present and the protocol contract is exercised separately by the MCP tests/evaluator.
 
 Repository assets remain explicit external configuration through `RepositoryAssets`; packaging does not turn them into hidden package data.
 
@@ -100,12 +108,35 @@ Python 3.11 is intentionally a lightweight compatibility lane rather than a dupl
 - locked `uv sync`;
 - compile of the installable `src` package;
 - Core API/use-case contract tests;
+- MCP API/evaluation contract tests;
 - package-migration semantic contract;
 - unified CLI parity tests;
 - imports of all current public package layers;
-- `bizman --help` smoke.
+- `bizman --help` and `bizman-mcp --help` smoke.
 
 The heavy jobs depend on both `validate` and `compatibility`, so a Python-floor regression fails early and avoids unnecessary Chrome/benchmark execution.
+
+### P3 MCP completion evaluation — gating inside `validate`
+
+`tools/evaluations/mcp_p3.py` is a correctness/protocol gate, not a timing benchmark. It builds the deterministic 590-record Agent Index plus a 20-session/40-change runtime fixture and evaluates the actual MCP surface through the official SDK.
+
+It requires:
+
+- exactly 10 read-only/closed-world tools;
+- explicit input/output schemas with bounded output collections;
+- no arbitrary path/SQL/database tool parameters;
+- v1/v2/v3 retrieval metrics no lower than the P2-E baseline;
+- all 11 current action records resolve and trace in <=2 tool calls;
+- common evidence/session median call count <=3;
+- compact/default structured output <=8 KiB;
+- representative ordinary structured output <=16 KiB;
+- no silent list truncation;
+- sanitized invalid-input/missing-index errors;
+- a successful initialize/list/call/close exchange through the installed `bizman-mcp` stdio process.
+
+The evaluator writes `mcp-p3-evaluation.json`, the workflow uploads it as the short-lived `mcp-p3-evaluation` artifact and appends a concise Actions summary. Any failed acceptance condition exits non-zero and fails `validate`.
+
+The durable reference result is `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
 
 ### 3. `collector-e2e` — gating
 
@@ -157,6 +188,7 @@ uv run python -m compileall -q src tools tests
 uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
 uv run --locked --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
+uv run python tools/evaluations/mcp_p3.py
 ```
 
 Canonical application commands use the installed unified CLI and an explicit repository asset root:
@@ -169,6 +201,7 @@ uv run bizman collect \
 uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData"
 uv run bizman detect --repo-root "$PWD" --data-dir "$HOME/BizManData" --dry-run
 uv run bizman validate --repo-root "$PWD"
+uv run bizman-mcp --repo-root "$PWD" --data-dir "$HOME/BizManData"
 ```
 
 The explicit `--repo-root` is the configuration boundary for curated repository assets. Core operation DTOs remain path-free.

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from bizman.core import (
     ChangeGetResult as CoreChangeGetResult,
@@ -44,7 +44,7 @@ class EvidenceHit(BaseModel):
     kind: KnowledgeKind
     title: str
     match_kind: Literal["exact_ref", "exact_alias", "exact_title", "full_text"]
-    evidence_refs: tuple[str, ...]
+    evidence_refs: Annotated[tuple[str, ...], Field(max_length=8)]
 
 
 class EvidenceResolveResult(BaseModel):
@@ -56,7 +56,7 @@ class EvidenceResolveResult(BaseModel):
 class EvidenceSearchResult(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    items: tuple[EvidenceHit, ...]
+    items: Annotated[tuple[EvidenceHit, ...], Field(max_length=50)]
 
 
 class EvidenceItem(BaseModel):
@@ -65,9 +65,9 @@ class EvidenceItem(BaseModel):
     ref: str
     kind: KnowledgeKind
     title: str
-    aliases: tuple[str, ...]
+    aliases: Annotated[tuple[str, ...], Field(max_length=64)]
     body: str
-    evidence_refs: tuple[str, ...]
+    evidence_refs: Annotated[tuple[str, ...], Field(max_length=8)]
     source_dataset: str
 
 
@@ -126,7 +126,7 @@ class SessionSummaryItem(BaseModel):
 class SessionListResult(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    items: tuple[SessionSummaryItem, ...]
+    items: Annotated[tuple[SessionSummaryItem, ...], Field(max_length=50)]
     next_cursor: str | None = None
 
 
@@ -164,7 +164,7 @@ class SessionCompareResult(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     comparison: SessionComparisonItem | None
-    missing_session_ids: tuple[str, ...]
+    missing_session_ids: Annotated[tuple[str, ...], Field(max_length=2)]
 
 
 class SessionAnomalyItem(BaseModel):
@@ -182,7 +182,7 @@ class SessionAnomalyItem(BaseModel):
 class SessionAnomalyListResult(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    items: tuple[SessionAnomalyItem, ...]
+    items: Annotated[tuple[SessionAnomalyItem, ...], Field(max_length=50)]
     next_cursor: str | None = None
 
 
@@ -205,7 +205,7 @@ class ChangeItem(BaseModel):
 class ChangeListResult(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    items: tuple[ChangeItem, ...]
+    items: Annotated[tuple[ChangeItem, ...], Field(max_length=50)]
     next_cursor: str | None = None
 
 

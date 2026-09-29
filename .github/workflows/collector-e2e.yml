@@ -70,6 +70,78 @@ jobs:
           retention-days: 7
       - name: Validate structured knowledge
         run: uv run python tools/validate_repo.py
+      - name: Run P3 MCP completion evaluation
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run python tools/evaluations/mcp_p3.py \
+            --output "$RUNNER_TEMP/mcp-p3-evaluation.json"
+      - name: Publish P3 MCP evaluation summary
+        if: always()
+        shell: bash
+        run: |
+          uv run python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          from pathlib import Path
+
+          path = Path(os.environ["RUNNER_TEMP"]) / "mcp-p3-evaluation.json"
+          print("## P3 MCP completion evaluation")
+          if not path.exists():
+              print("P3 MCP evaluation did not produce a report.")
+              raise SystemExit(0)
+          try:
+              data = json.loads(path.read_text(encoding="utf-8"))
+          except (OSError, json.JSONDecodeError) as exc:
+              print(f"P3 MCP evaluation report was unreadable: {exc}")
+              raise SystemExit(0)
+
+          print(f"Overall: **{'PASS' if data['passed'] else 'FAIL'}**")
+          print(f"Tools: {data['surface']['tool_count']}")
+          print(
+              "Retrieval parity: "
+              f"{'PASS' if data['retrieval']['passed'] else 'FAIL'}"
+          )
+          print(
+              "Known action trace: "
+              f"{data['action_trace']['actions']} actions, "
+              f"max {data['action_trace']['max_calls']} calls"
+          )
+          print(
+              "Evidence/session median calls: "
+              f"{data['common_tasks']['median_calls_evidence_session']:.1f}"
+          )
+          print(
+              "Result sizes: compact max "
+              f"{data['surface']['compact_max_bytes']} B; "
+              f"standard max {data['surface']['standard_max_bytes']} B"
+          )
+          print(
+              "Installed stdio: "
+              f"{'PASS' if data['stdio']['passed'] else 'FAIL'}"
+          )
+          print("")
+          print("| Corpus | Recall@1 | Recall@5 | MRR | Evidence | No-match |")
+          print("|---|---:|---:|---:|---:|---:|")
+          for name, item in data["retrieval"]["corpora"].items():
+              no_match = item["no_match_accuracy"]
+              rendered_no_match = (
+                  "n/a" if no_match is None else f"{no_match:.3f}"
+              )
+              print(
+                  f"| {name} | {item['recall_at_1']:.3f} | "
+                  f"{item['recall_at_5']:.3f} | {item['mrr']:.3f} | "
+                  f"{item['evidence_correctness']:.3f} | "
+                  f"{rendered_no_match} |"
+              )
+          PY
+      - name: Upload P3 MCP evaluation report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mcp-p3-evaluation
+          path: ${{ runner.temp }}/mcp-p3-evaluation.json
+          if-no-files-found: warn
+          retention-days: 7
       - name: Validate SonarQube Cloud CI configuration
         if: ${{ vars.SONAR_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         env:
