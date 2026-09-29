@@ -88,7 +88,7 @@ class CollectorEventPipeline:
         network_normalizer: NetworkNormalizer,
         correlator: ActionHttpCorrelator,
         writer: Any,
-        response_body_supported: bool,
+        response_body_supported: bool = False,
     ) -> None:
         self.binding_name = binding_name
         self.observer_world_name = observer_world_name
@@ -107,7 +107,15 @@ class CollectorEventPipeline:
         for link in self.correlator.observe(event):
             self.writer.append_event(link)
 
-    async def handle_network(
+    def handle_network(self, event: CdpEvent, *, target_id: str | None) -> None:
+        normalized = self.network_normalizer.normalize(
+            method=event.method,
+            params=event.params,
+            target_id=target_id,
+        )
+        self._append_observation(normalized)
+
+    async def handle_network_with_body(
         self,
         event: CdpEvent,
         *,
@@ -125,14 +133,14 @@ class CollectorEventPipeline:
                 and isinstance(encoded_length, (int, float))
                 and encoded_length > self.network_normalizer.max_response_body_bytes
             )
-            if (
-                self.network_normalizer.response_body_capture_candidate(request_id)
-                and encoded_too_large
-            ):
+            candidate = self.network_normalizer.response_body_capture_candidate(
+                request_id
+            )
+            if candidate and encoded_too_large:
                 self.writer.add_warning(
                     "company roster response body skipped: encoded size exceeds limit"
                 )
-            elif self.network_normalizer.response_body_capture_candidate(request_id):
+            elif candidate:
                 try:
                     result = await cdp.command(
                         "Network.getResponseBody",
@@ -153,12 +161,7 @@ class CollectorEventPipeline:
                         f"{type(exc).__name__}"
                     )
 
-        normalized = self.network_normalizer.normalize(
-            method=event.method,
-            params=event.params,
-            target_id=target_id,
-        )
-        self._append_observation(normalized)
+        self.handle_network(event, target_id=target_id)
 
     def handle_runtime(self, event: CdpEvent, *, target_id: str | None) -> None:
         session_id = event.session_id
@@ -270,7 +273,7 @@ async def _consume_events(
             pipeline.handle_runtime(event, target_id=target_id)
             continue
         if event.method.startswith("Network."):
-            await pipeline.handle_network(
+            await pipeline.handle_network_with_body(
                 event,
                 target_id=target_id,
                 cdp=cdp,
