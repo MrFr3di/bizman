@@ -100,11 +100,8 @@ def _sanitize_html_page(raw: bytes) -> bytes:
     except UnicodeDecodeError as exc:
         raise ResponseBodyCaptureError("company roster response is not UTF-8") from exc
     parser = _VisibleHtmlTextParser()
-    try:
-        parser.feed(text)
-        parser.close()
-    except Exception as exc:
-        raise ResponseBodyCaptureError("company roster HTML cannot be sanitized") from exc
+    parser.feed(text)
+    parser.close()
     return canonical_json_bytes(
         {
             "schema_version": _PAGE_ARTIFACT_SCHEMA_VERSION,
@@ -524,7 +521,9 @@ class NetworkNormalizer:
     ) -> dict[str, Any] | None:
         if not self.response_body_capture_candidate(request_id):
             return None
-        state = self._requests[request_id]
+        state = self._requests.get(request_id)
+        if state is None:
+            return None
         raw = _decode_response_body(
             body,
             base64_encoded=base64_encoded,
@@ -537,15 +536,20 @@ class NetworkNormalizer:
             target_id=target_id,
             request_id=request_id,
         )
+        url = state.get("url")
+        if not isinstance(url, str):
+            raise ResponseBodyCaptureError(
+                "company roster request state is missing URL"
+            )
         event.update(
             {
-                "redirect_index": state["redirect_index"],
-                "method": state["method"],
-                "url_path": self._path(str(state["url"])),
+                "redirect_index": state.get("redirect_index", 0),
+                "method": state.get("method"),
+                "url_path": self._path(url),
                 "route_pattern": None,
-                "status_code": state["status_code"],
-                "query": state["query"],
-                "mime_type": state["mime_type"],
+                "status_code": state.get("status_code"),
+                "query": state.get("query"),
+                "mime_type": state.get("mime_type"),
                 "request_body_ref": None,
                 "response_body_ref": artifact_ref,
             }
