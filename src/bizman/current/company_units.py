@@ -12,7 +12,7 @@ from bizman.sessions.evidence import EvidenceReader
 
 _ROSTER_PATH = "/company/"
 _PAGE_SCHEMA_VERSION = "1.0"
-_SANITIZER_VERSION = 1
+_SANITIZER_VERSION = 2
 _UNIT_LINE_RE = re.compile(r"^(.+?) #([1-9][0-9]*)$", re.ASCII)
 _LEVEL_RE = re.compile(r"^[1-9][0-9]*$", re.ASCII)
 _COMPANY_RE = re.compile(r"^Компания\s+(.+)$")
@@ -240,6 +240,20 @@ def project_company_roster_event(
             "recognized company roster no longer exposes the enterprises section"
         )
 
+    headers = ("Город", "Предприятие", "Уровень")
+    header_index = next(
+        (
+            index
+            for index in range(len(lines) - 2)
+            if lines[index:index + 3] == headers
+        ),
+        None,
+    )
+    if header_index is None:
+        raise CompanyUnitsParserIncompatible(
+            "recognized company roster has no verified table structure"
+        )
+
     company = CompanyState(
         company_id=company_id,
         name=_company_name(lines, title),
@@ -248,12 +262,16 @@ def project_company_roster_event(
         observed_at=observed_at,
     )
     units = _parse_units(
-        lines=lines,
+        lines=lines[header_index + len(headers):],
         company_id=company_id,
         session_id=session_id,
         sequence=sequence,
         observed_at=observed_at,
     )
+    if not units:
+        raise CompanyUnitsParserIncompatible(
+            "recognized roster has no positive unit rows; empty state is unproven"
+        )
     return CompanyRosterProjection(company=company, units=units)
 
 
