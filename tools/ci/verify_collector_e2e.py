@@ -137,7 +137,7 @@ def main() -> int:
     roster_artifact = json.loads(
         _artifact_path(data_dir, roster_ref).read_text(encoding="utf-8")
     )
-    if roster_artifact.get("sanitizer_version") != 1:
+    if roster_artifact.get("sanitizer_version") != 2:
         raise AssertionError("unexpected company roster sanitizer version")
     roster_text = roster_artifact.get("text")
     if not isinstance(roster_text, str):
@@ -210,6 +210,10 @@ def main() -> int:
         "TOP_SECRET_INPUT_VALUE",
         "TOP_SECRET_ROSTER_INPUT",
         "TOP_SECRET_ROSTER_SCRIPT",
+        "TOP_SECRET_ROSTER_HIDDEN_NESTED",
+        "TOP_SECRET_ROSTER_HIDDEN_TAIL",
+        "TOP_SECRET_ROSTER_HIDDEN_STYLE",
+        "TOP_SECRET_ROSTER_HIDDEN_ARIA",
         "clientSecret",
         "accessToken",
     )
