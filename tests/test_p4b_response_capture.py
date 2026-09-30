@@ -73,7 +73,7 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             normalizer = self._normalizer(Path(tmp))
             self._prime_company_roster(normalizer)
-            self.assertTrue(normalizer.response_body_capture_candidate("r1"))
+            self.assertTrue(normalizer.response_body_capture_candidate("r1", target_id="t1"))
 
             normalizer.normalize(
                 method="Network.requestWillBeSent",
@@ -102,7 +102,64 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
                 },
                 target_id="t1",
             )
-            self.assertFalse(normalizer.response_body_capture_candidate("r2"))
+            self.assertFalse(normalizer.response_body_capture_candidate("r2", target_id="t1"))
+
+    def test_same_request_id_cannot_cross_target_boundaries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            normalizer = self._normalizer(Path(tmp))
+            self._prime_company_roster(normalizer)
+            same_id_other_target = {
+                "requestId": "r1",
+                "timestamp": 2.0,
+                "request": {
+                    "url": "https://bizmania.ru/units/shop/?id=33670",
+                    "method": "GET",
+                    "headers": {},
+                },
+            }
+            normalizer.normalize(
+                method="Network.requestWillBeSent",
+                params=same_id_other_target,
+                target_id="t2",
+            )
+            normalizer.normalize(
+                method="Network.responseReceived",
+                params={
+                    "requestId": "r1",
+                    "timestamp": 2.1,
+                    "response": {
+                        "url": "https://bizmania.ru/units/shop/?id=33670",
+                        "status": 200,
+                        "mimeType": "text/html",
+                        "headers": {},
+                    },
+                },
+                target_id="t2",
+            )
+            self.assertTrue(
+                normalizer.response_body_capture_candidate(
+                    "r1", target_id="t1"
+                )
+            )
+            self.assertFalse(
+                normalizer.response_body_capture_candidate(
+                    "r1", target_id="t2"
+                )
+            )
+            normalized = normalizer.normalize_response_body(
+                request_id="r1",
+                body=(
+                    "<html><head><title>Компания Paradise</title></head>"
+                    "<body><div>Предприятия</div></body></html>"
+                ),
+                base64_encoded=False,
+                params={"requestId": "r1", "timestamp": 2.2},
+                target_id="t1",
+            )
+            self.assertIsNotNone(normalized)
+            assert normalized is not None
+            self.assertEqual(normalized["url_path"], "/company/")
+            self.assertEqual(normalized["query"]["id"], ["13393"])
 
     def test_sanitized_artifact_keeps_visible_roster_but_drops_script_and_attributes(self):
         with tempfile.TemporaryDirectory() as tmp:
