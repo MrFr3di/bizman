@@ -159,10 +159,9 @@ def _connect_rw(path: Path) -> sqlite3.Connection:
         )
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
-            connection = sqlite3.connect(path, timeout=5.0, autocommit=True)
-        else:  # Python 3.11 compatibility.
-            connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
+        # isolation_level=None leaves BEGIN/COMMIT under the store's control on
+        # both supported Python versions without relying on 3.12+ keywords.
+        connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
         try:
             connection.execute("PRAGMA trusted_schema = OFF")
             connection.execute("PRAGMA foreign_keys = ON")
@@ -195,20 +194,12 @@ def _connect_ro(path: Path) -> sqlite3.Connection:
         )
     try:
         uri = f"{path.resolve().as_uri()}?mode=ro"
-        if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
-            connection = sqlite3.connect(
-                uri,
-                timeout=5.0,
-                uri=True,
-                autocommit=True,
-            )
-        else:
-            connection = sqlite3.connect(
-                uri,
-                timeout=5.0,
-                uri=True,
-                isolation_level=None,
-            )
+        connection = sqlite3.connect(
+            uri,
+            timeout=5.0,
+            uri=True,
+            isolation_level=None,
+        )
         connection.execute("PRAGMA trusted_schema = OFF")
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA busy_timeout = 5000")
