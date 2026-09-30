@@ -312,7 +312,8 @@ jobs:
           curl -fsS http://127.0.0.1:9222/json/version >/dev/null
 
           set +e
-          timeout --preserve-status --signal=INT --kill-after=5s 16s \
+          # Allow WebSocket close handshake and finally: manifest finalization after SIGINT.
+          timeout --preserve-status --signal=INT --kill-after=15s 16s \
             uv run python tools/collect_live.py \
               --endpoint http://127.0.0.1:9222 \
               --data-dir "$DATA_DIR" \
