@@ -353,3 +353,18 @@ P4-C is accepted only when:
 - final CI/Sonar/review gates are green.
 
 If C0 fails, the correct outcome is a documented evidence gap. P4-C must not manufacture certainty to satisfy a milestone.
+
+## 18. Engineering references reviewed (2026-09-30)
+
+- Chrome DevTools Protocol overview/versioning: https://chromedevtools.github.io/devtools-protocol/
+- CDP Network domain / `Network.getResponseBody`: https://chromedevtools.github.io/devtools-protocol/tot/Network/
+- WHATWG URL Living Standard (updated 2026-09-10): https://url.spec.whatwg.org/
+- OWASP Input Validation Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+- OWASP DOM Clobbering Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/DOM_Clobbering_Prevention_Cheat_Sheet.html
+- RFC 8785 JSON Canonicalization Scheme (used as design reference; no new dependency): https://www.rfc-editor.org/rfc/rfc8785.html
+- SQLite atomic commit: https://www.sqlite.org/atomiccommit.html
+- SQLite WAL: https://www.sqlite.org/wal.html
+- SQLite PRAGMA integrity/foreign-key checks: https://www.sqlite.org/pragma.html
+- SQLite VACUUM INTO semantics: https://www.sqlite.org/lang_vacuum.html
+- Python sqlite3 transaction control: https://docs.python.org/3/library/sqlite3.html
+- W3C PROV overview (conceptual provenance reference only): https://www.w3.org/TR/prov-overview/
