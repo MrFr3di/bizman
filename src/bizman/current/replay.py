@@ -9,6 +9,7 @@ from typing import Mapping
 
 from bizman.changes.profile import compile_default_analysis_profile
 from bizman.current.company_units import (
+    CompanyRosterProjection,
     CompanyUnitsArtifactError,
     CompanyUnitsParserIncompatible,
     project_company_roster_event,
@@ -66,6 +67,31 @@ def _ordered_identities(
     )
 
 
+def _verified_event_sequence(event: Mapping[str, object], expected: int) -> int:
+    sequence = event.get("sequence")
+    if isinstance(sequence, bool) or not isinstance(sequence, int):
+        raise TypeError("validated evidence sequence must be an integer")
+    if sequence != expected:
+        raise CurrentStateIntegrityError(
+            "validated evidence sequence is not contiguous"
+        )
+    return sequence
+
+
+def _roster_projection_or_stale(
+    reader: EvidenceReader,
+    event: Mapping[str, object],
+) -> tuple[CompanyRosterProjection | None, bool]:
+    try:
+        return project_company_roster_event(reader, event), False
+    except CompanyUnitsParserIncompatible:
+        return None, True
+    except CompanyUnitsArtifactError as exc:
+        raise CurrentStateIntegrityError(
+            "company/unit evidence artifact violates Current State contract"
+        ) from exc
+
+
 def _replay_session(
     reader: EvidenceReader,
     identity: EvidenceIdentity,
@@ -82,23 +108,9 @@ def _replay_session(
     ):
         if not isinstance(event, Mapping):
             raise TypeError("EvidenceReader event must be a mapping")
-        sequence = event.get("sequence")
-        if isinstance(sequence, bool) or not isinstance(sequence, int):
-            raise TypeError("validated evidence sequence must be an integer")
-        if sequence != event_count:
-            raise CurrentStateIntegrityError(
-                "validated evidence sequence is not contiguous"
-            )
-
-        try:
-            projection = project_company_roster_event(reader, event)
-        except CompanyUnitsParserIncompatible:
-            parser_incompatible = True
-            projection = None
-        except CompanyUnitsArtifactError as exc:
-            raise CurrentStateIntegrityError(
-                "company/unit evidence artifact violates Current State contract"
-            ) from exc
+        sequence = _verified_event_sequence(event, event_count)
+        projection, incompatible = _roster_projection_or_stale(reader, event)
+        parser_incompatible = parser_incompatible or incompatible
 
         if projection is not None:
             companies[projection.company.company_id] = projection.company
