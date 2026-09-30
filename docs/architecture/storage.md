@@ -81,7 +81,9 @@ P4-B добавляет первый узко allowlisted путь для respon
 - текст title;
 - видимые текстовые узлы страницы.
 
-HTML attributes, значения input/form, scripts, styles, templates, noscript и textarea не сохраняются. Raw response body этим путём не хранится.
+HTML attributes, значения input/form, scripts, styles, templates, noscript и textarea не сохраняются. Sanitizer v2 также подавляет вложенный текст под `hidden`, `inert`, `aria-hidden=true`, inline `display:none` / `visibility:hidden`, а также SVG/iframe/select. Изменение только исключённого текста не должно менять SHA-256 sanitized CAS artifact. Raw response body этим путём не хранится.
+
+Это консервативная структурная фильтрация, а не вычисление браузером CSS visibility: внешний CSS и произвольные видимые текстовые секреты нельзя достоверно классифицировать вне DOM. Поэтому body-capture остаётся ограниченным известным first-party roster, а parser не использует HTML вне подтверждённой структуры roster. Если нет распознанной таблицы или положительных строк, результат `stale` (UNKNOWN), но не достоверно пустая компания.
 
 Collector выпускает отдельный immutable `http.response_body` event со ссылкой на sanitized CAS artifact. Существующие `http.response` и `http.finished` не переписываются.
 
