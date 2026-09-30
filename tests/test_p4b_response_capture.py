@@ -252,7 +252,10 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
                 params={"requestId": "r1", "timestamp": 1.3},
                 target_id="t1",
             )
-            assert first is not None and second is not None
+            self.assertIsNotNone(first)
+            self.assertIsNotNone(second)
+            assert first is not None
+            assert second is not None
             self.assertEqual(
                 first["response_body_ref"],
                 second["response_body_ref"],
