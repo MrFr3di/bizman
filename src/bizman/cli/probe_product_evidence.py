@@ -4,11 +4,14 @@ import argparse
 import json
 from pathlib import Path
 
-from bizman.core import (
-    CoreContext,
+from bizman.core import CoreContext, OperationError
+from bizman.core.product_probe import (
     ProductEvidenceProbeRequest,
     probe_product_evidence,
 )
+
+
+_MAX_PROBE_BODY_BYTES = 4 * 1024 * 1024
 
 
 def configure_parser(parser: argparse.ArgumentParser) -> None:
@@ -22,12 +25,23 @@ def configure_parser(parser: argparse.ArgumentParser) -> None:
     parser.set_defaults(handler=run)
 
 
+def _read_bounded(path: Path) -> bytes:
+    try:
+        with path.open("rb") as stream:
+            body = stream.read(_MAX_PROBE_BODY_BYTES + 1)
+    except OSError as exc:
+        raise OperationError("product evidence probe input is unavailable") from exc
+    if len(body) > _MAX_PROBE_BODY_BYTES:
+        raise OperationError("product evidence probe input exceeds size limit")
+    return body
+
+
 def run(context: CoreContext, args: argparse.Namespace) -> int:
     result = probe_product_evidence(
         context,
         ProductEvidenceProbeRequest(
             source_url=args.source_url,
-            body_file=args.body_file,
+            body=_read_bounded(args.body_file),
         ),
     )
     report = {
