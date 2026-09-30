@@ -26,7 +26,10 @@ def _parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     collect_command.configure_parser(subparsers.add_parser("collect"))
     detect_command.configure_parser(subparsers.add_parser("detect"))
-    probe_product_evidence_command.configure_parser(\n        subparsers.add_parser("probe-product-evidence")\n    )\n    validate_command.configure_parser(subparsers.add_parser("validate"))
+    probe_product_evidence_command.configure_parser(
+        subparsers.add_parser("probe-product-evidence")
+    )
+    validate_command.configure_parser(subparsers.add_parser("validate"))
     return parser
 
 
