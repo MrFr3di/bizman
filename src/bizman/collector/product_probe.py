@@ -8,6 +8,8 @@ from urllib.parse import parse_qsl, urlsplit
 _MAX_SIGNED_INT64 = (1 << 63) - 1
 _GOODS_PATH = "/units/shop/"
 _PRODUCT_LINK_PATH = "/products/"
+_SUPPRESSED_TAGS = frozenset({"script", "style", "template", "noscript", "svg", "iframe"})
+_HIDDEN_STYLE_TOKENS = ("display:none", "visibility:hidden", "visibility:collapse")
 
 
 class ProductProbeRouteError(ValueError):
@@ -37,10 +39,14 @@ class ProductProbeRoute:
             or parts.fragment
             or parts.hostname not in approved_hosts
             or parts.path != _GOODS_PATH
+            or "%" in parts.path
+            or "%" in parts.query
         ):
             raise ProductProbeRouteError("URL is outside the approved P4-C C0 surface")
-
-        pairs = parse_qsl(parts.query, keep_blank_values=True, strict_parsing=True)
+        try:
+            pairs = parse_qsl(parts.query, keep_blank_values=True, strict_parsing=True)
+        except ValueError as exc:
+            raise ProductProbeRouteError("query is malformed") from exc
         if len(pairs) != 2 or {key for key, _value in pairs} != {"id", "tab"}:
             raise ProductProbeRouteError("query must contain exactly one id and one tab")
         values = {key: value for key, value in pairs}
@@ -71,18 +77,44 @@ class ProductIdentityCandidate:
     numeric_query_ids: tuple[int, ...]
 
 
+def _hidden(attrs: list[tuple[str, str | None]]) -> bool:
+    lowered = {key.casefold(): value for key, value in attrs}
+    if "hidden" in lowered or "inert" in lowered:
+        return True
+    aria_hidden = lowered.get("aria-hidden")
+    if isinstance(aria_hidden, str) and aria_hidden.casefold() == "true":
+        return True
+    style = lowered.get("style")
+    if isinstance(style, str):
+        compact = "".join(style.casefold().split())
+        return any(token in compact for token in _HIDDEN_STYLE_TOKENS)
+    return False
+
+
 class _IdentityCandidateParser(HTMLParser):
     def __init__(self, *, max_candidates: int) -> None:
         super().__init__(convert_charrefs=True)
         self.max_candidates = max_candidates
         self.candidates: list[ProductIdentityCandidate] = []
+        self._suppressed_depth = 0
+        self._open_suppression: list[bool] = []
 
     def handle_starttag(
         self,
         tag: str,
         attrs: list[tuple[str, str | None]],
     ) -> None:
-        if len(self.candidates) >= self.max_candidates or tag.casefold() != "a":
+        normalized_tag = tag.casefold()
+        suppress_here = (
+            self._suppressed_depth > 0
+            or normalized_tag in _SUPPRESSED_TAGS
+            or _hidden(attrs)
+        )
+        self._open_suppression.append(suppress_here)
+        if suppress_here:
+            self._suppressed_depth += 1
+            return
+        if len(self.candidates) >= self.max_candidates or normalized_tag != "a":
             return
         href = next(
             (value for key, value in attrs if key.casefold() == "href"),
@@ -91,7 +123,14 @@ class _IdentityCandidateParser(HTMLParser):
         if not isinstance(href, str):
             return
         parts = urlsplit(href)
-        if parts.scheme or parts.netloc or parts.fragment or parts.path != _PRODUCT_LINK_PATH:
+        if (
+            parts.scheme
+            or parts.netloc
+            or parts.fragment
+            or parts.path != _PRODUCT_LINK_PATH
+            or "%" in parts.path
+            or "%" in parts.query
+        ):
             return
         try:
             pairs = parse_qsl(parts.query, keep_blank_values=True, strict_parsing=True)
@@ -117,6 +156,26 @@ class _IdentityCandidateParser(HTMLParser):
                 numeric_query_ids=(numeric_id,),
             )
         )
+
+    def handle_startendtag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        before = len(self._open_suppression)
+        self.handle_starttag(tag, attrs)
+        if len(self._open_suppression) > before:
+            suppressed = self._open_suppression.pop()
+            if suppressed:
+                self._suppressed_depth -= 1
+
+    def handle_endtag(self, tag: str) -> None:
+        del tag
+        if not self._open_suppression:
+            return
+        suppressed = self._open_suppression.pop()
+        if suppressed:
+            self._suppressed_depth -= 1
 
 
 def inspect_product_identity_candidates(
