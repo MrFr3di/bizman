@@ -135,7 +135,7 @@ def _decode_response_body(
             if base64_encoded
             else body.encode("utf-8")
         )
-    except (ValueError, UnicodeError) as exc:
+    except ValueError as exc:
         raise ResponseBodyCaptureError("CDP response body encoding is invalid") from exc
     if len(raw) > max_bytes:
         raise ResponseBodyCaptureError("CDP response body exceeds capture size limit")
