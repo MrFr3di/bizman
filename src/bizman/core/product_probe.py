@@ -46,11 +46,7 @@ def probe_product_evidence(
             request.source_url,
             approved_hosts=("bizmania.ru",),
         )
-        size = request.body_file.stat().st_size
-        if size > _MAX_PROBE_BODY_BYTES:
-            raise ValueError("probe body exceeds the research size limit")
-        body = request.body_file.read_bytes()
-        candidates = inspect_product_identity_candidates(body)
+        with request.body_file.open("rb") as stream:\n            body = stream.read(_MAX_PROBE_BODY_BYTES + 1)\n        if len(body) > _MAX_PROBE_BODY_BYTES:\n            raise ValueError("probe body exceeds the research size limit")\n        candidates = inspect_product_identity_candidates(body)
     except (OSError, UnicodeError, ValueError) as exc:
         raise OperationError(
             f"product evidence probe failed: {type(exc).__name__}"
