@@ -47,7 +47,7 @@ def _artifact_bytes(text: str, *, title: str = "Компания Paradise · П�
     return canonical_json_bytes(
         {
             "schema_version": "1.0",
-            "sanitizer_version": 1,
+            "sanitizer_version": 2,
             "media_type": "text/html",
             "title": title,
             "text": text,
@@ -331,6 +331,41 @@ class CompanyUnitReplayTests(unittest.TestCase):
         )
         self.assertEqual(snapshot.companies, ())
         self.assertEqual(snapshot.units, ())
+
+    def test_unverified_or_empty_roster_marks_state_stale(self):
+        malformed = (
+            "Компания Paradise\nПредприятия\nГород\nНовый формат\nУровень",
+            "Компания Paradise\nПредприятия\nГород\nПредприятие\nУровень\n"
+            "Нет распознанных строк",
+        )
+        for content in malformed:
+            with self.subTest(content=content), tempfile.TemporaryDirectory() as tmp:
+                data_dir = Path(tmp) / "BizManData"
+                ref = _put_artifact(data_dir, _artifact_bytes(content))
+                _write_session(
+                    data_dir,
+                    session_id=SESSION_A,
+                    started_at="2026-09-29T10:00:00Z",
+                    ended_at="2026-09-29T10:01:00Z",
+                    events=[
+                        _roster_event(
+                            SESSION_A,
+                            0,
+                            EVENT_A0,
+                            ref,
+                            observed_at="2026-09-29T10:00:30Z",
+                        )
+                    ],
+                )
+                snapshot = build_replay_snapshot(
+                    REPO_ROOT, data_dir, _redaction()
+                )
+                self.assertEqual(snapshot.metadata.status, "stale")
+                self.assertEqual(
+                    snapshot.metadata.stale_reason,
+                    "company_units_parser_v1_incompatible",
+                )
+                self.assertEqual(snapshot.units, ())
 
     def test_mutated_company_artifact_fails_verified_replay(self):
         with tempfile.TemporaryDirectory() as tmp:
