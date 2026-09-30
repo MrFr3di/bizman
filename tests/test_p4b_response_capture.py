@@ -120,6 +120,10 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
 </table>
 <input name="clientSecret" value="TOP_SECRET_INPUT">
 <script>const token = "TOP_SECRET_SCRIPT";</script>
+<div hidden><div>TOP_SECRET_HIDDEN_NESTED</div><span>TOP_SECRET_HIDDEN_TAIL</span></div>
+<div style="color:red; DISPLAY: none !important"><b>TOP_SECRET_INLINE_STYLE</b></div>
+<section aria-hidden="true">TOP_SECRET_ARIA_HIDDEN</section>
+<div inert>TOP_SECRET_INERT</div>
 </body>
 </html>"""
             event = normalizer.normalize_response_body(
@@ -136,7 +140,7 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
             ref = event["response_body_ref"]
             self.assertIsInstance(ref, str)
             artifact = json.loads(normalizer.artifacts.read_bytes(ref))
-            self.assertEqual(artifact["sanitizer_version"], 1)
+            self.assertEqual(artifact["sanitizer_version"], 2)
             self.assertEqual(
                 artifact["title"],
                 "Компания Paradise · Предприятия",
@@ -145,6 +149,14 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
             serialized = json.dumps(artifact, ensure_ascii=False)
             self.assertNotIn("TOP_SECRET_INPUT", serialized)
             self.assertNotIn("TOP_SECRET_SCRIPT", serialized)
+            for forbidden in (
+                "TOP_SECRET_HIDDEN_NESTED",
+                "TOP_SECRET_HIDDEN_TAIL",
+                "TOP_SECRET_INLINE_STYLE",
+                "TOP_SECRET_ARIA_HIDDEN",
+                "TOP_SECRET_INERT",
+            ):
+                self.assertNotIn(forbidden, serialized)
             self.assertNotIn("clientSecret", serialized)
 
     def test_excluded_private_html_does_not_change_sanitized_artifact_identity(self):
@@ -158,6 +170,9 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
                     "<div>Предприятия</div>"
                     "<input value='SECRET_A'>"
                     "<script>const token='SECRET_A'</script>"
+                    "<div hidden><div>SECRET_A</div><span>SECRET_A</span></div>"
+                    "<div style='display:none'>SECRET_A</div>"
+                    "<section aria-hidden='true'>SECRET_A</section>"
                     "</body></html>"
                 ),
                 base64_encoded=False,
@@ -171,6 +186,9 @@ class ResponseBodyEvidenceTests(unittest.TestCase):
                     "<div>Предприятия</div>"
                     "<input value='SECRET_B'>"
                     "<script>const token='SECRET_B'</script>"
+                    "<div hidden><div>SECRET_B</div><span>SECRET_B</span></div>"
+                    "<div style='display:none'>SECRET_B</div>"
+                    "<section aria-hidden='true'>SECRET_B</section>"
                     "</body></html>"
                 ),
                 base64_encoded=False,
