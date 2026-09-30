@@ -13,9 +13,9 @@ from bizman.sessions.evidence import EvidenceReader
 _ROSTER_PATH = "/company/"
 _PAGE_SCHEMA_VERSION = "1.0"
 _SANITIZER_VERSION = 2
-_UNIT_LINE_RE = re.compile(r"^(.+?) #([1-9][0-9]*)$", re.ASCII)
-_LEVEL_RE = re.compile(r"^[1-9][0-9]*$", re.ASCII)
-_COMPANY_RE = re.compile(r"^Компания\s+(.+)$")
+_UNIT_LINE_RE = re.compile(r"^(.+?) #([1-9]\d*)$", re.ASCII)
+_LEVEL_RE = re.compile(r"^[1-9]\d*$", re.ASCII)
+_COMPANY_PREFIX = "Компания "
 _HEADER_VALUES = frozenset(
     {
         "Город",
@@ -130,9 +130,9 @@ def _load_page_artifact(
 
 def _company_name(lines: tuple[str, ...], title: object) -> str:
     for line in lines:
-        match = _COMPANY_RE.fullmatch(line)
-        if match is not None:
-            name = match.group(1).strip()
+        # Whitespace is normalized before parsing. No backtracking regex needed.
+        if line.startswith(_COMPANY_PREFIX):
+            name = line.removeprefix(_COMPANY_PREFIX).strip()
             if name:
                 return name
     if isinstance(title, str) and title.startswith("Компания "):
