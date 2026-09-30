@@ -6,7 +6,6 @@ from pathlib import Path
 
 from bizman.collector.product_probe import (
     ProductProbeRoute,
-    ProductProbeRouteError,
     inspect_product_identity_candidates,
 )
 from bizman.core import CoreContext
@@ -38,7 +37,7 @@ def run(context: CoreContext, args: argparse.Namespace) -> int:
             raise ValueError("probe body exceeds the research size limit")
         body = args.body_file.read_bytes()
         candidates = inspect_product_identity_candidates(body)
-    except (OSError, UnicodeError, ValueError, ProductProbeRouteError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         raise ValueError(f"product evidence probe failed: {type(exc).__name__}") from exc
 
     report = {
