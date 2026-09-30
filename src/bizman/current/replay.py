@@ -181,10 +181,8 @@ def _is_rebuildable_older_state(path: Path) -> bool:
     if not path.exists() or not path.is_file():
         return False
     try:
-        if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
-            connection = sqlite3.connect(path, timeout=5.0, autocommit=True)
-        else:
-            connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
+        # Keep explicit SQL transactions compatible with Python 3.11 and 3.14.
+        connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
         try:
             application_id_row = connection.execute(
                 "PRAGMA application_id"
