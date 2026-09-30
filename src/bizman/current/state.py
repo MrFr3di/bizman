@@ -320,81 +320,87 @@ class CurrentStateStore:
             )
             self._connection.execute(f"PRAGMA user_version = {USER_VERSION}")
 
+    def _validate_schema_identity(self) -> None:
+        application_id = int(
+            self._connection.execute("PRAGMA application_id").fetchone()[0]
+        )
+        user_version = int(
+            self._connection.execute("PRAGMA user_version").fetchone()[0]
+        )
+        if application_id != APPLICATION_ID:
+            raise CurrentStateCompatibilityError(
+                f"foreign Current State database application_id={application_id}"
+            )
+        if user_version != USER_VERSION:
+            relation = "newer" if user_version > USER_VERSION else "older"
+            raise CurrentStateCompatibilityError(
+                f"{relation} Current State schema {user_version} is unsupported; "
+                f"expected {USER_VERSION}"
+            )
+
+        tables = _user_tables(self._connection)
+        if tables != _EXPECTED_TABLES:
+            raise CurrentStateCompatibilityError(
+                "Current State database user tables do not match schema v2"
+            )
+        strict = {
+            str(row[1]): int(row[5])
+            for row in self._connection.execute("PRAGMA table_list")
+            if str(row[1]) in _EXPECTED_TABLES
+        }
+        if set(strict) != _EXPECTED_TABLES:
+            raise CurrentStateCompatibilityError(
+                "Current State database is missing required schema tables"
+            )
+        if any(value != 1 for value in strict.values()):
+            raise CurrentStateCompatibilityError(
+                "Current State database tables must all be STRICT"
+            )
+
+
+    def _validate_row_integrity(self) -> None:
+        meta_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM projection_meta"
+            ).fetchone()[0]
+        )
+        ledger_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM replayed_session"
+            ).fetchone()[0]
+        )
+        company_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM company"
+            ).fetchone()[0]
+        )
+        unit_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM unit"
+            ).fetchone()[0]
+        )
+        if meta_count not in {0, 1}:
+            raise CurrentStateIntegrityError(
+                "Current State must contain at most one metadata row"
+            )
+        if meta_count == 0 and (ledger_count or company_count or unit_count):
+            raise CurrentStateIntegrityError(
+                "Current State rows exist without metadata"
+            )
+        foreign_key_violations = tuple(
+            self._connection.execute("PRAGMA foreign_key_check")
+        )
+        if foreign_key_violations:
+            raise CurrentStateIntegrityError(
+                "Current State contains foreign-key violations"
+            )
+        if meta_count == 1:
+            self._snapshot_unchecked()
+
     def _validate_existing(self) -> None:
         try:
-            application_id = int(
-                self._connection.execute("PRAGMA application_id").fetchone()[0]
-            )
-            user_version = int(
-                self._connection.execute("PRAGMA user_version").fetchone()[0]
-            )
-            if application_id != APPLICATION_ID:
-                raise CurrentStateCompatibilityError(
-                    f"foreign Current State database application_id={application_id}"
-                )
-            if user_version != USER_VERSION:
-                relation = "newer" if user_version > USER_VERSION else "older"
-                raise CurrentStateCompatibilityError(
-                    f"{relation} Current State schema {user_version} is unsupported; "
-                    f"expected {USER_VERSION}"
-                )
-
-            tables = _user_tables(self._connection)
-            if tables != _EXPECTED_TABLES:
-                raise CurrentStateCompatibilityError(
-                    "Current State database user tables do not match schema v1"
-                )
-            strict = {
-                str(row[1]): int(row[5])
-                for row in self._connection.execute("PRAGMA table_list")
-                if str(row[1]) in _EXPECTED_TABLES
-            }
-            if set(strict) != _EXPECTED_TABLES:
-                raise CurrentStateCompatibilityError(
-                    "Current State database is missing required schema tables"
-                )
-            if any(value != 1 for value in strict.values()):
-                raise CurrentStateCompatibilityError(
-                    "Current State database tables must all be STRICT"
-                )
-
-            meta_count = int(
-                self._connection.execute(
-                    "SELECT count(*) FROM projection_meta"
-                ).fetchone()[0]
-            )
-            ledger_count = int(
-                self._connection.execute(
-                    "SELECT count(*) FROM replayed_session"
-                ).fetchone()[0]
-            )
-            company_count = int(
-                self._connection.execute(
-                    "SELECT count(*) FROM company"
-                ).fetchone()[0]
-            )
-            unit_count = int(
-                self._connection.execute(
-                    "SELECT count(*) FROM unit"
-                ).fetchone()[0]
-            )
-            if meta_count not in {0, 1}:
-                raise CurrentStateIntegrityError(
-                    "Current State must contain at most one metadata row"
-                )
-            if meta_count == 0 and (ledger_count or company_count or unit_count):
-                raise CurrentStateIntegrityError(
-                    "Current State rows exist without metadata"
-                )
-            foreign_key_violations = tuple(
-                self._connection.execute("PRAGMA foreign_key_check")
-            )
-            if foreign_key_violations:
-                raise CurrentStateIntegrityError(
-                    "Current State contains foreign-key violations"
-                )
-            if meta_count == 1:
-                self._snapshot_unchecked()
+            self._validate_schema_identity()
+            self._validate_row_integrity()
         except CurrentStateError:
             raise
         except (TypeError, ValueError) as exc:
