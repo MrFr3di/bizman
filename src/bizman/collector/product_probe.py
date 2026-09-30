@@ -8,8 +8,7 @@ from urllib.parse import parse_qsl, urlsplit
 _MAX_SIGNED_INT64 = (1 << 63) - 1
 _GOODS_PATH = "/units/shop/"
 _PRODUCT_LINK_PATH = "/products/"
-_SUPPRESSED_TAGS = frozenset({"script", "style", "template", "noscript", "svg", "iframe"})
-_HIDDEN_STYLE_TOKENS = ("display:none", "visibility:hidden", "visibility:collapse")
+_SUPPRESSED_TAGS = frozenset({"script", "style", "template", "noscript", "svg", "iframe"})\n_VOID_TAGS = frozenset({"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"})\n_HIDDEN_STYLE_TOKENS = ("display:none", "visibility:hidden", "visibility:collapse")
 
 
 class ProductProbeRouteError(ValueError):
@@ -97,8 +96,7 @@ class _IdentityCandidateParser(HTMLParser):
         self.max_candidates = max_candidates
         self.candidates: list[ProductIdentityCandidate] = []
         self._suppressed_depth = 0
-        self._open_suppression: list[bool] = []
-
+        self._open_suppression: list[tuple[str, bool]] = []\n
     def handle_starttag(
         self,
         tag: str,
@@ -110,11 +108,7 @@ class _IdentityCandidateParser(HTMLParser):
             or normalized_tag in _SUPPRESSED_TAGS
             or _hidden(attrs)
         )
-        self._open_suppression.append(suppress_here)
-        if suppress_here:
-            self._suppressed_depth += 1
-            return
-        if len(self.candidates) >= self.max_candidates or normalized_tag != "a":
+        is_void = normalized_tag in _VOID_TAGS\n        if not is_void:\n            self._open_suppression.append((normalized_tag, suppress_here))\n        if suppress_here:\n            if not is_void:\n                self._suppressed_depth += 1\n            return\n        if len(self.candidates) >= self.max_candidates or normalized_tag != "a":
             return
         href = next(
             (value for key, value in attrs if key.casefold() == "href"),
@@ -162,21 +156,9 @@ class _IdentityCandidateParser(HTMLParser):
         tag: str,
         attrs: list[tuple[str, str | None]],
     ) -> None:
-        before = len(self._open_suppression)
-        self.handle_starttag(tag, attrs)
-        if len(self._open_suppression) > before:
-            suppressed = self._open_suppression.pop()
-            if suppressed:
-                self._suppressed_depth -= 1
-
+        normalized_tag = tag.casefold()\n        if normalized_tag in _VOID_TAGS:\n            self.handle_starttag(tag, attrs)\n            return\n        before = len(self._open_suppression)\n        self.handle_starttag(tag, attrs)\n        if len(self._open_suppression) > before:\n            _opened_tag, suppressed = self._open_suppression.pop()\n            if suppressed:\n                self._suppressed_depth -= 1\n
     def handle_endtag(self, tag: str) -> None:
-        del tag
-        if not self._open_suppression:
-            return
-        suppressed = self._open_suppression.pop()
-        if suppressed:
-            self._suppressed_depth -= 1
-
+        normalized_tag = tag.casefold()\n        for index in range(len(self._open_suppression) - 1, -1, -1):\n            if self._open_suppression[index][0] != normalized_tag:\n                continue\n            closing = self._open_suppression[index:]\n            del self._open_suppression[index:]\n            self._suppressed_depth -= sum(1 for _name, suppressed in closing if suppressed)\n            return\n
 
 def inspect_product_identity_candidates(
     html: bytes,
