@@ -22,6 +22,10 @@ BizManData/
     state.sqlite3
     state.sqlite3-wal          # transient when applicable
     state.sqlite3-shm          # transient when applicable
+  state/
+    current.sqlite3
+    current.sqlite3-wal        # transient when applicable
+    current.sqlite3-shm        # transient when applicable
   promotions/
     <analysis-profile-prefix>/<session-uuidv7>/promotion.<sha256>.json
   parquet/                     # future historical projection
@@ -66,6 +70,26 @@ Detector читает только finalized `completed`/`cancelled` sessions д
 Все evidence roots (`sessions/`, `events/`, `artifacts/sha256/`) обязаны после filesystem resolution оставаться внутри configured `BizManData`; path traversal и symlink escape fail closed.
 
 Отсутствующий `request_body_ref` означает **unknown evidence**, а не пустой body. Поэтому structural extraction сохраняет `body_keys=None`, и операция становится `INDETERMINATE`, если решение зависит от неизвестной body structure.
+
+## Current State P4-B evidence boundary
+
+P4-B добавляет первый узко allowlisted путь для response-body evidence. Для успешного first-party `GET /company/?id=...&tab=units...` collector после `Network.loadingFinished` может вызвать пассивный CDP `Network.getResponseBody`.
+
+Тело ограничивается по размеру и санитизируется до durable persistence. CAS artifact содержит только детерминированный UTF-8 JSON:
+
+- version схемы и sanitizer;
+- текст title;
+- видимые текстовые узлы страницы.
+
+HTML attributes, значения input/form, scripts, styles, templates, noscript и textarea не сохраняются. Sanitizer v2 также подавляет вложенный текст под `hidden`, `inert`, `aria-hidden=true`, inline `display:none` / `visibility:hidden`, а также SVG/iframe/select. Изменение только исключённого текста не должно менять SHA-256 sanitized CAS artifact. Raw response body этим путём не хранится.
+
+Это консервативная структурная фильтрация, а не вычисление браузером CSS visibility: внешний CSS и произвольные видимые текстовые секреты нельзя достоверно классифицировать вне DOM. Поэтому body-capture остаётся ограниченным известным first-party roster, а parser не использует HTML вне подтверждённой структуры roster. Если нет распознанной таблицы или положительных строк, результат `stale` (UNKNOWN), но не достоверно пустая компания.
+
+Collector выпускает отдельный immutable `http.response_body` event со ссылкой на sanitized CAS artifact. Существующие `http.response` и `http.finished` не переписываются.
+
+Current State разыменовывает artifact только через `EvidenceReader.read_verified_artifact`, поэтому CAS bytes проверяются по digest до company/unit parser. Отсутствующее response-body evidence означает UNKNOWN, а не пустой roster.
+
+Current State schema v2 остаётся rebuildable derived storage. При explicit rebuild существующий файл schema v1 автоматически заменяется только если он точно распознан как P4-A по application ID, user version, STRICT table set и column contract. Новая v2 сначала строится и полностью проверяется во временном sibling SQLite-файле; затем выполняется same-directory atomic replace. Если после probe остаются старые `-wal`/`-shm`, upgrade fail closed и не трогает v1. Ошибка staging/swap не должна превращаться в молчаливое частичное обновление, а foreign/unidentified/newer schema по-прежнему fail closed.
 
 ## Форматы
 

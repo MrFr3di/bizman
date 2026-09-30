@@ -142,6 +142,70 @@ jobs:
           path: ${{ runner.temp }}/mcp-p3-evaluation.json
           if-no-files-found: warn
           retention-days: 7
+      - name: Diagnose public SonarQube Cloud PR gate and issues
+        if: ${{ github.event_name == 'pull_request' }}
+        continue-on-error: true
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== Public Sonar Quality Gate, PR #$PR_NUMBER ==="
+          gate_json="$RUNNER_TEMP/sonar-pr-gate.json"
+          gate_http=$(curl -sS --get \
+            --data-urlencode "projectKey=MrFr3di_bizman" \
+            --data-urlencode "pullRequest=$PR_NUMBER" \
+            --output "$gate_json" --write-out '%{http_code}' \
+            https://sonarcloud.io/api/qualitygates/project_status) || gate_http="transport-error"
+          if [[ "$gate_http" == "200" ]]; then
+            uv run python -c '
+          import json, sys
+          gate = json.load(open(sys.argv[1], encoding="utf-8")).get("projectStatus", {})
+          print(json.dumps({
+              "status": gate.get("status"),
+              "conditions": gate.get("conditions", []),
+              "period": gate.get("period"),
+          }, ensure_ascii=False, indent=2))
+          ' "$gate_json"
+          else
+            echo "::warning::Sonar PR gate is inaccessible anonymously (HTTP $gate_http); 404 can mean private or missing project. Inspect with authorized Sonar access."
+          fi
+          echo "=== Public unresolved Sonar issues, PR #$PR_NUMBER ==="
+          issues_json="$RUNNER_TEMP/sonar-pr-issues.json"
+          issues_http=$(curl -sS --get \
+            --data-urlencode "componentKeys=MrFr3di_bizman" \
+            --data-urlencode "pullRequest=$PR_NUMBER" \
+            --data-urlencode "resolved=false" \
+            --data-urlencode "ps=100" \
+            --output "$issues_json" --write-out '%{http_code}' \
+            https://sonarcloud.io/api/issues/search) || issues_http="transport-error"
+          if [[ "$issues_http" == "200" ]]; then
+            uv run python -c '
+          import json, sys
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          print(json.dumps({
+              "total": payload.get("paging", {}).get("total", payload.get("total")),
+              "issues": [
+                  {
+                      "rule": item.get("rule"),
+                      "type": item.get("type"),
+                      "impacts": item.get("impacts"),
+                      "message": item.get("message"),
+                      "component": item.get("component"),
+                      "line": item.get("line"),
+                      "status": item.get("status"),
+                  }
+                  for item in payload.get("issues", [])
+              ],
+          }, ensure_ascii=False, indent=2))
+          ' "$issues_json"
+            if [[ "$gate_http" != "200" ]]; then
+              echo "::warning::Public issue results cannot establish a passing Quality Gate when its API is inaccessible."
+            fi
+          else
+            echo "::warning::Sonar PR issues are inaccessible anonymously (HTTP $issues_http)."
+          fi
+
       - name: Validate SonarQube Cloud CI configuration
         if: ${{ vars.SONAR_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         env:
@@ -192,7 +256,8 @@ jobs:
       - name: Run Python floor contract smoke
         run: |
           uv run python -m unittest discover -s tests -p "test_core_*.py" -v
-          uv run python -m unittest discover -s tests -p "test_current_state.py" -v
+          uv run python -m unittest discover -s tests -p "test_current_*.py" -v
+          uv run python -m unittest discover -s tests -p "test_p4b_response_capture.py" -v
           uv run python -m unittest discover -s tests -p "test_mcp_*.py" -v
           uv run python -m unittest discover -s tests -p "test_package_migration_contract.py" -v
           uv run python -m unittest discover -s tests -p "test_cli_parity.py" -v
@@ -280,7 +345,8 @@ jobs:
           curl -fsS http://127.0.0.1:9222/json/version >/dev/null
 
           set +e
-          timeout --preserve-status --signal=INT --kill-after=5s 16s \
+          # Allow WebSocket close handshake and finally: manifest finalization after SIGINT.
+          timeout --preserve-status --signal=INT --kill-after=15s 16s \
             uv run python tools/collect_live.py \
               --endpoint http://127.0.0.1:9222 \
               --data-dir "$DATA_DIR" \
@@ -306,6 +372,7 @@ jobs:
             ${{ runner.temp }}/bizman-fixture.log
             ${{ runner.temp }}/bizman-chrome.log
             ${{ runner.temp }}/bizman-collector.log
+            ${{ runner.temp }}/BizManData
           if-no-files-found: ignore
           retention-days: 3
 

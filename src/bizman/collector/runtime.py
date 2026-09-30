@@ -11,6 +11,7 @@ from bizman.collector.actions import ActionNormalizer, ExecutionContextRegistry
 from bizman.collector.cdp import (
     CdpConnection,
     CdpConnectionClosed,
+    CdpError,
     CdpEvent,
     CdpTransport,
     open_cdp_transport,
@@ -22,15 +23,20 @@ from bizman.collector.discovery import (
     discover_browser,
 )
 from bizman.collector.events import CollectorClock, EventSequencer
-from bizman.collector.network import FirstPartyPolicy, NetworkNormalizer
+from bizman.collector.network import (
+    FirstPartyPolicy,
+    NetworkNormalizer,
+    ResponseBodyCaptureError,
+)
 from bizman.collector.storage import ArtifactStore, SessionWriter
 from bizman.collector.targets import TargetOrchestrator
 from bizman.foundation.redaction import RedactionPolicy
 from bizman.foundation.session import new_session_manifest
 
-COLLECTOR_VERSION = "0.2.1"
+COLLECTOR_VERSION = "0.3.0"
 ACTION_BINDING_NAME = "__bizmanActionV1"
 ACTION_WORLD_NAME = "bizman-action-observer-v1"
+_RESPONSE_BODY_METHOD = "Network.getResponseBody"
 
 PASSIVE_CDP_METHODS = frozenset(
     {
@@ -39,6 +45,7 @@ PASSIVE_CDP_METHODS = frozenset(
         "Target.attachToTarget",
         "Target.setAutoAttach",
         "Network.enable",
+        _RESPONSE_BODY_METHOD,
         "Runtime.enable",
         "Runtime.addBinding",
         "Page.addScriptToEvaluateOnNewDocument",
@@ -82,6 +89,7 @@ class CollectorEventPipeline:
         network_normalizer: NetworkNormalizer,
         correlator: ActionHttpCorrelator,
         writer: Any,
+        response_body_supported: bool = False,
     ) -> None:
         self.binding_name = binding_name
         self.observer_world_name = observer_world_name
@@ -91,6 +99,7 @@ class CollectorEventPipeline:
         self.network_normalizer = network_normalizer
         self.correlator = correlator
         self.writer = writer
+        self.response_body_supported = bool(response_body_supported)
 
     def _append_observation(self, event: dict[str, Any] | None) -> None:
         if event is None:
@@ -106,6 +115,57 @@ class CollectorEventPipeline:
             target_id=target_id,
         )
         self._append_observation(normalized)
+
+    async def handle_network_with_body(
+        self,
+        event: CdpEvent,
+        *,
+        target_id: str | None,
+        cdp: CdpConnection,
+    ) -> None:
+        if event.method == "Network.loadingFinished":
+            request_id = event.params.get("requestId")
+            encoded_length = event.params.get("encodedDataLength")
+            encoded_too_large = (
+                not isinstance(encoded_length, bool)
+                and isinstance(encoded_length, (int, float))
+                and encoded_length > self.network_normalizer.max_response_body_bytes
+            )
+            candidate = self.network_normalizer.response_body_capture_candidate(
+                request_id,
+                target_id=target_id,
+            )
+            if candidate and not self.response_body_supported:
+                self.writer.add_warning(
+                    "company roster response body unavailable: "
+                    "Network.getResponseBody unsupported"
+                )
+            elif candidate and encoded_too_large:
+                self.writer.add_warning(
+                    "company roster response body skipped: encoded size exceeds limit"
+                )
+            elif candidate:
+                try:
+                    result = await cdp.command(
+                        _RESPONSE_BODY_METHOD,
+                        {"requestId": request_id},
+                        session_id=event.session_id,
+                    )
+                    body_event = self.network_normalizer.normalize_response_body(
+                        request_id=str(request_id),
+                        body=result.get("body"),
+                        base64_encoded=result.get("base64Encoded"),
+                        params=event.params,
+                        target_id=target_id,
+                    )
+                    self._append_observation(body_event)
+                except (CdpError, ResponseBodyCaptureError) as exc:
+                    self.writer.add_warning(
+                        "company roster response body unavailable: "
+                        f"{type(exc).__name__}"
+                    )
+
+        self.handle_network(event, target_id=target_id)
 
     def handle_runtime(self, event: CdpEvent, *, target_id: str | None) -> None:
         session_id = event.session_id
@@ -217,7 +277,11 @@ async def _consume_events(
             pipeline.handle_runtime(event, target_id=target_id)
             continue
         if event.method.startswith("Network."):
-            pipeline.handle_network(event, target_id=target_id)
+            await pipeline.handle_network_with_body(
+                event,
+                target_id=target_id,
+                cdp=cdp,
+            )
 
 
 def _action_instrumentation_issues(
@@ -320,6 +384,9 @@ async def run_collection(
         network_normalizer=network_normalizer,
         correlator=correlator,
         writer=writer,
+        response_body_supported=resolved_discovery.capabilities.has_command(
+            _RESPONSE_BODY_METHOD
+        ),
     )
 
     action_issues = _action_instrumentation_issues(resolved_discovery.capabilities)

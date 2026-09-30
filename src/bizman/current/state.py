@@ -1,22 +1,25 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from pathlib import Path
 import sqlite3
-from typing import Final, Iterator
+from typing import Final
 
 from bizman.current.model import (
+    CompanyState,
     CurrentProjectionSpec,
     CurrentStateSnapshot,
     ReplaySession,
+    UnitState,
     build_current_snapshot,
 )
 
 
 APPLICATION_ID: Final[int] = 0x424D4331
-USER_VERSION: Final[int] = 1
+USER_VERSION: Final[int] = 2
 _MIN_SQLITE_VERSION: Final[tuple[int, int, int]] = (3, 37, 0)
-_EXPECTED_TABLES = frozenset({"projection_meta", "replayed_session"})
+_EXPECTED_TABLES = frozenset(
+    {"projection_meta", "replayed_session", "company", "unit"}
+)
 
 
 class CurrentStateError(RuntimeError):
@@ -82,6 +85,36 @@ _SCHEMA = (
     CREATE INDEX replayed_session_order_idx
     ON replayed_session(started_at, session_id)
     """,
+    """
+    CREATE TABLE company (
+        company_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL CHECK (length(name) > 0),
+        source_session_id TEXT NOT NULL,
+        source_sequence INTEGER NOT NULL CHECK (source_sequence >= 0),
+        observed_at TEXT NOT NULL,
+        FOREIGN KEY (source_session_id)
+            REFERENCES replayed_session(session_id)
+    ) STRICT
+    """,
+    """
+    CREATE TABLE unit (
+        unit_id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL,
+        display_name TEXT NOT NULL CHECK (length(display_name) > 0),
+        city_name TEXT NOT NULL CHECK (length(city_name) > 0),
+        level INTEGER NOT NULL CHECK (level > 0),
+        source_session_id TEXT NOT NULL,
+        source_sequence INTEGER NOT NULL CHECK (source_sequence >= 0),
+        observed_at TEXT NOT NULL,
+        FOREIGN KEY (company_id) REFERENCES company(company_id),
+        FOREIGN KEY (source_session_id)
+            REFERENCES replayed_session(session_id)
+    ) STRICT
+    """,
+    """
+    CREATE INDEX unit_company_idx
+    ON unit(company_id, unit_id)
+    """,
 )
 
 
@@ -125,10 +158,9 @@ def _connect_rw(path: Path) -> sqlite3.Connection:
         )
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
-            connection = sqlite3.connect(path, timeout=5.0, autocommit=True)
-        else:  # Python 3.11 compatibility.
-            connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
+        # isolation_level=None leaves BEGIN/COMMIT under the store's control on
+        # both supported Python versions without relying on 3.12+ keywords.
+        connection = sqlite3.connect(path, timeout=5.0, isolation_level=None)
         try:
             connection.execute("PRAGMA trusted_schema = OFF")
             connection.execute("PRAGMA foreign_keys = ON")
@@ -161,20 +193,12 @@ def _connect_ro(path: Path) -> sqlite3.Connection:
         )
     try:
         uri = f"{path.resolve().as_uri()}?mode=ro"
-        if hasattr(sqlite3, "LEGACY_TRANSACTION_CONTROL"):
-            connection = sqlite3.connect(
-                uri,
-                timeout=5.0,
-                uri=True,
-                autocommit=True,
-            )
-        else:
-            connection = sqlite3.connect(
-                uri,
-                timeout=5.0,
-                uri=True,
-                isolation_level=None,
-            )
+        connection = sqlite3.connect(
+            uri,
+            timeout=5.0,
+            uri=True,
+            isolation_level=None,
+        )
         connection.execute("PRAGMA trusted_schema = OFF")
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA busy_timeout = 5000")
@@ -183,6 +207,49 @@ def _connect_ro(path: Path) -> sqlite3.Connection:
         raise CurrentStateOperationError(
             "cannot open Current State database read-only"
         ) from exc
+
+
+class _ImmediateTransaction:
+    """One explicit SQLite transaction; no deferred generator cleanup."""
+
+    def __init__(self, connection: sqlite3.Connection) -> None:
+        self._connection = connection
+
+    def __enter__(self) -> None:
+        try:
+            self._connection.execute("BEGIN IMMEDIATE")
+        except sqlite3.Error as exc:
+            raise CurrentStateOperationError(
+                "Current State transaction failed"
+            ) from exc
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: object,
+    ) -> bool:
+        del exc_type, tb
+        try:
+            if exc is None:
+                self._connection.execute("COMMIT")
+            elif self._connection.in_transaction:
+                self._connection.execute("ROLLBACK")
+        except sqlite3.Error as transaction_error:
+            if self._connection.in_transaction:
+                try:
+                    self._connection.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            raise CurrentStateOperationError(
+                "Current State transaction failed"
+            ) from transaction_error
+
+        if isinstance(exc, sqlite3.Error):
+            raise CurrentStateOperationError(
+                "Current State transaction failed"
+            ) from exc
+        return False
 
 
 class CurrentStateStore:
@@ -249,29 +316,12 @@ class CurrentStateStore:
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
-    @contextmanager
-    def _immediate_transaction(self) -> Iterator[None]:
+    def _immediate_transaction(self) -> _ImmediateTransaction:
         if self._read_only:
             raise CurrentStateCompatibilityError(
                 "Current State database is open read-only"
             )
-        try:
-            self._connection.execute("BEGIN IMMEDIATE")
-            try:
-                yield
-                self._connection.execute("COMMIT")
-            except BaseException:
-                if self._connection.in_transaction:
-                    self._connection.execute("ROLLBACK")
-                raise
-        except CurrentStateError:
-            raise
-        except sqlite3.Error as exc:
-            if self._connection.in_transaction:
-                self._connection.execute("ROLLBACK")
-            raise CurrentStateOperationError(
-                "Current State transaction failed"
-            ) from exc
+        return _ImmediateTransaction(self._connection)
 
     def _bootstrap_or_validate(self) -> None:
         application_id = int(
@@ -295,64 +345,86 @@ class CurrentStateStore:
             )
             self._connection.execute(f"PRAGMA user_version = {USER_VERSION}")
 
+    def _validate_schema_identity(self) -> None:
+        application_id = int(
+            self._connection.execute("PRAGMA application_id").fetchone()[0]
+        )
+        user_version = int(
+            self._connection.execute("PRAGMA user_version").fetchone()[0]
+        )
+        if application_id != APPLICATION_ID:
+            raise CurrentStateCompatibilityError(
+                f"foreign Current State database application_id={application_id}"
+            )
+        if user_version != USER_VERSION:
+            relation = "newer" if user_version > USER_VERSION else "older"
+            raise CurrentStateCompatibilityError(
+                f"{relation} Current State schema {user_version} is unsupported; "
+                f"expected {USER_VERSION}"
+            )
+
+        tables = _user_tables(self._connection)
+        if tables != _EXPECTED_TABLES:
+            raise CurrentStateCompatibilityError(
+                "Current State database user tables do not match schema v2"
+            )
+        strict = {
+            str(row[1]): int(row[5])
+            for row in self._connection.execute("PRAGMA table_list")
+            if str(row[1]) in _EXPECTED_TABLES
+        }
+        if set(strict) != _EXPECTED_TABLES:
+            raise CurrentStateCompatibilityError(
+                "Current State database is missing required schema tables"
+            )
+        if any(value != 1 for value in strict.values()):
+            raise CurrentStateCompatibilityError(
+                "Current State database tables must all be STRICT"
+            )
+
+    def _validate_row_integrity(self) -> None:
+        meta_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM projection_meta"
+            ).fetchone()[0]
+        )
+        ledger_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM replayed_session"
+            ).fetchone()[0]
+        )
+        company_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM company"
+            ).fetchone()[0]
+        )
+        unit_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM unit"
+            ).fetchone()[0]
+        )
+        if meta_count not in {0, 1}:
+            raise CurrentStateIntegrityError(
+                "Current State must contain at most one metadata row"
+            )
+        if meta_count == 0 and (ledger_count or company_count or unit_count):
+            raise CurrentStateIntegrityError(
+                "Current State rows exist without metadata"
+            )
+        foreign_key_violations = tuple(
+            self._connection.execute("PRAGMA foreign_key_check")
+        )
+        if foreign_key_violations:
+            raise CurrentStateIntegrityError(
+                "Current State contains foreign-key violations"
+            )
+        if meta_count == 1:
+            self._snapshot_unchecked()
+
     def _validate_existing(self) -> None:
         try:
-            application_id = int(
-                self._connection.execute("PRAGMA application_id").fetchone()[0]
-            )
-            user_version = int(
-                self._connection.execute("PRAGMA user_version").fetchone()[0]
-            )
-            if application_id != APPLICATION_ID:
-                raise CurrentStateCompatibilityError(
-                    f"foreign Current State database application_id={application_id}"
-                )
-            if user_version != USER_VERSION:
-                relation = "newer" if user_version > USER_VERSION else "older"
-                raise CurrentStateCompatibilityError(
-                    f"{relation} Current State schema {user_version} is unsupported; "
-                    f"expected {USER_VERSION}"
-                )
-
-            tables = _user_tables(self._connection)
-            if tables != _EXPECTED_TABLES:
-                raise CurrentStateCompatibilityError(
-                    "Current State database user tables do not match schema v1"
-                )
-            strict = {
-                str(row[1]): int(row[5])
-                for row in self._connection.execute("PRAGMA table_list")
-                if str(row[1]) in _EXPECTED_TABLES
-            }
-            if set(strict) != _EXPECTED_TABLES:
-                raise CurrentStateCompatibilityError(
-                    "Current State database is missing required schema tables"
-                )
-            if any(value != 1 for value in strict.values()):
-                raise CurrentStateCompatibilityError(
-                    "Current State database tables must all be STRICT"
-                )
-
-            meta_count = int(
-                self._connection.execute(
-                    "SELECT count(*) FROM projection_meta"
-                ).fetchone()[0]
-            )
-            ledger_count = int(
-                self._connection.execute(
-                    "SELECT count(*) FROM replayed_session"
-                ).fetchone()[0]
-            )
-            if meta_count not in {0, 1}:
-                raise CurrentStateIntegrityError(
-                    "Current State must contain at most one metadata row"
-                )
-            if meta_count == 0 and ledger_count != 0:
-                raise CurrentStateIntegrityError(
-                    "Current State replay ledger exists without metadata"
-                )
-            if meta_count == 1:
-                self._snapshot_unchecked()
+            self._validate_schema_identity()
+            self._validate_row_integrity()
         except CurrentStateError:
             raise
         except (TypeError, ValueError) as exc:
@@ -402,6 +474,59 @@ class CurrentStateStore:
             )
         )
 
+        companies = tuple(
+            CompanyState(
+                company_id=str(company_id),
+                name=str(name),
+                source_session_id=str(source_session_id),
+                source_sequence=int(source_sequence),
+                observed_at=str(observed_at),
+            )
+            for (
+                company_id,
+                name,
+                source_session_id,
+                source_sequence,
+                observed_at,
+            ) in self._connection.execute(
+                """
+                SELECT company_id, name, source_session_id,
+                       source_sequence, observed_at
+                FROM company
+                ORDER BY company_id
+                """
+            )
+        )
+        units = tuple(
+            UnitState(
+                unit_id=str(unit_id),
+                company_id=str(company_id),
+                display_name=str(display_name),
+                city_name=str(city_name),
+                level=int(level),
+                source_session_id=str(source_session_id),
+                source_sequence=int(source_sequence),
+                observed_at=str(observed_at),
+            )
+            for (
+                unit_id,
+                company_id,
+                display_name,
+                city_name,
+                level,
+                source_session_id,
+                source_sequence,
+                observed_at,
+            ) in self._connection.execute(
+                """
+                SELECT unit_id, company_id, display_name, city_name, level,
+                       source_session_id, source_sequence, observed_at
+                FROM unit
+                ORDER BY unit_id
+                """
+            )
+        )
+
         from bizman.current.model import CurrentStateMetadata
 
         metadata = CurrentStateMetadata(
@@ -425,6 +550,8 @@ class CurrentStateStore:
         return CurrentStateSnapshot(
             metadata=metadata,
             sessions=sessions,
+            companies=companies,
+            units=units,
         )
 
     def snapshot(self) -> CurrentStateSnapshot | None:
@@ -448,6 +575,8 @@ class CurrentStateStore:
 
         meta = snapshot.metadata
         with self._immediate_transaction():
+            self._connection.execute("DELETE FROM unit")
+            self._connection.execute("DELETE FROM company")
             self._connection.execute("DELETE FROM replayed_session")
             self._connection.execute("DELETE FROM projection_meta")
             self._connection.executemany(
@@ -470,6 +599,45 @@ class CurrentStateStore:
                         item.last_sequence,
                     )
                     for item in snapshot.sessions
+                ),
+            )
+            self._connection.executemany(
+                """
+                INSERT INTO company(
+                    company_id, name, source_session_id,
+                    source_sequence, observed_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        item.company_id,
+                        item.name,
+                        item.source_session_id,
+                        item.source_sequence,
+                        item.observed_at,
+                    )
+                    for item in snapshot.companies
+                ),
+            )
+            self._connection.executemany(
+                """
+                INSERT INTO unit(
+                    unit_id, company_id, display_name, city_name, level,
+                    source_session_id, source_sequence, observed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        item.unit_id,
+                        item.company_id,
+                        item.display_name,
+                        item.city_name,
+                        item.level,
+                        item.source_session_id,
+                        item.source_sequence,
+                        item.observed_at,
+                    )
+                    for item in snapshot.units
                 ),
             )
             self._connection.execute(
@@ -521,6 +689,8 @@ class CurrentStateStore:
         stale = build_current_snapshot(
             spec,
             current.sessions,
+            companies=current.companies,
+            units=current.units,
             status="stale",
             stale_reason=reason,
         )

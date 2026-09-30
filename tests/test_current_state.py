@@ -310,11 +310,21 @@ class CurrentStateStoreTests(unittest.TestCase):
                 strict = {
                     row[1]: row[5]
                     for row in connection.execute("PRAGMA table_list")
-                    if row[1] in {"projection_meta", "replayed_session"}
+                    if row[1] in {
+                        "projection_meta",
+                        "replayed_session",
+                        "company",
+                        "unit",
+                    }
                 }
                 self.assertEqual(
                     strict,
-                    {"projection_meta": 1, "replayed_session": 1},
+                    {
+                        "projection_meta": 1,
+                        "replayed_session": 1,
+                        "company": 1,
+                        "unit": 1,
+                    },
                 )
                 store.replace_snapshot(_snapshot())
 

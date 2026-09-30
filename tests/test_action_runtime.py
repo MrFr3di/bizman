@@ -136,12 +136,14 @@ class ActionInstrumentationTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any("secure" in warning.casefold() for warning in warnings))
 
     def test_passive_allowlist_adds_only_observation_commands(self):
+        self.assertIn("Network.getResponseBody", PASSIVE_CDP_METHODS)
         self.assertIn("Runtime.enable", PASSIVE_CDP_METHODS)
         self.assertIn("Runtime.addBinding", PASSIVE_CDP_METHODS)
         self.assertIn("Page.addScriptToEvaluateOnNewDocument", PASSIVE_CDP_METHODS)
         self.assertNotIn("Runtime.evaluate", PASSIVE_CDP_METHODS)
         self.assertNotIn("Page.navigate", PASSIVE_CDP_METHODS)
         self.assertNotIn("Page.reload", PASSIVE_CDP_METHODS)
+        self.assertNotIn("Fetch.enable", PASSIVE_CDP_METHODS)
 
 
 if __name__ == "__main__":

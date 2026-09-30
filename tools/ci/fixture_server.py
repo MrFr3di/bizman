@@ -11,6 +11,26 @@ HTTP_HOST = "127.0.0.1"
 HTTP_PORT = 8765
 WS_PORT = 8766
 
+_COMPANY_ROSTER = """<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Компания Paradise · Предприятия</title></head>
+<body>
+<h1>Компания Paradise</h1>
+<nav>Компания</nav>
+<section>Предприятия</section>
+<table>
+  <tr><th>Город</th><th>Предприятие</th><th>Уровень</th><th>Эффект.</th></tr>
+  <tr><td>Анкара</td><td>Детский магазин #33670</td><td>1</td><td>100%</td></tr>
+  <tr><td>Анкара</td><td>Аптека #33676</td><td>1</td><td>100%</td></tr>
+</table>
+<input name="clientSecret" value="TOP_SECRET_ROSTER_INPUT">
+<script>const token = "TOP_SECRET_ROSTER_SCRIPT";</script>
+<div hidden><div>TOP_SECRET_ROSTER_HIDDEN_NESTED</div><span>TOP_SECRET_ROSTER_HIDDEN_TAIL</span></div>
+<div style="color:red; display:none">TOP_SECRET_ROSTER_HIDDEN_STYLE</div>
+<section aria-hidden="true">TOP_SECRET_ROSTER_HIDDEN_ARIA</section>
+</body>
+</html>""".encode("utf-8")
+
 _PAGE = f"""<!doctype html>
 <html>
 <head><meta charset=\"utf-8\"><title>BizMan collector fixture</title></head>
@@ -35,6 +55,8 @@ actionForm.addEventListener('submit', (event) => {{
 }});
 
 async function exerciseNetwork() {{
+  const rosterResponse = await fetch('/company/?id=13393&tab=units&p=1');
+  await rosterResponse.text();
   await fetch('/api/get?safe=1&accessToken=TOP_SECRET_QUERY');
   await fetch('/api/post', {{
     method: 'POST',
@@ -78,6 +100,8 @@ class FixtureHandler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path == "/":
             self._send(200, _PAGE, "text/html; charset=utf-8")
+        elif path == "/company/":
+            self._send(200, _COMPANY_ROSTER, "text/html; charset=utf-8")
         elif path == "/healthz":
             self._send(200, b"ok", "text/plain")
         elif path == "/api/get":

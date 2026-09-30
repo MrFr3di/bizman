@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 import json
 from pathlib import Path
+import re
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -14,6 +17,148 @@ from bizman.foundation.redaction import RedactionPolicy, redact_headers, redact_
 from bizman.foundation.session import new_uuid7
 
 _MAX_FIELDS = 4096
+_MAX_RESPONSE_BODY_BYTES = 4 * 1024 * 1024
+_COMPANY_ROSTER_PATH = "/company/"
+_PAGE_ARTIFACT_SCHEMA_VERSION = "1.0"
+_PAGE_SANITIZER_VERSION = 2
+_EXCLUDED_PAGE_TAGS = frozenset({
+    "script", "style", "template", "noscript", "textarea", "svg", "iframe", "select",
+})
+_VOID_HTML_TAGS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+})
+_INLINE_HIDDEN_CSS_RE = re.compile(
+    r"(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*(?:hidden|collapse))\b",
+    re.IGNORECASE,
+)
+
+
+class ResponseBodyCaptureError(ValueError):
+    """An allowlisted response body could not be captured safely."""
+
+
+class _VisibleHtmlTextParser(HTMLParser):
+    """Conservative structural text extraction, never a computed CSS visibility proof."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._open_tags: list[tuple[str, bool]] = []
+        self._suppressed_depth = 0
+        self._title_active = False
+        self._title_parts: list[str] = []
+        self._text_parts: list[str] = []
+
+    @staticmethod
+    def _is_hidden(
+        tag: str, attrs: list[tuple[str, str | None]],
+    ) -> bool:
+        if tag in _EXCLUDED_PAGE_TAGS:
+            return True
+        for raw_name, raw_value in attrs:
+            name = raw_name.casefold()
+            value = raw_value or ""
+            if name in {"hidden", "inert"}:
+                return True
+            if name == "aria-hidden" and value.strip().casefold() == "true":
+                return True
+            if name == "style" and _INLINE_HIDDEN_CSS_RE.search(value):
+                return True
+        return False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        normalized = tag.casefold()
+        suppressed = self._is_hidden(normalized, attrs)
+        if normalized not in _VOID_HTML_TAGS:
+            self._open_tags.append((normalized, suppressed))
+            if suppressed:
+                self._suppressed_depth += 1
+        self._title_active = (
+            normalized == "title" and self._suppressed_depth == 0
+        ) or (
+            self._title_active and self._suppressed_depth == 0
+        )
+
+    def handle_endtag(self, tag: str) -> None:
+        normalized = tag.casefold()
+        for index in range(len(self._open_tags) - 1, -1, -1):
+            if self._open_tags[index][0] == normalized:
+                closed = self._open_tags[index:]
+                del self._open_tags[index:]
+                self._suppressed_depth -= sum(hidden for _, hidden in closed)
+                self._title_active = (
+                    self._suppressed_depth == 0
+                    and any(name == "title" for name, _ in self._open_tags)
+                )
+                return
+
+    def handle_data(self, data: str) -> None:
+        if self._suppressed_depth:
+            return
+        value = " ".join(data.split())
+        if not value:
+            return
+        if self._title_active:
+            self._title_parts.append(value)
+            return
+        self._text_parts.append(value)
+
+    @property
+    def title(self) -> str | None:
+        value = " ".join(self._title_parts).strip()
+        return value or None
+
+    @property
+    def text(self) -> str:
+        return "\n".join(self._text_parts)
+
+
+def _decode_response_body(
+    body: object,
+    *,
+    base64_encoded: object,
+    max_bytes: int,
+) -> bytes:
+    if not isinstance(body, str):
+        raise ResponseBodyCaptureError("CDP response body must be a string")
+    if not isinstance(base64_encoded, bool):
+        raise ResponseBodyCaptureError("CDP base64Encoded flag must be boolean")
+    # Reject oversized CDP strings before allocating decoded response bytes.
+    if base64_encoded:
+        if len(body) > ((max_bytes + 2) // 3) * 4 + 8:
+            raise ResponseBodyCaptureError("CDP encoded body exceeds capture size limit")
+    elif len(body) > max_bytes:
+        raise ResponseBodyCaptureError("CDP response body exceeds capture size limit")
+    try:
+        raw = (
+            base64.b64decode(body, validate=True)
+            if base64_encoded
+            else body.encode("utf-8")
+        )
+    except ValueError as exc:
+        raise ResponseBodyCaptureError("CDP response body encoding is invalid") from exc
+    if len(raw) > max_bytes:
+        raise ResponseBodyCaptureError("CDP response body exceeds capture size limit")
+    return raw
+
+
+def _sanitize_html_page(raw: bytes) -> bytes:
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ResponseBodyCaptureError("company roster response is not UTF-8") from exc
+    parser = _VisibleHtmlTextParser()
+    parser.feed(text)
+    parser.close()
+    return canonical_json_bytes(
+        {
+            "schema_version": _PAGE_ARTIFACT_SCHEMA_VERSION,
+            "sanitizer_version": _PAGE_SANITIZER_VERSION,
+            "media_type": "text/html",
+            "title": parser.title,
+            "text": parser.text,
+        }
+    )
 
 
 def _utc_now_iso() -> str:
@@ -109,6 +254,7 @@ class NetworkNormalizer:
         artifacts: ArtifactStore,
         sequencer: EventSequencer | None = None,
         clock: CollectorClock | None = None,
+        max_response_body_bytes: int = _MAX_RESPONSE_BODY_BYTES,
     ) -> None:
         self.session_id = session_id
         self.first_party = first_party
@@ -116,7 +262,10 @@ class NetworkNormalizer:
         self.artifacts = artifacts
         self.sequencer = sequencer or EventSequencer()
         self.clock = clock or CollectorClock()
-        self._requests: dict[str, dict[str, Any]] = {}
+        if max_response_body_bytes <= 0:
+            raise ValueError("max_response_body_bytes must be positive")
+        self.max_response_body_bytes = int(max_response_body_bytes)
+        self._requests: dict[tuple[str | None, str], dict[str, Any]] = {}
         self._websockets: dict[str, dict[str, Any]] = {}
 
     def _query(self, url: str) -> dict[str, list[str]]:
@@ -243,6 +392,7 @@ class NetworkNormalizer:
                 "initiator_type",
                 "has_user_gesture",
                 "request_body_ref",
+                "response_body_ref",
                 "websocket_opcode",
                 "error_text",
             )
@@ -273,7 +423,7 @@ class NetworkNormalizer:
         if not isinstance(url, str):
             return None
 
-        previous = self._requests.get(request_id)
+        previous = self._requests.get((target_id, request_id))
         redirect_response = params.get("redirectResponse")
         redirect_index = int(previous.get("redirect_index", 0)) if previous else 0
         redirect_from_path = None
@@ -286,7 +436,7 @@ class NetworkNormalizer:
             redirect_status_code = _status_code(redirect_response.get("status"))
 
         if not self.first_party.matches_url(url):
-            self._requests.pop(request_id, None)
+            self._requests.pop((target_id, request_id), None)
             return None
 
         request_method = request.get("method")
@@ -297,8 +447,11 @@ class NetworkNormalizer:
             "url": url,
             "method": request_method if isinstance(request_method, str) else None,
             "redirect_index": redirect_index,
+            "query": self._query(url),
+            "status_code": None,
+            "mime_type": None,
         }
-        self._requests[request_id] = state
+        self._requests[(target_id, request_id)] = state
 
         event = self._base_event(
             event_type="http.request",
@@ -339,14 +492,22 @@ class NetworkNormalizer:
         response = params.get("response")
         if not isinstance(request_id, str) or not isinstance(response, dict):
             return None
-        state = self._requests.get(request_id)
+        state = self._requests.get((target_id, request_id))
         if state is None:
             return None
         url = response.get("url") if isinstance(response.get("url"), str) else state["url"]
         if not self.first_party.matches_url(url):
-            self._requests.pop(request_id, None)
+            self._requests.pop((target_id, request_id), None)
             return None
         headers = response.get("headers")
+        status_code = _status_code(response.get("status"))
+        mime_type = (
+            response.get("mimeType")
+            if isinstance(response.get("mimeType"), str)
+            else None
+        )
+        state["status_code"] = status_code
+        state["mime_type"] = mime_type
         event = self._base_event(
             event_type="http.response",
             params=params,
@@ -359,13 +520,94 @@ class NetworkNormalizer:
                 "method": state["method"],
                 "url_path": self._path(url),
                 "route_pattern": None,
-                "status_code": _status_code(response.get("status")),
+                "status_code": status_code,
                 "query": self._query(url),
                 "headers": redact_headers(headers, self.redaction) if isinstance(headers, dict) else {},
                 "request_body_ref": None,
                 "response_body_ref": None,
-                "mime_type": response.get("mimeType") if isinstance(response.get("mimeType"), str) else None,
+                "mime_type": mime_type,
                 "protocol": response.get("protocol") if isinstance(response.get("protocol"), str) else None,
+            }
+        )
+        return self._finish_event(event)
+
+    def response_body_capture_candidate(
+        self, request_id: object, *, target_id: str | None = None,
+    ) -> bool:
+        if not isinstance(request_id, str):
+            return False
+        state = self._requests.get((target_id, request_id))
+        if state is None:
+            return False
+        if state.get("method") != "GET":
+            return False
+        if self._path(str(state.get("url", ""))) != _COMPANY_ROSTER_PATH:
+            return False
+        if state.get("status_code") != 200:
+            return False
+        mime_type = str(state.get("mime_type", ""))
+        mime_base, _separator, _parameters = mime_type.partition(";")
+        if mime_base.casefold() != "text/html":
+            return False
+        query = state.get("query")
+        if not isinstance(query, dict):
+            return False
+        company_ids = query.get("id")
+        tabs = query.get("tab")
+        if not isinstance(company_ids, list) or len(company_ids) != 1:
+            return False
+        company_id = next(iter(company_ids), None)
+        if (
+            not isinstance(company_id, str)
+            or not company_id.isascii()
+            or not company_id.isdigit()
+            or company_id.startswith("0")
+        ):
+            return False
+        return tabs == ["units"]
+
+    def normalize_response_body(
+        self,
+        *,
+        request_id: str,
+        body: object,
+        base64_encoded: object,
+        params: dict[str, Any],
+        target_id: str | None,
+    ) -> dict[str, Any] | None:
+        if not self.response_body_capture_candidate(request_id, target_id=target_id):
+            return None
+        state = self._requests.get((target_id, request_id))
+        if state is None:
+            return None
+        raw = _decode_response_body(
+            body,
+            base64_encoded=base64_encoded,
+            max_bytes=self.max_response_body_bytes,
+        )
+        artifact_ref = self.artifacts.put_bytes(_sanitize_html_page(raw))
+        event = self._base_event(
+            event_type="http.response_body",
+            params=params,
+            target_id=target_id,
+            request_id=request_id,
+        )
+        url = state.get("url")
+        if not isinstance(url, str):
+            raise ResponseBodyCaptureError(
+                "company roster request state is missing URL"
+            )
+        event.update(
+            {
+                "redirect_index": state.get("redirect_index", 0),
+                "method": state.get("method"),
+                "url_path": self._path(url),
+                "route_pattern": None,
+                "status_code": state.get("status_code"),
+                "query": state.get("query"),
+                "mime_type": state.get("mime_type"),
+                "request_body_ref": None,
+                "response_body_ref": artifact_ref,
             }
         )
         return self._finish_event(event)
@@ -376,7 +618,7 @@ class NetworkNormalizer:
         request_id = params.get("requestId")
         if not isinstance(request_id, str):
             return None
-        state = self._requests.pop(request_id, None)
+        state = self._requests.pop((target_id, request_id), None)
         if state is None:
             return None
         event = self._base_event(
@@ -411,7 +653,7 @@ class NetworkNormalizer:
         request_id = params.get("requestId")
         if not isinstance(request_id, str):
             return None
-        state = self._requests.pop(request_id, None)
+        state = self._requests.pop((target_id, request_id), None)
         if state is None:
             return None
         event = self._base_event(
@@ -528,3 +770,4 @@ class NetworkNormalizer:
             }
         )
         return self._finish_event(event)
+
