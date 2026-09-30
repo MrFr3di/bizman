@@ -220,6 +220,106 @@ class CurrentStateMetadata:
                 _non_negative_int(self.last_sequence, name="last_sequence")
 
 
+def _validate_snapshot_ledger(
+    metadata: CurrentStateMetadata,
+    session_values: tuple[ReplaySession, ...],
+) -> tuple[ReplaySession, ...]:
+    sessions = tuple(session_values)
+    if not all(isinstance(item, ReplaySession) for item in sessions):
+        raise TypeError("sessions must contain only ReplaySession values")
+    if len({item.session_id for item in sessions}) != len(sessions):
+        raise ValueError("Current State replay ledger contains duplicate sessions")
+    ordered = tuple(sorted(sessions))
+    if sessions != ordered:
+        raise ValueError(
+            "Current State replay ledger must be ordered by started_at/session_id"
+        )
+    if metadata.session_count != len(sessions):
+        raise ValueError("Current State session_count disagrees with replay ledger")
+
+    if sessions:
+        last = sessions[-1]
+        if metadata.last_session_id != last.session_id:
+            raise ValueError("Current State last_session_id disagrees with ledger")
+        if metadata.last_sequence != last.last_sequence:
+            raise ValueError("Current State last_sequence disagrees with ledger")
+    elif (
+        metadata.last_session_id is not None
+        or metadata.last_sequence is not None
+    ):
+        raise ValueError("empty Current State cannot carry checkpoint identity")
+
+    return sessions
+
+
+def _validate_snapshot_domain(
+    sessions: tuple[ReplaySession, ...],
+    company_values: tuple[CompanyState, ...],
+    unit_values: tuple[UnitState, ...],
+) -> tuple[tuple[CompanyState, ...], tuple[UnitState, ...]]:
+    companies = tuple(company_values)
+    units = tuple(unit_values)
+    if not all(isinstance(item, CompanyState) for item in companies):
+        raise TypeError("companies must contain only CompanyState values")
+    if not all(isinstance(item, UnitState) for item in units):
+        raise TypeError("units must contain only UnitState values")
+    if len({item.company_id for item in companies}) != len(companies):
+        raise ValueError("Current State contains duplicate company_id values")
+    if len({item.unit_id for item in units}) != len(units):
+        raise ValueError("Current State contains duplicate unit_id values")
+    if companies != tuple(sorted(companies, key=lambda item: item.company_id)):
+        raise ValueError("companies must be ordered by company_id")
+    if units != tuple(sorted(units, key=lambda item: item.unit_id)):
+        raise ValueError("units must be ordered by unit_id")
+
+    session_by_id = {item.session_id: item for item in sessions}
+    company_ids = {item.company_id for item in companies}
+    for value in (*companies, *units):
+        session = session_by_id.get(value.source_session_id)
+        if session is None:
+            raise ValueError("domain provenance references an unreplayed session")
+        if value.source_sequence >= session.event_count:
+            raise ValueError("domain provenance sequence exceeds replayed session")
+    for unit in units:
+        if unit.company_id not in company_ids:
+            raise ValueError("unit references a company absent from Current State")
+
+    return companies, units
+
+
+def _validate_snapshot_fingerprints(
+    metadata: CurrentStateMetadata,
+    sessions: tuple[ReplaySession, ...],
+    companies: tuple[CompanyState, ...],
+    units: tuple[UnitState, ...],
+) -> None:
+    expected_input = current_input_fingerprint(
+        CurrentProjectionSpec(
+            projection_name=metadata.projection_name,
+            projection_version=metadata.projection_version,
+            analysis_profile_sha256=metadata.analysis_profile_sha256,
+        ),
+        sessions,
+    )
+    if metadata.input_fingerprint != expected_input:
+        raise ValueError("Current State input_fingerprint is inconsistent")
+
+    expected_state = current_state_fingerprint(
+        projection_name=metadata.projection_name,
+        projection_version=metadata.projection_version,
+        analysis_profile_sha256=metadata.analysis_profile_sha256,
+        input_fingerprint=metadata.input_fingerprint,
+        status=metadata.status,
+        stale_reason=metadata.stale_reason,
+        sessions=sessions,
+        companies=companies,
+        units=units,
+    )
+    if metadata.state_fingerprint != expected_state:
+        raise ValueError("Current State state_fingerprint is inconsistent")
+
+
+
 @dataclass(frozen=True, slots=True)
 class CurrentStateSnapshot:
     metadata: CurrentStateMetadata
@@ -230,83 +330,13 @@ class CurrentStateSnapshot:
     def __post_init__(self) -> None:
         if not isinstance(self.metadata, CurrentStateMetadata):
             raise TypeError("metadata must be CurrentStateMetadata")
-        sessions = tuple(self.sessions)
-        if not all(isinstance(item, ReplaySession) for item in sessions):
-            raise TypeError("sessions must contain only ReplaySession values")
-        if len({item.session_id for item in sessions}) != len(sessions):
-            raise ValueError("Current State replay ledger contains duplicate sessions")
-        ordered = tuple(sorted(sessions))
-        if sessions != ordered:
-            raise ValueError(
-                "Current State replay ledger must be ordered by started_at/session_id"
-            )
-        if self.metadata.session_count != len(sessions):
-            raise ValueError("Current State session_count disagrees with replay ledger")
-
-        if sessions:
-            last = sessions[-1]
-            if self.metadata.last_session_id != last.session_id:
-                raise ValueError("Current State last_session_id disagrees with ledger")
-            if self.metadata.last_sequence != last.last_sequence:
-                raise ValueError("Current State last_sequence disagrees with ledger")
-        elif (
-            self.metadata.last_session_id is not None
-            or self.metadata.last_sequence is not None
-        ):
-            raise ValueError("empty Current State cannot carry checkpoint identity")
-
-        expected_input = current_input_fingerprint(
-            CurrentProjectionSpec(
-                projection_name=self.metadata.projection_name,
-                projection_version=self.metadata.projection_version,
-                analysis_profile_sha256=self.metadata.analysis_profile_sha256,
-            ),
-            sessions,
+        sessions = _validate_snapshot_ledger(self.metadata, self.sessions)
+        companies, units = _validate_snapshot_domain(
+            sessions, self.companies, self.units,
         )
-        if self.metadata.input_fingerprint != expected_input:
-            raise ValueError("Current State input_fingerprint is inconsistent")
-
-        companies = tuple(self.companies)
-        units = tuple(self.units)
-        if not all(isinstance(item, CompanyState) for item in companies):
-            raise TypeError("companies must contain only CompanyState values")
-        if not all(isinstance(item, UnitState) for item in units):
-            raise TypeError("units must contain only UnitState values")
-        if len({item.company_id for item in companies}) != len(companies):
-            raise ValueError("Current State contains duplicate company_id values")
-        if len({item.unit_id for item in units}) != len(units):
-            raise ValueError("Current State contains duplicate unit_id values")
-        if companies != tuple(sorted(companies, key=lambda item: item.company_id)):
-            raise ValueError("companies must be ordered by company_id")
-        if units != tuple(sorted(units, key=lambda item: item.unit_id)):
-            raise ValueError("units must be ordered by unit_id")
-
-        session_by_id = {item.session_id: item for item in sessions}
-        company_ids = {item.company_id for item in companies}
-        for value in (*companies, *units):
-            session = session_by_id.get(value.source_session_id)
-            if session is None:
-                raise ValueError("domain provenance references an unreplayed session")
-            if value.source_sequence >= session.event_count:
-                raise ValueError("domain provenance sequence exceeds replayed session")
-        for unit in units:
-            if unit.company_id not in company_ids:
-                raise ValueError("unit references a company absent from Current State")
-
-        expected_state = current_state_fingerprint(
-            projection_name=self.metadata.projection_name,
-            projection_version=self.metadata.projection_version,
-            analysis_profile_sha256=self.metadata.analysis_profile_sha256,
-            input_fingerprint=self.metadata.input_fingerprint,
-            status=self.metadata.status,
-            stale_reason=self.metadata.stale_reason,
-            sessions=sessions,
-            companies=companies,
-            units=units,
+        _validate_snapshot_fingerprints(
+            self.metadata, sessions, companies, units,
         )
-        if self.metadata.state_fingerprint != expected_state:
-            raise ValueError("Current State state_fingerprint is inconsistent")
-
         object.__setattr__(self, "sessions", sessions)
         object.__setattr__(self, "companies", companies)
         object.__setattr__(self, "units", units)
