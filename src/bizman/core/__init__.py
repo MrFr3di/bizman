@@ -17,7 +17,12 @@ from bizman.core.errors import (
     DataIntegrityError,
     OperationError,
 )
-from bizman.core.product_probe import (\n    ProductEvidenceProbeRequest,\n    ProductEvidenceProbeResult,\n    probe_product_evidence,\n)\nfrom bizman.core.provenance import (
+from bizman.core.product_probe import (
+    ProductEvidenceProbeRequest,
+    ProductEvidenceProbeResult,
+    probe_product_evidence,
+)
+from bizman.core.provenance import (
     EvidenceTrace,
     EvidenceTraceRequest,
     EvidenceTraceResult,
@@ -93,6 +98,8 @@ __all__ = [
     "KnowledgeSearchRequest",
     "KnowledgeSearchResult",
     "OperationError",
+    "ProductEvidenceProbeRequest",
+    "ProductEvidenceProbeResult",
     "RepositoryAssets",
     "SessionAnomalyListRequest",
     "SessionAnomalyPage",
@@ -118,6 +125,7 @@ __all__ = [
     "list_changes",
     "list_session_anomalies",
     "list_sessions",
+    "probe_product_evidence",
     "resolve_knowledge",
     "search_knowledge",
     "trace_evidence",
