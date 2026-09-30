@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from html.parser import HTMLParser
 import json
 from pathlib import Path
+import re
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -19,8 +20,18 @@ _MAX_FIELDS = 4096
 _MAX_RESPONSE_BODY_BYTES = 4 * 1024 * 1024
 _COMPANY_ROSTER_PATH = "/company/"
 _PAGE_ARTIFACT_SCHEMA_VERSION = "1.0"
-_PAGE_SANITIZER_VERSION = 1
-_EXCLUDED_PAGE_TAGS = frozenset({"script", "style", "template", "noscript", "textarea"})
+_PAGE_SANITIZER_VERSION = 2
+_EXCLUDED_PAGE_TAGS = frozenset({
+    "script", "style", "template", "noscript", "textarea", "svg", "iframe", "select",
+})
+_VOID_HTML_TAGS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+})
+_INLINE_HIDDEN_CSS_RE = re.compile(
+    r"(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*(?:hidden|collapse))\b",
+    re.IGNORECASE,
+)
 
 
 class ResponseBodyCaptureError(ValueError):
@@ -28,35 +39,66 @@ class ResponseBodyCaptureError(ValueError):
 
 
 class _VisibleHtmlTextParser(HTMLParser):
+    """Conservative structural text extraction, never a computed CSS visibility proof."""
+
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self._excluded_depth = 0
-        self._title_depth = 0
+        self._open_tags: list[tuple[str, bool]] = []
+        self._suppressed_depth = 0
+        self._title_active = False
         self._title_parts: list[str] = []
         self._text_parts: list[str] = []
 
+    @staticmethod
+    def _is_hidden(
+        tag: str, attrs: list[tuple[str, str | None]],
+    ) -> bool:
+        if tag in _EXCLUDED_PAGE_TAGS:
+            return True
+        for raw_name, raw_value in attrs:
+            name = raw_name.casefold()
+            value = raw_value or ""
+            if name in {"hidden", "inert"}:
+                return True
+            if name == "aria-hidden" and value.strip().casefold() == "true":
+                return True
+            if name == "style" and _INLINE_HIDDEN_CSS_RE.search(value):
+                return True
+        return False
+
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        del attrs
         normalized = tag.casefold()
-        if normalized in _EXCLUDED_PAGE_TAGS:
-            self._excluded_depth += 1
-        if normalized == "title":
-            self._title_depth += 1
+        suppressed = self._is_hidden(normalized, attrs)
+        if normalized not in _VOID_HTML_TAGS:
+            self._open_tags.append((normalized, suppressed))
+            if suppressed:
+                self._suppressed_depth += 1
+        self._title_active = (
+            normalized == "title" and self._suppressed_depth == 0
+        ) or (
+            self._title_active and self._suppressed_depth == 0
+        )
 
     def handle_endtag(self, tag: str) -> None:
         normalized = tag.casefold()
-        if normalized == "title" and self._title_depth:
-            self._title_depth -= 1
-        if normalized in _EXCLUDED_PAGE_TAGS and self._excluded_depth:
-            self._excluded_depth -= 1
+        for index in range(len(self._open_tags) - 1, -1, -1):
+            if self._open_tags[index][0] == normalized:
+                closed = self._open_tags[index:]
+                del self._open_tags[index:]
+                self._suppressed_depth -= sum(hidden for _, hidden in closed)
+                self._title_active = (
+                    self._suppressed_depth == 0
+                    and any(name == "title" for name, _ in self._open_tags)
+                )
+                return
 
     def handle_data(self, data: str) -> None:
-        if self._excluded_depth:
+        if self._suppressed_depth:
             return
         value = " ".join(data.split())
         if not value:
             return
-        if self._title_depth:
+        if self._title_active:
             self._title_parts.append(value)
             return
         self._text_parts.append(value)
@@ -81,6 +123,12 @@ def _decode_response_body(
         raise ResponseBodyCaptureError("CDP response body must be a string")
     if not isinstance(base64_encoded, bool):
         raise ResponseBodyCaptureError("CDP base64Encoded flag must be boolean")
+    # Reject oversized CDP strings before allocating decoded response bytes.
+    if base64_encoded:
+        if len(body) > ((max_bytes + 2) // 3) * 4 + 8:
+            raise ResponseBodyCaptureError("CDP encoded body exceeds capture size limit")
+    elif len(body) > max_bytes:
+        raise ResponseBodyCaptureError("CDP response body exceeds capture size limit")
     try:
         raw = (
             base64.b64decode(body, validate=True)
