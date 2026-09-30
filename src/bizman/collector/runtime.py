@@ -36,6 +36,7 @@ from bizman.foundation.session import new_session_manifest
 COLLECTOR_VERSION = "0.3.0"
 ACTION_BINDING_NAME = "__bizmanActionV1"
 ACTION_WORLD_NAME = "bizman-action-observer-v1"
+_RESPONSE_BODY_METHOD = "Network.getResponseBody"
 
 PASSIVE_CDP_METHODS = frozenset(
     {
@@ -44,7 +45,7 @@ PASSIVE_CDP_METHODS = frozenset(
         "Target.attachToTarget",
         "Target.setAutoAttach",
         "Network.enable",
-        "Network.getResponseBody",
+        _RESPONSE_BODY_METHOD,
         "Runtime.enable",
         "Runtime.addBinding",
         "Page.addScriptToEvaluateOnNewDocument",
@@ -146,7 +147,7 @@ class CollectorEventPipeline:
             elif candidate:
                 try:
                     result = await cdp.command(
-                        "Network.getResponseBody",
+                        _RESPONSE_BODY_METHOD,
                         {"requestId": request_id},
                         session_id=event.session_id,
                     )
@@ -384,7 +385,7 @@ async def run_collection(
         correlator=correlator,
         writer=writer,
         response_body_supported=resolved_discovery.capabilities.has_command(
-            "Network.getResponseBody"
+            _RESPONSE_BODY_METHOD
         ),
     )
 
