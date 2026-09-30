@@ -93,6 +93,14 @@ class ProductIdentityInspectionTests(unittest.TestCase):
         """
         self.assertEqual(inspect_product_identity_candidates(html), ())
 
+    def test_hidden_void_element_does_not_suppress_following_candidate(self) -> None:
+        html = (
+            b'<input type="hidden" value="secret">'
+            b'<a href="/products/?id=47">x</a>'
+        )
+        report = inspect_product_identity_candidates(html)
+        self.assertEqual(report[0].numeric_query_ids, (47,))
+
     def test_candidate_collection_is_bounded(self) -> None:
         html = (
             "<div>"
