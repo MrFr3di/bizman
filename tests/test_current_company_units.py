@@ -393,8 +393,9 @@ class CompanyUnitReplayTests(unittest.TestCase):
             artifact = data_dir / "artifacts" / "sha256" / digest[:2] / digest
             artifact.write_bytes(payload + b"tampered")
 
+            redaction = _redaction()
             with self.assertRaises(EvidenceIntegrityError):
-                build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
+                build_replay_snapshot(REPO_ROOT, data_dir, redaction)
 
 
 def _write_p4a_v1_database(path: Path) -> None:
@@ -496,12 +497,9 @@ class CompanyUnitStoreTests(unittest.TestCase):
             connection.commit()
             connection.close()
 
+            redaction = _redaction()
             with self.assertRaises(CurrentStateCompatibilityError):
-                rebuild_current_state(
-                    REPO_ROOT,
-                    data_dir,
-                    _redaction(),
-                )
+                rebuild_current_state(REPO_ROOT, data_dir, redaction)
 
     def test_schema_replacement_refuses_existing_sqlite_sidecars(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -512,16 +510,13 @@ class CompanyUnitStoreTests(unittest.TestCase):
             shm_path = state_path.with_name(state_path.name + "-shm")
             shm_path.write_bytes(b"synthetic-active-sidecar")
 
+            redaction = _redaction()
             with patch(
                 "bizman.current.replay._is_rebuildable_older_state",
                 return_value=True,
             ):
                 with self.assertRaises(CurrentStateOperationError):
-                    rebuild_current_state(
-                        REPO_ROOT,
-                        data_dir,
-                        _redaction(),
-                    )
+                    rebuild_current_state(REPO_ROOT, data_dir, redaction)
 
             self.assertEqual(state_path.read_bytes(), before)
             self.assertTrue(shm_path.exists())
@@ -533,16 +528,13 @@ class CompanyUnitStoreTests(unittest.TestCase):
             _write_p4a_v1_database(state_path)
             before = state_path.read_bytes()
 
+            redaction = _redaction()
             with patch(
                 "bizman.current.replay.os.replace",
                 side_effect=OSError("synthetic replace failure"),
             ):
                 with self.assertRaises(CurrentStateOperationError):
-                    rebuild_current_state(
-                        REPO_ROOT,
-                        data_dir,
-                        _redaction(),
-                    )
+                    rebuild_current_state(REPO_ROOT, data_dir, redaction)
 
             self.assertEqual(state_path.read_bytes(), before)
             connection = sqlite3.connect(state_path)
