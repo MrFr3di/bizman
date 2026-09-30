@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from bizman.collector.product_probe import (
     ProductIdentityCandidate,
@@ -18,12 +17,15 @@ _MAX_PROBE_BODY_BYTES = 4 * 1024 * 1024
 @dataclass(frozen=True, slots=True)
 class ProductEvidenceProbeRequest:
     source_url: str
-    body_file: Path
+    body: bytes
 
     def __post_init__(self) -> None:
         if not isinstance(self.source_url, str) or not self.source_url:
             raise TypeError("source_url must be a non-empty string")
-        object.__setattr__(self, "body_file", Path(self.body_file))
+        if not isinstance(self.body, bytes):
+            raise TypeError("body must be bytes")
+        if len(self.body) > _MAX_PROBE_BODY_BYTES:
+            raise ValueError("body exceeds the research size limit")
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,12 +48,8 @@ def probe_product_evidence(
             request.source_url,
             approved_hosts=("bizmania.ru",),
         )
-        with request.body_file.open("rb") as stream:
-            body = stream.read(_MAX_PROBE_BODY_BYTES + 1)
-        if len(body) > _MAX_PROBE_BODY_BYTES:
-            raise ValueError("probe body exceeds the research size limit")
-        candidates = inspect_product_identity_candidates(body)
-    except (OSError, UnicodeError, ValueError) as exc:
+        candidates = inspect_product_identity_candidates(request.body)
+    except (UnicodeError, ValueError) as exc:
         raise OperationError(
             f"product evidence probe failed: {type(exc).__name__}"
         ) from exc
