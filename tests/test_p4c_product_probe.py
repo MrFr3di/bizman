@@ -29,7 +29,9 @@ class ProductProbeRouteTests(unittest.TestCase):
             "https://bizmania.ru/units/shop/?id=33670&tab=goods&extra=1",
             "https://bizmania.ru/units/shop/?id=0&tab=goods",
             "https://bizmania.ru/units/shop/?id=+33670&tab=goods",
-            "https://bizmania.ru/units/shop/?id=３３６７０&tab=goods",\n            "https://bizmania.ru/units/shop/?%69d=33670&tab=goods",\n            "https://bizmania.ru/units/shop/?id=33670&t%61b=goods",
+            "https://bizmania.ru/units/shop/?id=３３６７０&tab=goods",
+            "https://bizmania.ru/units/shop/?%69d=33670&tab=goods",
+            "https://bizmania.ru/units/shop/?id=33670&t%61b=goods",
             "https://bizmania.ru/units/service/?id=33670&tab=goods",
             "https://bizmania.ru/units/shop/?id=33670&tab=supply",
         )
