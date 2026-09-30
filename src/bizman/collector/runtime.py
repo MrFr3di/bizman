@@ -131,7 +131,8 @@ class CollectorEventPipeline:
                 and encoded_length > self.network_normalizer.max_response_body_bytes
             )
             candidate = self.network_normalizer.response_body_capture_candidate(
-                request_id
+                request_id,
+                target_id=target_id,
             )
             if candidate and not self.response_body_supported:
                 self.writer.add_warning(
