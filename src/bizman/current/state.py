@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from pathlib import Path
 import sqlite3
-from typing import Final, Iterator
+from typing import Final
 
 from bizman.current.model import (
     CompanyState,
@@ -210,6 +209,49 @@ def _connect_ro(path: Path) -> sqlite3.Connection:
         ) from exc
 
 
+class _ImmediateTransaction:
+    """One explicit SQLite transaction; no deferred generator cleanup."""
+
+    def __init__(self, connection: sqlite3.Connection) -> None:
+        self._connection = connection
+
+    def __enter__(self) -> None:
+        try:
+            self._connection.execute("BEGIN IMMEDIATE")
+        except sqlite3.Error as exc:
+            raise CurrentStateOperationError(
+                "Current State transaction failed"
+            ) from exc
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: object,
+    ) -> bool:
+        del exc_type, tb
+        try:
+            if exc is None:
+                self._connection.execute("COMMIT")
+            elif self._connection.in_transaction:
+                self._connection.execute("ROLLBACK")
+        except sqlite3.Error as transaction_error:
+            if self._connection.in_transaction:
+                try:
+                    self._connection.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            raise CurrentStateOperationError(
+                "Current State transaction failed"
+            ) from transaction_error
+
+        if isinstance(exc, sqlite3.Error):
+            raise CurrentStateOperationError(
+                "Current State transaction failed"
+            ) from exc
+        return False
+
+
 class CurrentStateStore:
     """Rebuildable deterministic Current State SQLite store."""
 
@@ -274,29 +316,12 @@ class CurrentStateStore:
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
-    @contextmanager
-    def _immediate_transaction(self) -> Iterator[None]:
+    def _immediate_transaction(self) -> _ImmediateTransaction:
         if self._read_only:
             raise CurrentStateCompatibilityError(
                 "Current State database is open read-only"
             )
-        try:
-            self._connection.execute("BEGIN IMMEDIATE")
-            try:
-                yield
-                self._connection.execute("COMMIT")
-            except BaseException:
-                if self._connection.in_transaction:
-                    self._connection.execute("ROLLBACK")
-                raise
-        except CurrentStateError:
-            raise
-        except sqlite3.Error as exc:
-            if self._connection.in_transaction:
-                self._connection.execute("ROLLBACK")
-            raise CurrentStateOperationError(
-                "Current State transaction failed"
-            ) from exc
+        return _ImmediateTransaction(self._connection)
 
     def _bootstrap_or_validate(self) -> None:
         application_id = int(
@@ -356,7 +381,6 @@ class CurrentStateStore:
             raise CurrentStateCompatibilityError(
                 "Current State database tables must all be STRICT"
             )
-
 
     def _validate_row_integrity(self) -> None:
         meta_count = int(
