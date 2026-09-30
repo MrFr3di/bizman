@@ -29,7 +29,7 @@ class ProductProbeRouteTests(unittest.TestCase):
             "https://bizmania.ru/units/shop/?id=33670&tab=goods&extra=1",
             "https://bizmania.ru/units/shop/?id=0&tab=goods",
             "https://bizmania.ru/units/shop/?id=+33670&tab=goods",
-            "https://bizmania.ru/units/shop/?id=３３６７０&tab=goods",
+            "https://bizmania.ru/units/shop/?id=３３６７０&tab=goods",\n            "https://bizmania.ru/units/shop/?%69d=33670&tab=goods",\n            "https://bizmania.ru/units/shop/?id=33670&t%61b=goods",
             "https://bizmania.ru/units/service/?id=33670&tab=goods",
             "https://bizmania.ru/units/shop/?id=33670&tab=supply",
         )
@@ -72,6 +72,17 @@ class ProductIdentityInspectionTests(unittest.TestCase):
         self.assertNotIn("TOP_SECRET", repr(report))
         self.assertNotIn("Antiseptic", repr(report))
         self.assertNotIn("Healing cream", repr(report))
+
+    def test_inactive_or_hidden_subtrees_are_not_candidates(self) -> None:
+        html = b"""
+        <template><a href="/products/?id=41">template</a></template>
+        <div hidden><a href="/products/?id=42">hidden</a></div>
+        <div aria-hidden="true"><a href="/products/?id=43">aria</a></div>
+        <svg><a href="/products/?id=44">svg</a></svg>
+        <a href="/products/?%69d=45">encoded key</a>
+        <a href="/products/?id=46&extra=1">extra query</a>
+        """
+        self.assertEqual(inspect_product_identity_candidates(html), ())
 
     def test_hidden_form_values_and_arbitrary_data_attributes_are_not_candidates(self) -> None:
         html = b"""
