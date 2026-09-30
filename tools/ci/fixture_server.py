@@ -25,6 +25,9 @@ _COMPANY_ROSTER = """<!doctype html>
 </table>
 <input name="clientSecret" value="TOP_SECRET_ROSTER_INPUT">
 <script>const token = "TOP_SECRET_ROSTER_SCRIPT";</script>
+<div hidden><div>TOP_SECRET_ROSTER_HIDDEN_NESTED</div><span>TOP_SECRET_ROSTER_HIDDEN_TAIL</span></div>
+<div style="color:red; display:none">TOP_SECRET_ROSTER_HIDDEN_STYLE</div>
+<section aria-hidden="true">TOP_SECRET_ROSTER_HIDDEN_ARIA</section>
 </body>
 </html>""".encode("utf-8")
 
