@@ -265,7 +265,7 @@ class NetworkNormalizer:
         if max_response_body_bytes <= 0:
             raise ValueError("max_response_body_bytes must be positive")
         self.max_response_body_bytes = int(max_response_body_bytes)
-        self._requests: dict[str, dict[str, Any]] = {}
+        self._requests: dict[tuple[str | None, str], dict[str, Any]] = {}
         self._websockets: dict[str, dict[str, Any]] = {}
 
     def _query(self, url: str) -> dict[str, list[str]]:
@@ -423,7 +423,7 @@ class NetworkNormalizer:
         if not isinstance(url, str):
             return None
 
-        previous = self._requests.get(request_id)
+        previous = self._requests.get((target_id, request_id))
         redirect_response = params.get("redirectResponse")
         redirect_index = int(previous.get("redirect_index", 0)) if previous else 0
         redirect_from_path = None
@@ -436,7 +436,7 @@ class NetworkNormalizer:
             redirect_status_code = _status_code(redirect_response.get("status"))
 
         if not self.first_party.matches_url(url):
-            self._requests.pop(request_id, None)
+            self._requests.pop((target_id, request_id), None)
             return None
 
         request_method = request.get("method")
@@ -451,7 +451,7 @@ class NetworkNormalizer:
             "status_code": None,
             "mime_type": None,
         }
-        self._requests[request_id] = state
+        self._requests[(target_id, request_id)] = state
 
         event = self._base_event(
             event_type="http.request",
@@ -492,12 +492,12 @@ class NetworkNormalizer:
         response = params.get("response")
         if not isinstance(request_id, str) or not isinstance(response, dict):
             return None
-        state = self._requests.get(request_id)
+        state = self._requests.get((target_id, request_id))
         if state is None:
             return None
         url = response.get("url") if isinstance(response.get("url"), str) else state["url"]
         if not self.first_party.matches_url(url):
-            self._requests.pop(request_id, None)
+            self._requests.pop((target_id, request_id), None)
             return None
         headers = response.get("headers")
         status_code = _status_code(response.get("status"))
@@ -531,10 +531,12 @@ class NetworkNormalizer:
         )
         return self._finish_event(event)
 
-    def response_body_capture_candidate(self, request_id: object) -> bool:
+    def response_body_capture_candidate(
+        self, request_id: object, *, target_id: str | None = None,
+    ) -> bool:
         if not isinstance(request_id, str):
             return False
-        state = self._requests.get(request_id)
+        state = self._requests.get((target_id, request_id))
         if state is None:
             return False
         if state.get("method") != "GET":
@@ -573,9 +575,9 @@ class NetworkNormalizer:
         params: dict[str, Any],
         target_id: str | None,
     ) -> dict[str, Any] | None:
-        if not self.response_body_capture_candidate(request_id):
+        if not self.response_body_capture_candidate(request_id, target_id=target_id):
             return None
-        state = self._requests.get(request_id)
+        state = self._requests.get((target_id, request_id))
         if state is None:
             return None
         raw = _decode_response_body(
@@ -616,7 +618,7 @@ class NetworkNormalizer:
         request_id = params.get("requestId")
         if not isinstance(request_id, str):
             return None
-        state = self._requests.pop(request_id, None)
+        state = self._requests.pop((target_id, request_id), None)
         if state is None:
             return None
         event = self._base_event(
@@ -651,7 +653,7 @@ class NetworkNormalizer:
         request_id = params.get("requestId")
         if not isinstance(request_id, str):
             return None
-        state = self._requests.pop(request_id, None)
+        state = self._requests.pop((target_id, request_id), None)
         if state is None:
             return None
         event = self._base_event(
