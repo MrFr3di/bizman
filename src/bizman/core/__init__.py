@@ -17,7 +17,7 @@ from bizman.core.errors import (
     DataIntegrityError,
     OperationError,
 )
-from bizman.core.provenance import (
+from bizman.core.product_probe import (\n    ProductEvidenceProbeRequest,\n    ProductEvidenceProbeResult,\n    probe_product_evidence,\n)\nfrom bizman.core.provenance import (
     EvidenceTrace,
     EvidenceTraceRequest,
     EvidenceTraceResult,
