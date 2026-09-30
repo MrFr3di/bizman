@@ -151,40 +151,45 @@ jobs:
         run: |
           set -euo pipefail
           echo "=== Public Sonar Quality Gate, PR #$PR_NUMBER ==="
-          curl -fsS --get \
+          gate_json="$RUNNER_TEMP/sonar-pr-gate.json"
+          gate_http=$(curl -sS --get \
             --data-urlencode "projectKey=MrFr3di_bizman" \
             --data-urlencode "pullRequest=$PR_NUMBER" \
-            https://sonarcloud.io/api/qualitygates/project_status \
-            | uv run python -c '
+            --output "$gate_json" --write-out '%{http_code}' \
+            https://sonarcloud.io/api/qualitygates/project_status) || gate_http="transport-error"
+          if [[ "$gate_http" == "200" ]]; then
+            uv run python -c '
           import json, sys
-          payload = json.load(sys.stdin)
-          gate = payload.get("projectStatus", {})
+          gate = json.load(open(sys.argv[1], encoding="utf-8")).get("projectStatus", {})
           print(json.dumps({
-              "errors": payload.get("errors"),
               "status": gate.get("status"),
               "conditions": gate.get("conditions", []),
               "period": gate.get("period"),
           }, ensure_ascii=False, indent=2))
-          '
-          echo "=== All unresolved Sonar issues, PR #$PR_NUMBER ==="
-          curl -fsS --get \
+          ' "$gate_json"
+          else
+            echo "::warning::Sonar PR gate is inaccessible anonymously (HTTP $gate_http); 404 can mean private or missing project. Inspect with authorized Sonar access."
+          fi
+          echo "=== Public unresolved Sonar issues, PR #$PR_NUMBER ==="
+          issues_json="$RUNNER_TEMP/sonar-pr-issues.json"
+          issues_http=$(curl -sS --get \
             --data-urlencode "componentKeys=MrFr3di_bizman" \
             --data-urlencode "pullRequest=$PR_NUMBER" \
             --data-urlencode "resolved=false" \
             --data-urlencode "ps=100" \
-            https://sonarcloud.io/api/issues/search \
-            | uv run python -c '
+            --output "$issues_json" --write-out '%{http_code}' \
+            https://sonarcloud.io/api/issues/search) || issues_http="transport-error"
+          if [[ "$issues_http" == "200" ]]; then
+            uv run python -c '
           import json, sys
-          payload = json.load(sys.stdin)
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
           print(json.dumps({
-              "errors": payload.get("errors"),
               "total": payload.get("paging", {}).get("total", payload.get("total")),
               "issues": [
                   {
                       "rule": item.get("rule"),
                       "type": item.get("type"),
                       "impacts": item.get("impacts"),
-                      "severity": item.get("severity"),
                       "message": item.get("message"),
                       "component": item.get("component"),
                       "line": item.get("line"),
@@ -193,7 +198,13 @@ jobs:
                   for item in payload.get("issues", [])
               ],
           }, ensure_ascii=False, indent=2))
-          '
+          ' "$issues_json"
+            if [[ "$gate_http" != "200" ]]; then
+              echo "::warning::Public issue results cannot establish a passing Quality Gate when its API is inaccessible."
+            fi
+          else
+            echo "::warning::Sonar PR issues are inaccessible anonymously (HTTP $issues_http)."
+          fi
 
       - name: Validate SonarQube Cloud CI configuration
         if: ${{ vars.SONAR_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
