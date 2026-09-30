@@ -48,7 +48,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         context = _context(args)
         return int(args.handler(context, args))
-    except (BizManError, ValueError) as exc:
+    except BizManError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
