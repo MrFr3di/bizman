@@ -60,6 +60,62 @@ class ProductProbeCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 2)
         self.assertNotIn("TOP_SECRET", stderr.getvalue())
 
+    def test_probe_candidate_overflow_is_nonzero_without_leaking_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            body = Path(tmp) / "goods.html"
+            body.write_text(
+                "".join(
+                    f'<a href="/products/?id={index + 1}">TOP_SECRET_{index}</a>'
+                    for index in range(65)
+                ),
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                exit_code = main(
+                    [
+                        "probe-product-evidence",
+                        "--repo-root",
+                        str(Path.cwd()),
+                        "--source-url",
+                        "https://bizmania.ru/units/shop/?id=33670&tab=goods",
+                        "--body-file",
+                        str(body),
+                    ]
+                )
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("ProductProbeCandidateOverflowError", stderr.getvalue())
+        self.assertNotIn("TOP_SECRET", stderr.getvalue())
+
+    def test_probe_rejects_oversized_input_before_parsing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            body = Path(tmp) / "goods.html"
+            body.write_bytes(b"x" * (4 * 1024 * 1024 + 1))
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                exit_code = main(
+                    [
+                        "probe-product-evidence",
+                        "--repo-root",
+                        str(Path.cwd()),
+                        "--source-url",
+                        "https://bizmania.ru/units/shop/?id=33670&tab=goods",
+                        "--body-file",
+                        str(body),
+                    ]
+                )
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual(
+            stderr.getvalue(),
+            "ERROR: product evidence probe input exceeds size limit\n",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

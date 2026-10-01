@@ -2,7 +2,8 @@
 
 **Status:** IN PROGRESS / NO AUTHORITY GRANTED  
 **Date:** 2026-09-30  
-**Design:** `docs/superpowers/specs/2026-09-30-p4c-product-identity-design.md`
+**Design:** `docs/superpowers/specs/2026-09-30-p4c-product-identity-design.md`  
+**Pre-C0 audit:** `docs/research/p4c-pre-c0-readiness.md`
 
 ## Purpose
 
@@ -23,13 +24,15 @@ bizman probe-product-evidence \
 
 The command:
 - accepts only the exact approved shop/goods route;
+- rejects control/space-normalized URL variants before URL parsing;
 - reads at most 4 MiB locally;
 - does not copy the body into BizManData or CAS;
 - prints only bounded structural candidate metadata;
 - currently recognizes only relative `/products/?id=<positive-int64>` hrefs as research candidates;
-- ignores labels, hidden form values, DOM id/name and arbitrary data attributes.
+- ignores labels, hidden form values, DOM id/name and arbitrary data attributes;
+- fails closed on duplicate attribute ambiguity or candidate-count overflow rather than silently truncating.
 
-A candidate is **not** yet an authoritative product ID. C0 must prove row binding and stability first.
+A candidate is **not** yet an authoritative product ID. A zero exit code means only that bounded research inspection completed. C0 must prove row binding, stability and completeness separately.
 
 ## Required real-evidence matrix
 
