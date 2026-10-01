@@ -46,14 +46,21 @@ class ProductProbeRoute:
         if _contains_forbidden_url_character(url):
             raise ProductProbeRouteError("URL is outside the approved P4-C C0 surface")
 
-        parts = urlsplit(url)
+        try:
+            parts = urlsplit(url)
+            hostname = parts.hostname
+            port = parts.port
+        except ValueError as exc:
+            raise ProductProbeRouteError(
+                "URL is outside the approved P4-C C0 surface"
+            ) from exc
         if (
             parts.scheme != "https"
             or parts.username is not None
             or parts.password is not None
-            or parts.port is not None
+            or port is not None
             or parts.fragment
-            or parts.hostname not in approved_hosts
+            or hostname not in approved_hosts
             or parts.path != _GOODS_PATH
             or "%" in parts.path
             or "%" in parts.query
