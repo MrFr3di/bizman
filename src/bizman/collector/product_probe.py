@@ -19,6 +19,14 @@ class ProductProbeRouteError(ValueError):
     """Raised when a research probe URL is outside the frozen C0 surface."""
 
 
+class ProductProbeCandidateOverflowError(ValueError):
+    """Raised when bounded C0 inspection cannot prove that all candidates were seen."""
+
+
+def _contains_forbidden_url_character(value: str) -> bool:
+    return any(ord(character) <= 0x20 or ord(character) == 0x7F for character in value)
+
+
 @dataclass(frozen=True, slots=True)
 class ProductProbeRoute:
     unit_id: int
@@ -33,6 +41,11 @@ class ProductProbeRoute:
         *,
         approved_hosts: tuple[str, ...],
     ) -> ProductProbeRoute:
+        if not isinstance(url, str) or not url:
+            raise ProductProbeRouteError("URL is outside the approved P4-C C0 surface")
+        if _contains_forbidden_url_character(url):
+            raise ProductProbeRouteError("URL is outside the approved P4-C C0 surface")
+
         parts = urlsplit(url)
         if (
             parts.scheme != "https"
@@ -80,7 +93,19 @@ class ProductIdentityCandidate:
     numeric_query_ids: tuple[int, ...]
 
 
+def _has_duplicate_attribute_names(attrs: list[tuple[str, str | None]]) -> bool:
+    seen: set[str] = set()
+    for key, _value in attrs:
+        normalized = key.casefold()
+        if normalized in seen:
+            return True
+        seen.add(normalized)
+    return False
+
+
 def _hidden(attrs: list[tuple[str, str | None]]) -> bool:
+    if _has_duplicate_attribute_names(attrs):
+        return True
     lowered = {key.casefold(): value for key, value in attrs}
     if "hidden" in lowered or "inert" in lowered:
         return True
@@ -120,15 +145,16 @@ class _IdentityCandidateParser(HTMLParser):
             if not is_void:
                 self._suppressed_depth += 1
             return
-        if len(self.candidates) >= self.max_candidates or normalized_tag != "a":
+        if normalized_tag != "a":
             return
-        href = next(
-            (value for key, value in attrs if key.casefold() == "href"),
-            None,
-        )
-        if not isinstance(href, str):
+        href_values = [
+            value
+            for key, value in attrs
+            if key.casefold() == "href" and isinstance(value, str)
+        ]
+        if len(href_values) != 1:
             return
-        parts = urlsplit(href)
+        parts = urlsplit(href_values[0])
         if (
             parts.scheme
             or parts.netloc
@@ -155,6 +181,10 @@ class _IdentityCandidateParser(HTMLParser):
         numeric_id = int(value)
         if numeric_id > _MAX_SIGNED_INT64:
             return
+        if len(self.candidates) >= self.max_candidates:
+            raise ProductProbeCandidateOverflowError(
+                "candidate count exceeds the bounded research limit"
+            )
         self.candidates.append(
             ProductIdentityCandidate(
                 tag="a",
