@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from bizman.collector.product_probe import (
+    ProductProbeCandidateOverflowError,
     ProductProbeRoute,
     ProductProbeRouteError,
     inspect_product_identity_candidates,
@@ -34,6 +35,9 @@ class ProductProbeRouteTests(unittest.TestCase):
             "https://bizmania.ru/units/shop/?id=33670&t%61b=goods",
             "https://bizmania.ru/units/service/?id=33670&tab=goods",
             "https://bizmania.ru/units/shop/?id=33670&tab=supply",
+            " https://bizmania.ru/units/shop/?id=33670&tab=goods",
+            "\thttps://bizmania.ru/units/shop/?id=33670&tab=goods",
+            "https://bizmania.ru/units/shop/?id=33670&tab=goods\n",
         )
         for url in rejected:
             with self.subTest(url=url):
@@ -95,6 +99,33 @@ class ProductIdentityInspectionTests(unittest.TestCase):
         """
         self.assertEqual(inspect_product_identity_candidates(html), ())
 
+    def test_duplicate_attributes_fail_closed_for_candidate_subtrees(self) -> None:
+        html = b"""
+        <a href="/products/?id=41" href="/products/?id=42">ambiguous href</a>
+        <div style="display:none" style="">
+          <a href="/products/?id=43">ambiguous style</a>
+        </div>
+        <a href="/products/?id=44">visible</a>
+        """
+        report = inspect_product_identity_candidates(html)
+        self.assertEqual(
+            [item.numeric_query_ids for item in report],
+            [(44,)],
+        )
+
+    def test_malformed_hidden_nesting_does_not_release_suppression_early(self) -> None:
+        html = b"""
+        <div hidden>
+          <span><a href="/products/?id=41">hidden</a>
+        </div>
+        <a href="/products/?id=42">visible</a>
+        """
+        report = inspect_product_identity_candidates(html)
+        self.assertEqual(
+            [item.numeric_query_ids for item in report],
+            [(42,)],
+        )
+
     def test_hidden_void_element_does_not_suppress_following_candidate(self) -> None:
         html = (
             b'<input type="hidden" value="secret">'
@@ -103,14 +134,14 @@ class ProductIdentityInspectionTests(unittest.TestCase):
         report = inspect_product_identity_candidates(html)
         self.assertEqual(report[0].numeric_query_ids, (47,))
 
-    def test_candidate_collection_is_bounded(self) -> None:
+    def test_candidate_overflow_fails_closed_instead_of_truncating(self) -> None:
         html = (
             "<div>"
             + "".join(f'<a href="/products/?id={index + 1}">x</a>' for index in range(20))
             + "</div>"
         ).encode()
-        report = inspect_product_identity_candidates(html, max_candidates=4)
-        self.assertEqual(len(report), 4)
+        with self.assertRaises(ProductProbeCandidateOverflowError):
+            inspect_product_identity_candidates(html, max_candidates=4)
 
 
 if __name__ == "__main__":
