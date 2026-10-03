@@ -79,7 +79,7 @@ The full test suite covers, among other invariants:
 - deterministic companies/units projection with latest-positive-observation semantics and UNKNOWN != deletion;
 - company/unit provenance, foreign keys, state-fingerprint tamper detection, parser-drift stale semantics and crash-safe P4-A schema-v1 → P4-B schema-v2 replacement;
 - P4-C typed shop/goods response capture, canonical unit-economics artifacts, catalog-semantic fingerprinting, unit-product provenance and explicit per-unit `ready/unknown/stale` goods coverage;
-- exact v1/v2 → v3 Current State staged replacement, product-row tamper/integrity checks and deterministic product delete/replay equivalence;
+- exact v1/v2/v3 → v4 Current State staged replacement, explicit orphan goods provenance, product-row tamper/integrity checks and deterministic product delete/replay equivalence;
 - path-free Core Current State rebuild and stable error translation;
 - Telegram adapter commands over Core with sanitized errors, bounded plain-text replies, strict chat-allowlist authorization and fail-closed CLI startup.
 
