@@ -23,7 +23,7 @@ Completed foundations include:
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
 
-**P3 — read-only MCP v1 is complete.** P4 is now active. **P4-A — Current State storage, identity and replay foundation is complete. P4-B — companies/units projection is the current slice:** `BizManData/state/current.sqlite3` is a rebuildable derived store, and P4-B adds authoritative company/unit state from narrowly allowlisted sanitized company-roster response evidence. See `docs/ROADMAP.md` and `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
+**P3 — read-only MCP v1 is complete.** P4 is now active. **P4-A — Current State storage, identity and replay foundation is complete. P4-B — companies/units projection is complete. P4-C — the C0 product-identity evidence gate passed on 2026-10-03; the next slice is Current State schema v3 unit-economics work under the authorized `UnitEconomicsV1` contract** (`docs/research/p4c-product-evidence.md`, runbook `docs/research/p4c-c0-runbook.md`). `BizManData/state/current.sqlite3` is a rebuildable derived store, and P4-B adds authoritative company/unit state from narrowly allowlisted sanitized company-roster response evidence. See `docs/ROADMAP.md` and `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`.
 
 ## Current corpus
 

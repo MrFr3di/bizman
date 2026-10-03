@@ -1,95 +1,86 @@
-# P4-C C0 — local runbook (authorized real-evidence run)
+# P4-C C0 — offline evidence runbook (executed 2026-10-03)
 
-**Status:** operational checklist for the single locally authorized C0 session.
-**Design:** `docs/superpowers/specs/2026-09-30-p4c-product-identity-design.md`
-**Readiness audit:** `docs/research/p4c-pre-c0-readiness.md`
+**Status:** executed; C0 result **PASS** recorded in `docs/research/p4c-product-evidence.md`.  
+**Design:** `docs/superpowers/specs/2026-09-30-p4c-product-identity-design.md` (amendment §19)  
+**Readiness audit:** `docs/research/p4c-pre-c0-readiness.md` (pre-C0 state)  
 **Decision record:** `docs/research/p4c-product-evidence.md`
 
-This runbook contains no private data. It is the checklist to execute before
-filling the decision matrix in `docs/research/p4c-product-evidence.md`.
+This runbook records the offline C0 run actually executed on 2026-10-03. The structural part
+needs no live logged-in game session: it uses the private HAR corpus plus response bodies
+already saved under the ignored `.work/` directory. Raw bodies never enter Git.
 
-## 0. Prerequisites
+## 0. Environment
 
-- [ ] `uv` pinned to the repository-required version `0.12.10`
-      (the running `uv` must report `0.12.10`; the repo enforces `required-version ==0.12.10`).
-- [ ] `uv sync --locked` passes in the repository checkout.
-- [ ] A dedicated Chrome profile logged in to `bizmania.ru` with a real game session
-      (you must own the units you inspect).
-- [ ] Browser remote debugging enabled if you capture bodies through CDP
-      (`--remote-debugging-port=9222` on a dedicated profile) — otherwise DevTools
-      manual response saving is sufficient.
+- `uv` **0.12.22** was used for the executed run. The local, ignored `.work/uv.toml`
+  (`required-version = "==0.12.22"`) was supplied as the uv config override; `pyproject.toml`
+  was not changed.
+- Dependencies stayed in locked mode (`uv sync --locked`).
+- No credentials, cookies, tokens, browser profiles or live game session are needed for the
+  structural extraction described here.
 
-## 1. Local capture area (never inside the repository)
+## 1. Sources
 
-```powershell
-$C0 = Join-Path $env:TEMP "bizman-p4c-c0"
-New-Item -ItemType Directory -Force $C0 | Out-Null
-```
+Private and never committed:
 
-Raw authenticated bodies stay in `$C0` only. Do not commit them, paste them into
-issues, CI logs or PRs, and do not move them under `D:\Repos\BizMan`.
+- the three HAR captures whose counts, period and SHA-256 are recorded in
+  `docs/research/captures.md`:
+  - `bizmania.ru.har`;
+  - `bizmania1.ru.har`;
+  - `bizmaniaFAQ.ru.har`.
+- the local live response bodies saved under ignored `.work/`, recorded in
+  `.work/capture-manifest.json`:
+  - `src.c0.20261003.a1` — unit 33670, `tab=goods` (`shop-a-1.html`);
+  - `src.c0.20261003.a2` — unit 33670, `tab=goods`, reload (`shop-a-2.html`);
+  - `src.c0.20261003.b1` — unit 33676, `tab=goods` (`shop-b-1.html`);
+  - `src.c0.20261003.s1` — unit 33676, `tab=supply` (comparison only);
+  - `src.c0.20261003.f1` — unit 33676, product-card comparison (outside the goods contract).
 
-## 2. Capture cases
+## 2. HAR corpus scan (offline)
 
-Collect each case from the authorized logged-in Chrome session and save the
-HTTP response body (DevTools -> Network -> select the document request ->
-Response -> save as `<case>.html` in `$C0`).
+For every first-party HAR entry whose document URL is exactly the shop goods surface
+(`/units/shop/?id=<unit>&tab=goods`), inspect the response body for the frozen selector and
+record only structural facts: goods-table presence, row count, numeric `product=N` values,
+pagination-like query keys (`p`, `page`, `offset`, `start`, `limit`) and the UA string. Never
+export product labels, prices, hidden values, cookies or headers.
 
-| Case | URL to open | Save as | Requirement |
-| --- | --- | --- | --- |
-| A1 | `https://bizmania.ru/units/shop/?id=13548&tab=goods` | `A1.html` | at least 2 visible product rows |
-| A2 | same shop after reload and, if possible, row reorder | `A2.html` | same shop, second observation |
-| B1 | `https://bizmania.ru/units/shop/?id=33670&tab=goods` | `B1.html` | second unit, same surface |
-| P1 | paginated goods page, if pagination exists | `P1.html` | page 2 or explicit no-pagination finding |
-| S1 | `https://bizmania.ru/units/shop/?id=13548&tab=supply` | `S1.html` | comparison surface only; not auto-promoted |
+Result (2026-10-03): 21 `tab=goods` entries, 18 complete goods tables, 12 units, 61 distinct
+numeric product ids. The per-capture matrix, the reload comparison, the e5307 anomaly and the
+explicit UNKNOWNs are in the evidence gate `docs/research/p4c-product-evidence.md`.
 
-Alternative target units from the historical census: `13443`, `13507`, `13534`,
-`13576`, `17181`, `17184`, `17245`, `26230`, `33676`.
+## 3. Probe runs (offline, research-only)
 
-Record separately:
-
-- [ ] Chrome product/version and (if CDP) protocol version metadata;
-- [ ] exact unit id and case label per capture;
-- [ ] the exact structural relation observed in DevTools between each candidate
-      product href and its row;
-- [ ] whether hidden/inactive markup contains competing product-like ids;
-- [ ] whether A1/A2 preserve identity under reload/reorder;
-- [ ] whether pagination exists and what one page omission means.
-
-## 3. Probe runs
+The research probe reads one local body transiently, never copies it into BizManData or CAS and
+prints only bounded structural candidate metadata. Run it once per saved goods body, with the
+source URL exactly `{id, tab}` (a URL carrying `product=...` is rejected by design):
 
 ```powershell
 uv run bizman probe-product-evidence `
   --repo-root "$PWD" `
-  --source-url "https://bizmania.ru/units/shop/?id=<UNIT>&tab=goods" `
-  --body-file "$C0\<CASE>.html"
+  --source-url "https://bizmania.ru/units/shop/?id=33670&tab=goods" `
+  --body-file ".work/shop-a-1.html"
 ```
 
-Exit code 0 means only that the bounded inspection completed; it is never a
-C0 PASS signal. The probe reports candidate numeric ids only.
+Run under the uv 0.12.22 config override from `.work/uv.toml`. Repeat for
+`.work/shop-a-2.html` (unit 33670) and `.work/shop-b-1.html` (unit 33676). Notes:
 
-Run once per case: A1, A2, B1, P1 (if it exists). S1 is rejected by the goods
-probe by design; its bodies are for manual structural comparison only.
+- the frozen row-bound goods selector is recognized as a **non-authoritative** candidate
+  extractor; exit code 0 only means the bounded inspection completed and is never a PASS signal;
+- `tab=supply` is not accepted by the goods probe; `shop-b-supply-1.html` was compared manually
+  only and inherits no trust;
+- the product-card body `shop-b-product-416.html` is outside the source route contract and is
+  likewise comparison-only.
 
-## 4. Decision
+## 4. Results and decision
 
-Fill the matrix in `docs/research/p4c-product-evidence.md` from the recorded
-observations. PASS requires one exact row-bound field/location that:
+The filled evidence matrix, the dated PASS decision, the classified e5307 anomaly and the
+remaining UNKNOWNs (server row reorder, completeness/pagination, deletion) are recorded in
+`docs/research/p4c-product-evidence.md`. The frozen contract and field map are in the design
+amendment `docs/superpowers/specs/2026-09-30-p4c-product-identity-design.md` §19.
 
-1. identifies the corresponding product on at least two units;
-2. remains stable across harmless reload/order change;
-3. can be extracted without persisting broad hidden/form/script state;
-4. has understood duplicate/ambiguity behavior;
-5. has explicit pagination/completeness semantics.
+## 5. Privacy rules (unchanged)
 
-NO-GO conditions are listed in the decision record; any of them stops P4-C
-before schema v3 and the deliverable becomes a documented evidence gap.
-
-## 5. After the run
-
-- [ ] Delete or archive `$C0` locally (raw bodies are never needed again).
-- [ ] Record the decision (PASS / NO-GO / PENDING with reasons) in
-      `docs/research/p4c-product-evidence.md`.
-- [ ] If PASS: proceed to the P4-C implementation plan (ProductEvidenceV1
-      capture, reducer, schema v3) — research contract first, per the pre-C0
-      audit ordering.
+- raw HAR files and response bodies never enter Git (`.har` and `.work/` are ignored);
+- no cookies, tokens, Authorization headers, browser profiles or credentials are stored or
+  required in repository files or in this runbook;
+- durable documentation keeps only structural numeric metadata and capture identities;
+- probe output is bounded structural metadata, never raw markup or labels.

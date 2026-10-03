@@ -4,6 +4,10 @@
 **Repository baseline:** `0945bbe90e90d8460a4776d1e79c39abe44e7d38`  
 **Purpose:** finish every safe repository-side preparation step before a locally authorized real-response C0 run.
 
+> **Superseded 2026-10-03:** the C0 evidence gate has been completed with a PASS decision
+> (`docs/research/p4c-product-evidence.md`). This audit describes the pre-C0 repository state,
+> remains for history and grants no authority.
+
 This document is deliberately non-authoritative. It records what can be established from
 committed repository material and synthetic tests. It does **not** prove a live row-bound
 product identifier and it does not authorize ProductEvidenceV1, production goods capture,
