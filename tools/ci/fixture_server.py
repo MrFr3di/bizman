@@ -31,6 +31,100 @@ _COMPANY_ROSTER = """<!doctype html>
 </body>
 </html>""".encode("utf-8")
 
+_GOODS_UNIT_ID = "33670"
+_GOODS_PRODUCTS = (880001, 880002)
+_GOODS_SECRETS = (
+    "TOP_SECRET_GOODS_LABEL",
+    "TOP_SECRET_GOODS_ATTR",
+    "TOP_SECRET_GOODS_INPUT",
+)
+
+
+def _goods_row(
+    *,
+    index: int,
+    product: int,
+    revenue: int,
+    profit: int,
+    stock_qty: int,
+    stock_quality: str,
+    our_price: int,
+    city_quality: str,
+    city_price: int,
+    sales_volume: int,
+    supply_qty: int,
+    supply_cost: int,
+) -> str:
+    href = (
+        f"/units/shop/?id={_GOODS_UNIT_ID}&tab=goods&product={product}"
+    )
+    cells = (
+        f'<td><a href="{href}"><img src="/img/p.png" '
+        f'alt="{_GOODS_SECRETS[1]}"></a>'
+        f'<input type="hidden" name="product[{index}]" value="{product}">'
+        f'<input type="hidden" name="clientSecret" value="{_GOODS_SECRETS[2]}"></td>',
+        f'<td><a href="{href}">{_GOODS_SECRETS[0]} {product}</a></td>',
+        '<td><div class="progress" title="50%"></div></td>',
+        f"<td>{revenue} p. {profit} p. "
+        '<span title="Рентабельность: 17%"></span></td>',
+        "<td>10%</td>",
+        f"<td>{stock_qty}</td>",
+        f"<td>{stock_quality}</td>",
+        "<td>800 p. (700 p.)</td>",
+        '<td><a href="#graph">graph</a></td>',
+        f'<td><input name="price[{index}]" value="{our_price}"></td>',
+        f"<td>{city_quality}</td>",
+        f"<td>{city_price}</td>",
+        f"<td>{sales_volume}</td>",
+        '<td><a href="#dialog">dialog</a></td>',
+        f'<td><input name="purchaseQuantity[{index}]" value="{supply_qty}">'
+        f'<input type="hidden" name="vendorPrice[{index}]" value="{supply_cost}"></td>',
+        '<td><a href="#buy">buy</a></td>',
+    )
+    return f'<tr id="pr{product}">{"".join(cells)}</tr>'
+
+
+_GOODS_HEADER = (
+    '<tr class="tblh">'
+    + "".join('<td class="tblh">Header</td>' for _ in range(16))
+    + "</tr>"
+)
+_GOODS_PAGE = (
+    "<!doctype html><html><body><table id=\"goods\">"
+    + _GOODS_HEADER
+    + _GOODS_HEADER
+    + _goods_row(
+        index=0,
+        product=_GOODS_PRODUCTS[0],
+        revenue=1500,
+        profit=250,
+        stock_qty=20,
+        stock_quality="4.0 (3.0)",
+        our_price=300,
+        city_quality="4.5",
+        city_price=310,
+        sales_volume=5,
+        supply_qty=3,
+        supply_cost=120,
+    )
+    + _goods_row(
+        index=1,
+        product=_GOODS_PRODUCTS[1],
+        revenue=2500,
+        profit=400,
+        stock_qty=30,
+        stock_quality="3.5 (2.5)",
+        our_price=350,
+        city_quality="3.75",
+        city_price=360,
+        sales_volume=6,
+        supply_qty=4,
+        supply_cost=130,
+    )
+    + "</table></body></html>"
+).encode("utf-8")
+
+
 _PAGE = f"""<!doctype html>
 <html>
 <head><meta charset=\"utf-8\"><title>BizMan collector fixture</title></head>
@@ -57,6 +151,8 @@ actionForm.addEventListener('submit', (event) => {{
 async function exerciseNetwork() {{
   const rosterResponse = await fetch('/company/?id=13393&tab=units&p=1');
   await rosterResponse.text();
+  const goodsResponse = await fetch('/units/shop/?id=33670&tab=goods');
+  await goodsResponse.text();
   await fetch('/api/get?safe=1&accessToken=TOP_SECRET_QUERY');
   await fetch('/api/post', {{
     method: 'POST',
@@ -102,6 +198,8 @@ class FixtureHandler(BaseHTTPRequestHandler):
             self._send(200, _PAGE, "text/html; charset=utf-8")
         elif path == "/company/":
             self._send(200, _COMPANY_ROSTER, "text/html; charset=utf-8")
+        elif path == "/units/shop/":
+            self._send(200, _GOODS_PAGE, "text/html; charset=utf-8")
         elif path == "/healthz":
             self._send(200, b"ok", "text/plain")
         elif path == "/api/get":
