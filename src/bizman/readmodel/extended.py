@@ -411,12 +411,12 @@ def _session_endpoint_records(root: Path) -> list[KnowledgeRecord]:
                 raise ValueError(
                     f"{item_source}: observed_in_canonical_census must be boolean"
                 )
-            expected_classification = (
-                "known-endpoint"
+            allowed_classifications = (
+                {"known-endpoint"}
                 if observed_in_census
-                else "new-endpoint"
+                else {"new-endpoint", "error-surface"}
             )
-            if classification != expected_classification:
+            if classification not in allowed_classifications:
                 raise ValueError(
                     f"{item_source}: classification disagrees with census flag"
                 )
