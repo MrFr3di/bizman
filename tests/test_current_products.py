@@ -393,6 +393,96 @@ def _write_v2_database(path: Path) -> None:
         connection.close()
 
 
+def _write_v3_database(path: Path) -> None:
+    """Write the exact table/column/STRICT shape recognized as old schema v3."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path)
+    try:
+        connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
+        connection.execute("PRAGMA user_version = 3")
+        connection.executescript(
+            """
+            CREATE TABLE projection_meta (
+                singleton INTEGER,
+                projection_name TEXT,
+                projection_version INTEGER,
+                analysis_profile_sha256 TEXT,
+                unit_economics_contract TEXT,
+                catalog_resolver_sha256 TEXT,
+                input_fingerprint TEXT,
+                state_fingerprint TEXT,
+                status TEXT,
+                stale_reason TEXT,
+                session_count INTEGER,
+                last_session_id TEXT,
+                last_sequence INTEGER
+            ) STRICT;
+            CREATE TABLE replayed_session (
+                session_id TEXT,
+                manifest_sha256 TEXT,
+                evidence_sha256 TEXT,
+                started_at TEXT,
+                ended_at TEXT,
+                status TEXT,
+                event_count INTEGER,
+                last_sequence INTEGER
+            ) STRICT;
+            CREATE TABLE company (
+                company_id TEXT,
+                name TEXT,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            CREATE TABLE unit (
+                unit_id TEXT,
+                company_id TEXT,
+                display_name TEXT,
+                city_name TEXT,
+                level INTEGER,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            CREATE TABLE observed_product (
+                product_numeric_id INTEGER,
+                catalog_key TEXT,
+                resolution TEXT
+            ) STRICT;
+            CREATE TABLE unit_product (
+                unit_id TEXT,
+                product_numeric_id INTEGER,
+                revenue INTEGER,
+                profit INTEGER,
+                stock_qty INTEGER,
+                stock_quality REAL,
+                our_price INTEGER,
+                city_quality REAL,
+                city_price INTEGER,
+                sales_volume INTEGER,
+                supply_qty INTEGER,
+                supply_cost INTEGER,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            CREATE TABLE product_surface_state (
+                unit_id TEXT,
+                surface TEXT,
+                status TEXT,
+                stale_reason TEXT,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            """
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
 def _user_version(path: Path) -> int:
     connection = sqlite3.connect(path)
     try:
@@ -708,7 +798,12 @@ class GoodsReplayTests(unittest.TestCase):
                     )
                 ],
             )
-            snapshot = build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
+            snapshot = rebuild_current_state(REPO_ROOT, data_dir, _redaction())
+            state_path = data_dir / "state" / "current.sqlite3"
+            with CurrentStateStore.open_read_only_if_exists(state_path) as store:
+                assert store is not None
+                persisted = store.snapshot()
+            self.assertEqual(persisted, snapshot)
 
         self.assertEqual(snapshot.units, ())
         self.assertEqual(
@@ -1164,8 +1259,8 @@ class CatalogResolverTests(unittest.TestCase):
                 CatalogResolver.load(root)
 
 
-class CurrentStateV3MigrationTests(unittest.TestCase):
-    def test_v2_database_is_upgraded_to_v3_with_staged_swap(self):
+class CurrentStateV4MigrationTests(unittest.TestCase):
+    def test_v2_database_is_upgraded_to_v4_with_staged_swap(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
             state_path = data_dir / "state" / "current.sqlite3"
@@ -1181,10 +1276,30 @@ class CurrentStateV3MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
 
             self.assertEqual(version, USER_VERSION)
-            self.assertEqual(_table_names(state_path), V3_TABLES)
+            self.assertEqual(_table_names(state_path), V4_TABLES)
             self.assertEqual(rebuilt, persisted)
             self.assertEqual(rebuilt.companies, ())
             self.assertEqual(rebuilt.products, ())
+
+    def test_v3_database_is_upgraded_to_v4_with_staged_swap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            state_path = data_dir / "state" / "current.sqlite3"
+            _write_v3_database(state_path)
+
+            rebuilt = rebuild_current_state(REPO_ROOT, data_dir, _redaction())
+
+            with CurrentStateStore.open_read_only_if_exists(state_path) as store:
+                assert store is not None
+                persisted = store.snapshot()
+                version = store._connection.execute(
+                    "PRAGMA user_version"
+                ).fetchone()[0]
+
+            self.assertEqual(version, USER_VERSION)
+            self.assertEqual(_table_names(state_path), V4_TABLES)
+            self.assertEqual(rebuilt, persisted)
+            self.assertEqual(rebuilt.orphan_unit_products, ())
 
     def test_v2_fault_injected_swap_preserves_the_old_database(self):
         with tempfile.TemporaryDirectory() as tmp:
