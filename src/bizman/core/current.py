@@ -15,6 +15,7 @@ from bizman.core.errors import (
     OperationError,
 )
 from bizman.current import (
+    CatalogResolverError,
     CurrentStateCompatibilityError,
     CurrentStateIntegrityError,
     CurrentStateOperationError,
@@ -89,6 +90,8 @@ def rebuild_current_state(
         )
     except BaselineFormatError as exc:
         raise AssetError("curated baseline assets are invalid") from exc
+    except CatalogResolverError as exc:
+        raise AssetError("curated product catalog is unavailable or invalid") from exc
     except BaselineConsistencyError as exc:
         raise ContractMismatchError(
             "Current State analysis profile contracts are incompatible"

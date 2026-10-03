@@ -11,9 +11,14 @@ dependencies = [
     "websockets>=17.1,<18",
 ]
 
+[project.optional-dependencies]
+telegram = ["aiogram>=3.15,<4"]
+
 [project.scripts]
 bizman = "bizman.cli.main:main"
 bizman-mcp = "bizman.mcp.__main__:main"
+bizman-telegram = "bizman.telegram.__main__:main"
+bizman-ingest = "bizman.ingest.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13"]
@@ -26,12 +31,11 @@ dev = [
 ]
 
 [tool.uv]
-required-version = "==0.12.10"
+required-version = "==0.12.22"
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-exclude = ["tests", "tools"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B", "RUF"]
@@ -40,6 +44,7 @@ ignore = ["I", "RUF"]
 [tool.ruff.lint.per-file-ignores]
 "src/bizman/changes/diff.py" = ["F401"]
 "src/bizman/collector/network.py" = ["F401"]
+"tests/test_collector.py" = ["F401"]
 
 [tool.coverage.run]
 branch = true
@@ -69,6 +74,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -83,6 +91,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -97,6 +108,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -110,6 +124,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -122,6 +139,9 @@ forbidden_modules = [
     "bizman.cli",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -134,13 +154,16 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Core does not depend on adapters"
 type = "forbidden"
 source_modules = ["bizman.core"]
-forbidden_modules = ["bizman.cli", "bizman.mcp"]
+forbidden_modules = ["bizman.cli", "bizman.mcp", "bizman.telegram"]
 
 [[tool.importlinter.contracts]]
 name = "CLI directly consumes Core only"
@@ -154,6 +177,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 allow_indirect_imports = true
 [[tool.importlinter.contracts]]
@@ -168,5 +194,81 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.cli",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Telegram directly consumes Core only"
+type = "forbidden"
+source_modules = ["bizman.telegram"]
+forbidden_modules = [
+    "bizman.foundation",
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.cli",
+    "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Market depends only on deterministic lower layers"
+type = "forbidden"
+source_modules = ["bizman.market"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.experiments",
+    "bizman.ingest",
+    "bizman.mcp",
+    "bizman.telegram",
+]
+
+[[tool.importlinter.contracts]]
+name = "Experiments depend only on deterministic lower layers"
+type = "forbidden"
+source_modules = ["bizman.experiments"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.market",
+    "bizman.ingest",
+    "bizman.mcp",
+    "bizman.telegram",
+]
+
+[[tool.importlinter.contracts]]
+name = "Ingest depends only on foundation"
+type = "forbidden"
+source_modules = ["bizman.ingest"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.mcp",
+    "bizman.telegram",
+]

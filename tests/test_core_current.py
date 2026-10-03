@@ -58,7 +58,7 @@ class CoreCurrentStateTests(unittest.TestCase):
             for field in fields(type(value)):
                 self.assertNotIn("Path", str(field.type))
             with self.assertRaises((FrozenInstanceError, AttributeError, TypeError)):
-                setattr(value, "_probe", True)
+                value._probe = True
 
         self.assertEqual(tuple(fields(CurrentStateRebuildRequest)), ())
 

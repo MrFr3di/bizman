@@ -48,7 +48,9 @@ def probe_product_evidence(
             request.source_url,
             approved_hosts=("bizmania.ru",),
         )
-        candidates = inspect_product_identity_candidates(request.body)
+        candidates = inspect_product_identity_candidates(
+            request.body, expected_unit_id=route.unit_id,
+        )
     except (UnicodeError, ValueError) as exc:
         raise OperationError(
             f"product evidence probe failed: {type(exc).__name__}"

@@ -7,18 +7,30 @@ from typing import Final
 from bizman.current.model import (
     CompanyState,
     CurrentProjectionSpec,
+    CurrentStateMetadata,
     CurrentStateSnapshot,
+    ObservedProduct,
+    ProductSurfaceState,
     ReplaySession,
+    UnitProductState,
     UnitState,
     build_current_snapshot,
 )
 
 
 APPLICATION_ID: Final[int] = 0x424D4331
-USER_VERSION: Final[int] = 2
+USER_VERSION: Final[int] = 3
 _MIN_SQLITE_VERSION: Final[tuple[int, int, int]] = (3, 37, 0)
 _EXPECTED_TABLES = frozenset(
-    {"projection_meta", "replayed_session", "company", "unit"}
+    {
+        "projection_meta",
+        "replayed_session",
+        "company",
+        "unit",
+        "observed_product",
+        "unit_product",
+        "product_surface_state",
+    }
 )
 
 
@@ -45,6 +57,8 @@ _SCHEMA = (
         projection_name TEXT NOT NULL,
         projection_version INTEGER NOT NULL CHECK (projection_version > 0),
         analysis_profile_sha256 TEXT NOT NULL,
+        unit_economics_contract TEXT NOT NULL,
+        catalog_resolver_sha256 TEXT NOT NULL,
         input_fingerprint TEXT NOT NULL,
         state_fingerprint TEXT NOT NULL,
         status TEXT NOT NULL CHECK (status IN ('ready', 'stale')),
@@ -114,6 +128,82 @@ _SCHEMA = (
     """
     CREATE INDEX unit_company_idx
     ON unit(company_id, unit_id)
+    """,
+    """
+    CREATE TABLE observed_product (
+        product_numeric_id INTEGER PRIMARY KEY CHECK (product_numeric_id > 0),
+        catalog_key TEXT,
+        resolution TEXT NOT NULL CHECK (resolution IN ('resolved', 'unresolved')),
+        CHECK (
+            (resolution = 'resolved'
+                AND catalog_key IS NOT NULL
+                AND length(catalog_key) > 0)
+            OR
+            (resolution = 'unresolved' AND catalog_key IS NULL)
+        )
+    ) STRICT
+    """,
+    """
+    CREATE TABLE unit_product (
+        unit_id TEXT NOT NULL,
+        product_numeric_id INTEGER NOT NULL,
+        revenue INTEGER NOT NULL CHECK (revenue >= 0),
+        profit INTEGER NOT NULL CHECK (profit >= 0),
+        stock_qty INTEGER NOT NULL CHECK (stock_qty >= 0),
+        stock_quality REAL NOT NULL CHECK (stock_quality >= 0),
+        our_price INTEGER NOT NULL CHECK (our_price >= 0),
+        city_quality REAL NOT NULL CHECK (city_quality >= 0),
+        city_price INTEGER NOT NULL CHECK (city_price >= 0),
+        sales_volume INTEGER NOT NULL CHECK (sales_volume >= 0),
+        supply_qty INTEGER NOT NULL CHECK (supply_qty >= 0),
+        supply_cost INTEGER NOT NULL CHECK (supply_cost >= 0),
+        source_session_id TEXT NOT NULL,
+        source_sequence INTEGER NOT NULL CHECK (source_sequence >= 0),
+        observed_at TEXT NOT NULL,
+        PRIMARY KEY (unit_id, product_numeric_id),
+        FOREIGN KEY (unit_id) REFERENCES unit(unit_id),
+        FOREIGN KEY (product_numeric_id)
+            REFERENCES observed_product(product_numeric_id),
+        FOREIGN KEY (source_session_id)
+            REFERENCES replayed_session(session_id)
+    ) STRICT
+    """,
+    """
+    CREATE TABLE product_surface_state (
+        unit_id TEXT NOT NULL,
+        surface TEXT NOT NULL CHECK (length(surface) > 0),
+        status TEXT NOT NULL CHECK (status IN ('ready', 'unknown', 'stale')),
+        stale_reason TEXT,
+        source_session_id TEXT,
+        source_sequence INTEGER CHECK (
+            source_sequence IS NULL OR source_sequence >= 0
+        ),
+        observed_at TEXT,
+        PRIMARY KEY (unit_id, surface),
+        FOREIGN KEY (unit_id) REFERENCES unit(unit_id),
+        FOREIGN KEY (source_session_id)
+            REFERENCES replayed_session(session_id),
+        CHECK (
+            (status = 'unknown'
+                AND stale_reason IS NULL
+                AND source_session_id IS NULL
+                AND source_sequence IS NULL
+                AND observed_at IS NULL)
+            OR
+            (status = 'ready'
+                AND stale_reason IS NULL
+                AND source_session_id IS NOT NULL
+                AND source_sequence IS NOT NULL
+                AND observed_at IS NOT NULL)
+            OR
+            (status = 'stale'
+                AND stale_reason IS NOT NULL
+                AND length(stale_reason) > 0
+                AND source_session_id IS NOT NULL
+                AND source_sequence IS NOT NULL
+                AND observed_at IS NOT NULL)
+        )
+    ) STRICT
     """,
 )
 
@@ -366,7 +456,7 @@ class CurrentStateStore:
         tables = _user_tables(self._connection)
         if tables != _EXPECTED_TABLES:
             raise CurrentStateCompatibilityError(
-                "Current State database user tables do not match schema v2"
+                "Current State database user tables do not match schema v3"
             )
         strict = {
             str(row[1]): int(row[5])
@@ -380,6 +470,22 @@ class CurrentStateStore:
         if any(value != 1 for value in strict.values()):
             raise CurrentStateCompatibilityError(
                 "Current State database tables must all be STRICT"
+            )
+
+    def verify_storage_integrity(self) -> None:
+        """Run SQLite physical and foreign-key checks on the open database."""
+
+        integrity = [
+            str(row[0])
+            for row in self._connection.execute("PRAGMA integrity_check")
+        ]
+        if integrity != ["ok"]:
+            raise CurrentStateIntegrityError(
+                "Current State storage integrity check failed"
+            )
+        if tuple(self._connection.execute("PRAGMA foreign_key_check")):
+            raise CurrentStateIntegrityError(
+                "Current State contains foreign-key violations"
             )
 
     def _validate_row_integrity(self) -> None:
@@ -403,11 +509,33 @@ class CurrentStateStore:
                 "SELECT count(*) FROM unit"
             ).fetchone()[0]
         )
+        product_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM observed_product"
+            ).fetchone()[0]
+        )
+        unit_product_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM unit_product"
+            ).fetchone()[0]
+        )
+        surface_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM product_surface_state"
+            ).fetchone()[0]
+        )
         if meta_count not in {0, 1}:
             raise CurrentStateIntegrityError(
                 "Current State must contain at most one metadata row"
             )
-        if meta_count == 0 and (ledger_count or company_count or unit_count):
+        if meta_count == 0 and (
+            ledger_count
+            or company_count
+            or unit_count
+            or product_count
+            or unit_product_count
+            or surface_count
+        ):
             raise CurrentStateIntegrityError(
                 "Current State rows exist without metadata"
             )
@@ -440,7 +568,8 @@ class CurrentStateStore:
         meta = self._connection.execute(
             """
             SELECT projection_name, projection_version,
-                   analysis_profile_sha256, input_fingerprint,
+                   analysis_profile_sha256, unit_economics_contract,
+                   catalog_resolver_sha256, input_fingerprint,
                    state_fingerprint, status, stale_reason,
                    session_count, last_session_id, last_sequence
             FROM projection_meta
@@ -526,25 +655,129 @@ class CurrentStateStore:
                 """
             )
         )
-
-        from bizman.current.model import CurrentStateMetadata
+        products = tuple(
+            ObservedProduct(
+                product_numeric_id=int(product_numeric_id),
+                catalog_key=(
+                    str(catalog_key) if catalog_key is not None else None
+                ),
+                resolution=str(resolution),
+            )
+            for (
+                product_numeric_id,
+                catalog_key,
+                resolution,
+            ) in self._connection.execute(
+                """
+                SELECT product_numeric_id, catalog_key, resolution
+                FROM observed_product
+                ORDER BY product_numeric_id
+                """
+            )
+        )
+        unit_products = tuple(
+            UnitProductState(
+                unit_id=str(unit_id),
+                product_numeric_id=int(product_numeric_id),
+                revenue=int(revenue),
+                profit=int(profit),
+                stock_qty=int(stock_qty),
+                stock_quality=float(stock_quality),
+                our_price=int(our_price),
+                city_quality=float(city_quality),
+                city_price=int(city_price),
+                sales_volume=int(sales_volume),
+                supply_qty=int(supply_qty),
+                supply_cost=int(supply_cost),
+                source_session_id=str(source_session_id),
+                source_sequence=int(source_sequence),
+                observed_at=str(observed_at),
+            )
+            for (
+                unit_id,
+                product_numeric_id,
+                revenue,
+                profit,
+                stock_qty,
+                stock_quality,
+                our_price,
+                city_quality,
+                city_price,
+                sales_volume,
+                supply_qty,
+                supply_cost,
+                source_session_id,
+                source_sequence,
+                observed_at,
+            ) in self._connection.execute(
+                """
+                SELECT unit_id, product_numeric_id, revenue, profit,
+                       stock_qty, stock_quality, our_price, city_quality,
+                       city_price, sales_volume, supply_qty, supply_cost,
+                       source_session_id, source_sequence, observed_at
+                FROM unit_product
+                ORDER BY unit_id, product_numeric_id
+                """
+            )
+        )
+        surfaces = tuple(
+            ProductSurfaceState(
+                unit_id=str(unit_id),
+                surface=str(surface),
+                status=str(status),
+                stale_reason=(
+                    str(stale_reason) if stale_reason is not None else None
+                ),
+                source_session_id=(
+                    str(source_session_id)
+                    if source_session_id is not None
+                    else None
+                ),
+                source_sequence=(
+                    int(source_sequence)
+                    if source_sequence is not None
+                    else None
+                ),
+                observed_at=(
+                    str(observed_at) if observed_at is not None else None
+                ),
+            )
+            for (
+                unit_id,
+                surface,
+                status,
+                stale_reason,
+                source_session_id,
+                source_sequence,
+                observed_at,
+            ) in self._connection.execute(
+                """
+                SELECT unit_id, surface, status, stale_reason,
+                       source_session_id, source_sequence, observed_at
+                FROM product_surface_state
+                ORDER BY unit_id, surface
+                """
+            )
+        )
 
         metadata = CurrentStateMetadata(
             projection_name=str(meta[0]),
             projection_version=int(meta[1]),
             analysis_profile_sha256=str(meta[2]),
-            input_fingerprint=str(meta[3]),
-            state_fingerprint=str(meta[4]),
-            status=str(meta[5]),
+            unit_economics_contract=str(meta[3]),
+            catalog_resolver_sha256=str(meta[4]),
+            input_fingerprint=str(meta[5]),
+            state_fingerprint=str(meta[6]),
+            status=str(meta[7]),
             stale_reason=(
-                str(meta[6]) if meta[6] is not None else None
-            ),
-            session_count=int(meta[7]),
-            last_session_id=(
                 str(meta[8]) if meta[8] is not None else None
             ),
+            session_count=int(meta[9]),
+            last_session_id=(
+                str(meta[10]) if meta[10] is not None else None
+            ),
             last_sequence=(
-                int(meta[9]) if meta[9] is not None else None
+                int(meta[11]) if meta[11] is not None else None
             ),
         )
         return CurrentStateSnapshot(
@@ -552,6 +785,9 @@ class CurrentStateStore:
             sessions=sessions,
             companies=companies,
             units=units,
+            products=products,
+            unit_products=unit_products,
+            surfaces=surfaces,
         )
 
     def snapshot(self) -> CurrentStateSnapshot | None:
@@ -575,6 +811,9 @@ class CurrentStateStore:
 
         meta = snapshot.metadata
         with self._immediate_transaction():
+            self._connection.execute("DELETE FROM product_surface_state")
+            self._connection.execute("DELETE FROM unit_product")
+            self._connection.execute("DELETE FROM observed_product")
             self._connection.execute("DELETE FROM unit")
             self._connection.execute("DELETE FROM company")
             self._connection.execute("DELETE FROM replayed_session")
@@ -640,19 +879,87 @@ class CurrentStateStore:
                     for item in snapshot.units
                 ),
             )
+            self._connection.executemany(
+                """
+                INSERT INTO observed_product(
+                    product_numeric_id, catalog_key, resolution
+                ) VALUES (?, ?, ?)
+                """,
+                (
+                    (
+                        item.product_numeric_id,
+                        item.catalog_key,
+                        item.resolution,
+                    )
+                    for item in snapshot.products
+                ),
+            )
+            self._connection.executemany(
+                """
+                INSERT INTO unit_product(
+                    unit_id, product_numeric_id, revenue, profit,
+                    stock_qty, stock_quality, our_price, city_quality,
+                    city_price, sales_volume, supply_qty, supply_cost,
+                    source_session_id, source_sequence, observed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        item.unit_id,
+                        item.product_numeric_id,
+                        item.revenue,
+                        item.profit,
+                        item.stock_qty,
+                        item.stock_quality,
+                        item.our_price,
+                        item.city_quality,
+                        item.city_price,
+                        item.sales_volume,
+                        item.supply_qty,
+                        item.supply_cost,
+                        item.source_session_id,
+                        item.source_sequence,
+                        item.observed_at,
+                    )
+                    for item in snapshot.unit_products
+                ),
+            )
+            self._connection.executemany(
+                """
+                INSERT INTO product_surface_state(
+                    unit_id, surface, status, stale_reason,
+                    source_session_id, source_sequence, observed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        item.unit_id,
+                        item.surface,
+                        item.status,
+                        item.stale_reason,
+                        item.source_session_id,
+                        item.source_sequence,
+                        item.observed_at,
+                    )
+                    for item in snapshot.surfaces
+                ),
+            )
             self._connection.execute(
                 """
                 INSERT INTO projection_meta(
                     singleton, projection_name, projection_version,
-                    analysis_profile_sha256, input_fingerprint,
+                    analysis_profile_sha256, unit_economics_contract,
+                    catalog_resolver_sha256, input_fingerprint,
                     state_fingerprint, status, stale_reason,
                     session_count, last_session_id, last_sequence
-                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     meta.projection_name,
                     meta.projection_version,
                     meta.analysis_profile_sha256,
+                    meta.unit_economics_contract,
+                    meta.catalog_resolver_sha256,
                     meta.input_fingerprint,
                     meta.state_fingerprint,
                     meta.status,
@@ -685,12 +992,17 @@ class CurrentStateStore:
             projection_name=current.metadata.projection_name,
             projection_version=current.metadata.projection_version,
             analysis_profile_sha256=current.metadata.analysis_profile_sha256,
+            unit_economics_contract=current.metadata.unit_economics_contract,
+            catalog_resolver_sha256=current.metadata.catalog_resolver_sha256,
         )
         stale = build_current_snapshot(
             spec,
             current.sessions,
             companies=current.companies,
             units=current.units,
+            products=current.products,
+            unit_products=current.unit_products,
+            surfaces=current.surfaces,
             status="stale",
             stale_reason=reason,
         )

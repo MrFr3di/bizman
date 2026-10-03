@@ -20,6 +20,7 @@ BizManData/
 *.key
 
 # Operational/local data
+.work/
 *.sqlite
 *.sqlite3
 *.db

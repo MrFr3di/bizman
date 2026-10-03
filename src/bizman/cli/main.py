@@ -13,7 +13,9 @@ from bizman.core import (
     SystemUtcClock,
 )
 from bizman.cli import collect as collect_command
+from bizman.cli import current as current_command
 from bizman.cli import detect as detect_command
+from bizman.cli import market as market_command
 from bizman.cli import probe_product_evidence as probe_product_evidence_command
 from bizman.cli import validate as validate_command
 
@@ -25,7 +27,9 @@ def _parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     collect_command.configure_parser(subparsers.add_parser("collect"))
+    current_command.configure_parser(subparsers.add_parser("current"))
     detect_command.configure_parser(subparsers.add_parser("detect"))
+    market_command.configure_parser(subparsers.add_parser("market"))
     probe_product_evidence_command.configure_parser(
         subparsers.add_parser("probe-product-evidence")
     )

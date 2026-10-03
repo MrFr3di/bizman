@@ -137,12 +137,12 @@ class CollectorEventPipeline:
             )
             if candidate and not self.response_body_supported:
                 self.writer.add_warning(
-                    "company roster response body unavailable: "
+                    "response body unavailable: "
                     "Network.getResponseBody unsupported"
                 )
             elif candidate and encoded_too_large:
                 self.writer.add_warning(
-                    "company roster response body skipped: encoded size exceeds limit"
+                    "response body skipped: encoded size exceeds limit"
                 )
             elif candidate:
                 try:
@@ -161,7 +161,7 @@ class CollectorEventPipeline:
                     self._append_observation(body_event)
                 except (CdpError, ResponseBodyCaptureError) as exc:
                     self.writer.add_warning(
-                        "company roster response body unavailable: "
+                        "response body unavailable: "
                         f"{type(exc).__name__}"
                     )
 

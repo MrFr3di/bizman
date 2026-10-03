@@ -55,6 +55,8 @@ class DistributionContractTests(unittest.TestCase):
             {
                 "bizman": "bizman.cli.main:main",
                 "bizman-mcp": "bizman.mcp.__main__:main",
+                "bizman-telegram": "bizman.telegram.__main__:main",
+                "bizman-ingest": "bizman.ingest.__main__:main",
             },
         )
         self.assertEqual(
@@ -66,6 +68,10 @@ class DistributionContractTests(unittest.TestCase):
                 "websockets>=17.1,<18",
             ],
         )
+        self.assertEqual(
+            project["optional-dependencies"]["telegram"],
+            ["aiogram>=3.15,<4"],
+        )
 
         build = value["build-system"]
         self.assertEqual(build["build-backend"], "uv_build")
@@ -75,7 +81,7 @@ class DistributionContractTests(unittest.TestCase):
             value["dependency-groups"]["dev"],
             ["ruff==0.16.3", "import-linter==2.15"],
         )
-        self.assertEqual(value["tool"]["uv"]["required-version"], "==0.12.10")
+        self.assertEqual(value["tool"]["uv"]["required-version"], "==0.12.22")
         ruff = value["tool"]["ruff"]
         self.assertEqual(ruff["target-version"], "py311")
         self.assertEqual(ruff["lint"]["select"], ["E4", "E7", "E9", "F", "I", "B", "RUF"])
@@ -91,6 +97,11 @@ class DistributionContractTests(unittest.TestCase):
         self.assertEqual(lock["version"], 1)
         self.assertEqual(lock["requires-python"], ">=3.11")
         packages = {item["name"]: item for item in lock["package"]}
+        self.assertEqual(packages["aiogram"]["version"], "3.31.0")
+        self.assertEqual(
+            packages["bizman"]["optional-dependencies"]["telegram"],
+            [{"name": "aiogram"}],
+        )
         self.assertEqual(packages["jsonschema"]["version"], "4.26.0")
         self.assertEqual(packages["mcp"]["version"], "2.2.0")
         self.assertIn("pydantic", packages)
@@ -164,6 +175,12 @@ class DistributionContractTests(unittest.TestCase):
             mcp_console = venv / (
                 "Scripts/bizman-mcp.exe" if os.name == "nt" else "bin/bizman-mcp"
             )
+            telegram_console = venv / (
+                "Scripts/bizman-telegram.exe" if os.name == "nt" else "bin/bizman-telegram"
+            )
+            ingest_console = venv / (
+                "Scripts/bizman-ingest.exe" if os.name == "nt" else "bin/bizman-ingest"
+            )
             subprocess.run(
                 [uv, "pip", "install", "--python", str(python), str(wheel)],
                 cwd=root,
@@ -183,7 +200,8 @@ class DistributionContractTests(unittest.TestCase):
                     (
                         "import pathlib, bizman, bizman.foundation, bizman.sessions, "
                         "bizman.collector, bizman.changes, bizman.current, "
-                        "bizman.readmodel, bizman.core, bizman.mcp; "
+                        "bizman.readmodel, bizman.core, bizman.mcp, bizman.telegram, "
+                        "bizman.market, bizman.experiments, bizman.ingest; "
                         "print(pathlib.Path(bizman.__file__).resolve())"
                     ),
                 ],
@@ -218,6 +236,28 @@ class DistributionContractTests(unittest.TestCase):
             )
             self.assertIn("--repo-root", mcp_help.stdout)
             self.assertIn("--data-dir", mcp_help.stdout)
+
+            telegram_help = subprocess.run(
+                [str(telegram_console), "--help"],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("--repo-root", telegram_help.stdout)
+            self.assertIn("--data-dir", telegram_help.stdout)
+
+            ingest_help = subprocess.run(
+                [str(ingest_console), "--help"],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("--har", ingest_help.stdout)
+            self.assertIn("--out", ingest_help.stdout)
 
 
 if __name__ == "__main__":

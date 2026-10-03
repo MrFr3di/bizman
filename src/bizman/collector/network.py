@@ -12,13 +12,19 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 from bizman.collector.events import CollectorClock, EventSequencer
 from bizman.collector.storage import ArtifactStore
+from bizman.collector.unit_economics import (
+    UnitEconomicsExtractionError,
+    extract_unit_economics_payload,
+)
 from bizman.foundation.fingerprint import canonical_json_bytes, canonical_sha256
 from bizman.foundation.redaction import RedactionPolicy, redact_headers, redact_mapping
 from bizman.foundation.session import new_uuid7
+from bizman.foundation.unit_economics import RESPONSE_BODY_KIND
 
 _MAX_FIELDS = 4096
 _MAX_RESPONSE_BODY_BYTES = 4 * 1024 * 1024
 _COMPANY_ROSTER_PATH = "/company/"
+_GOODS_PATH = "/units/shop/"
 _PAGE_ARTIFACT_SCHEMA_VERSION = "1.0"
 _PAGE_SANITIZER_VERSION = 2
 _EXCLUDED_PAGE_TAGS = frozenset({
@@ -193,6 +199,53 @@ def _content_type(headers: dict[str, Any]) -> str:
         if name.casefold() == "content-type" and isinstance(value, str):
             return value.split(";", 1)[0].strip().casefold()
     return ""
+
+
+def _positive_decimal(value: object) -> str | None:
+    if (
+        not isinstance(value, str)
+        or not value.isascii()
+        or not value.isdigit()
+        or value.startswith("0")
+    ):
+        return None
+    return value
+
+
+def _goods_route_unit_id(url: str) -> str | None:
+    """Return the unit id only for the exact frozen shop-goods read surface."""
+
+    try:
+        parsed = urlparse(url)
+        port = parsed.port
+    except ValueError:
+        return None
+    if (
+        parsed.scheme != "https"
+        or parsed.username is not None
+        or parsed.password is not None
+        or port is not None
+        or parsed.fragment
+        or parsed.path != _GOODS_PATH
+        or "%" in parsed.query
+    ):
+        return None
+    try:
+        values = parse_qs(
+            parsed.query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=_MAX_FIELDS,
+        )
+    except ValueError:
+        return None
+    if set(values) != {"id", "tab"}:
+        return None
+    unit_ids = values["id"]
+    tabs = values["tab"]
+    if len(unit_ids) != 1 or len(tabs) != 1 or tabs[0] != "goods":
+        return None
+    return _positive_decimal(unit_ids[0])
 
 
 def _redact_json_value(value: Any, policy: RedactionPolicy) -> Any:
@@ -397,6 +450,9 @@ class NetworkNormalizer:
                 "error_text",
             )
         }
+        if "response_body_kind" in event:
+            # Conditional so legacy event fingerprints stay byte-identical.
+            semantic["response_body_kind"] = event.get("response_body_kind")
         event["fingerprint"] = canonical_sha256(semantic)
         return event
 
@@ -531,40 +587,51 @@ class NetworkNormalizer:
         )
         return self._finish_event(event)
 
-    def response_body_capture_candidate(
-        self, request_id: object, *, target_id: str | None = None,
-    ) -> bool:
+    def _capture_plan(
+        self, request_id: object, *, target_id: str | None,
+    ) -> tuple[str, str | None] | None:
         if not isinstance(request_id, str):
-            return False
+            return None
         state = self._requests.get((target_id, request_id))
         if state is None:
-            return False
+            return None
         if state.get("method") != "GET":
-            return False
-        if self._path(str(state.get("url", ""))) != _COMPANY_ROSTER_PATH:
-            return False
+            return None
         if state.get("status_code") != 200:
-            return False
+            return None
         mime_type = str(state.get("mime_type", ""))
         mime_base, _separator, _parameters = mime_type.partition(";")
         if mime_base.casefold() != "text/html":
-            return False
-        query = state.get("query")
-        if not isinstance(query, dict):
-            return False
-        company_ids = query.get("id")
-        tabs = query.get("tab")
-        if not isinstance(company_ids, list) or len(company_ids) != 1:
-            return False
-        company_id = next(iter(company_ids), None)
-        if (
-            not isinstance(company_id, str)
-            or not company_id.isascii()
-            or not company_id.isdigit()
-            or company_id.startswith("0")
-        ):
-            return False
-        return tabs == ["units"]
+            return None
+        url = state.get("url")
+        if not isinstance(url, str):
+            return None
+        path = self._path(url)
+        if path == _COMPANY_ROSTER_PATH:
+            query = state.get("query")
+            if not isinstance(query, dict):
+                return None
+            company_ids = query.get("id")
+            tabs = query.get("tab")
+            if not isinstance(company_ids, list) or len(company_ids) != 1:
+                return None
+            company_id = next(iter(company_ids), None)
+            if _positive_decimal(company_id) is None:
+                return None
+            if tabs != ["units"]:
+                return None
+            return ("company-roster", None)
+        if path == _GOODS_PATH:
+            unit_id = _goods_route_unit_id(url)
+            if unit_id is None:
+                return None
+            return ("unit-economics", unit_id)
+        return None
+
+    def response_body_capture_candidate(
+        self, request_id: object, *, target_id: str | None = None,
+    ) -> bool:
+        return self._capture_plan(request_id, target_id=target_id) is not None
 
     def normalize_response_body(
         self,
@@ -575,8 +642,10 @@ class NetworkNormalizer:
         params: dict[str, Any],
         target_id: str | None,
     ) -> dict[str, Any] | None:
-        if not self.response_body_capture_candidate(request_id, target_id=target_id):
+        plan = self._capture_plan(request_id, target_id=target_id)
+        if plan is None:
             return None
+        surface, unit_id = plan
         state = self._requests.get((target_id, request_id))
         if state is None:
             return None
@@ -585,7 +654,22 @@ class NetworkNormalizer:
             base64_encoded=base64_encoded,
             max_bytes=self.max_response_body_bytes,
         )
-        artifact_ref = self.artifacts.put_bytes(_sanitize_html_page(raw))
+        if surface == "unit-economics":
+            if unit_id is None:
+                raise ResponseBodyCaptureError(
+                    "unit economics capture plan is missing the unit id"
+                )
+            try:
+                artifact_ref = self.artifacts.put_bytes(
+                    extract_unit_economics_payload(raw, unit_id=unit_id)
+                )
+            except UnitEconomicsExtractionError as exc:
+                # No artifact and no event: the page is not proven typed evidence.
+                raise ResponseBodyCaptureError(
+                    "unit economics response body extraction failed"
+                ) from exc
+        else:
+            artifact_ref = self.artifacts.put_bytes(_sanitize_html_page(raw))
         event = self._base_event(
             event_type="http.response_body",
             params=params,
@@ -595,7 +679,7 @@ class NetworkNormalizer:
         url = state.get("url")
         if not isinstance(url, str):
             raise ResponseBodyCaptureError(
-                "company roster request state is missing URL"
+                "captured response body request state is missing URL"
             )
         event.update(
             {
@@ -610,6 +694,8 @@ class NetworkNormalizer:
                 "response_body_ref": artifact_ref,
             }
         )
+        if surface == "unit-economics":
+            event["response_body_kind"] = RESPONSE_BODY_KIND
         return self._finish_event(event)
 
     def _on_Network_loadingFinished(

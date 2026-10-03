@@ -2,18 +2,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import math
 import re
 
 from bizman.foundation.fingerprint import canonical_sha256
 
 
 PROJECTION_NAME = "bizman.current"
-PROJECTION_VERSION = 2
+PROJECTION_VERSION = 3
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _UUID7_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
 _STATUSES = frozenset({"ready", "stale"})
+_SURFACE_STATUSES = frozenset({"ready", "unknown", "stale"})
+_RESOLUTIONS = frozenset({"resolved", "unresolved"})
+_MAX_SIGNED_INT64 = (1 << 63) - 1
 
 
 def _require_sha256(value: object, *, name: str) -> str:
@@ -54,14 +58,41 @@ def _canonical_instant(value: object, *, name: str) -> tuple[str, datetime]:
 
 
 def _non_negative_int(value: object, *, name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < 0
+        or value > _MAX_SIGNED_INT64
+    ):
         raise ValueError(f"{name} must be a non-negative integer")
     return value
+
+
+def _positive_int64(value: object, *, name: str) -> int:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value <= 0
+        or value > _MAX_SIGNED_INT64
+    ):
+        raise ValueError(f"{name} must be a positive 64-bit integer")
+    return value
+
+
+def _non_negative_number(value: object, *, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be a finite non-negative number")
+    number = float(value)
+    if not math.isfinite(number) or number < 0:
+        raise ValueError(f"{name} must be a finite non-negative number")
+    return number
 
 
 @dataclass(frozen=True, slots=True)
 class CurrentProjectionSpec:
     analysis_profile_sha256: str
+    unit_economics_contract: str
+    catalog_resolver_sha256: str
     projection_name: str = PROJECTION_NAME
     projection_version: int = PROJECTION_VERSION
 
@@ -76,6 +107,14 @@ class CurrentProjectionSpec:
         _require_sha256(
             self.analysis_profile_sha256,
             name="analysis_profile_sha256",
+        )
+        _require_text(
+            self.unit_economics_contract,
+            name="unit_economics_contract",
+        )
+        _require_sha256(
+            self.catalog_resolver_sha256,
+            name="catalog_resolver_sha256",
         )
 
 
@@ -175,11 +214,114 @@ class UnitState:
         object.__setattr__(self, "observed_at", observed)
 
 
+@dataclass(frozen=True, slots=True, order=True)
+class ObservedProduct:
+    product_numeric_id: int
+    catalog_key: str | None
+    resolution: str
+
+    def __post_init__(self) -> None:
+        _positive_int64(self.product_numeric_id, name="product_numeric_id")
+        if self.resolution not in _RESOLUTIONS:
+            raise ValueError("resolution must be resolved or unresolved")
+        if self.resolution == "resolved":
+            _require_text(self.catalog_key, name="catalog_key")
+        elif self.catalog_key is not None:
+            raise ValueError("unresolved products cannot carry a catalog_key")
+
+
+@dataclass(frozen=True, slots=True, order=True)
+class UnitProductState:
+    unit_id: str
+    product_numeric_id: int
+    revenue: int
+    profit: int
+    stock_qty: int
+    stock_quality: float
+    our_price: int
+    city_quality: float
+    city_price: int
+    sales_volume: int
+    supply_qty: int
+    supply_cost: int
+    source_session_id: str
+    source_sequence: int
+    observed_at: str
+
+    def __post_init__(self) -> None:
+        _require_entity_id(self.unit_id, name="unit_id")
+        _positive_int64(self.product_numeric_id, name="product_numeric_id")
+        for name in (
+            "revenue",
+            "profit",
+            "stock_qty",
+            "our_price",
+            "city_price",
+            "sales_volume",
+            "supply_qty",
+            "supply_cost",
+        ):
+            _non_negative_int(getattr(self, name), name=name)
+        object.__setattr__(
+            self,
+            "stock_quality",
+            _non_negative_number(self.stock_quality, name="stock_quality"),
+        )
+        object.__setattr__(
+            self,
+            "city_quality",
+            _non_negative_number(self.city_quality, name="city_quality"),
+        )
+        _require_uuid7(self.source_session_id, name="source_session_id")
+        _non_negative_int(self.source_sequence, name="source_sequence")
+        observed, _ = _canonical_instant(self.observed_at, name="observed_at")
+        object.__setattr__(self, "observed_at", observed)
+
+
+@dataclass(frozen=True, slots=True, order=True)
+class ProductSurfaceState:
+    unit_id: str
+    surface: str
+    status: str
+    stale_reason: str | None
+    source_session_id: str | None
+    source_sequence: int | None
+    observed_at: str | None
+
+    def __post_init__(self) -> None:
+        _require_entity_id(self.unit_id, name="unit_id")
+        _require_text(self.surface, name="surface")
+        if self.status not in _SURFACE_STATUSES:
+            raise ValueError("surface status must be ready, unknown or stale")
+        provenance = (
+            self.source_session_id,
+            self.source_sequence,
+            self.observed_at,
+        )
+        if self.status == "unknown":
+            if self.stale_reason is not None:
+                raise ValueError("unknown surface cannot carry stale_reason")
+            if any(value is not None for value in provenance):
+                raise ValueError("unknown surface cannot carry provenance")
+            return
+        if self.status == "ready":
+            if self.stale_reason is not None:
+                raise ValueError("ready surface cannot carry stale_reason")
+        else:
+            _require_text(self.stale_reason, name="stale_reason")
+        _require_uuid7(self.source_session_id, name="source_session_id")
+        _non_negative_int(self.source_sequence, name="source_sequence")
+        observed, _ = _canonical_instant(self.observed_at, name="observed_at")
+        object.__setattr__(self, "observed_at", observed)
+
+
 @dataclass(frozen=True, slots=True)
 class CurrentStateMetadata:
     projection_name: str
     projection_version: int
     analysis_profile_sha256: str
+    unit_economics_contract: str
+    catalog_resolver_sha256: str
     input_fingerprint: str
     state_fingerprint: str
     status: str
@@ -199,6 +341,14 @@ class CurrentStateMetadata:
         _require_sha256(
             self.analysis_profile_sha256,
             name="analysis_profile_sha256",
+        )
+        _require_text(
+            self.unit_economics_contract,
+            name="unit_economics_contract",
+        )
+        _require_sha256(
+            self.catalog_resolver_sha256,
+            name="catalog_resolver_sha256",
         )
         _require_sha256(self.input_fingerprint, name="input_fingerprint")
         _require_sha256(self.state_fingerprint, name="state_fingerprint")
@@ -256,24 +406,72 @@ def _validate_snapshot_domain(
     sessions: tuple[ReplaySession, ...],
     company_values: tuple[CompanyState, ...],
     unit_values: tuple[UnitState, ...],
-) -> tuple[tuple[CompanyState, ...], tuple[UnitState, ...]]:
+    product_values: tuple[ObservedProduct, ...],
+    unit_product_values: tuple[UnitProductState, ...],
+    surface_values: tuple[ProductSurfaceState, ...],
+) -> tuple[
+    tuple[CompanyState, ...],
+    tuple[UnitState, ...],
+    tuple[ObservedProduct, ...],
+    tuple[UnitProductState, ...],
+    tuple[ProductSurfaceState, ...],
+]:
     companies = tuple(company_values)
     units = tuple(unit_values)
+    products = tuple(product_values)
+    unit_products = tuple(unit_product_values)
+    surfaces = tuple(surface_values)
     if not all(isinstance(item, CompanyState) for item in companies):
         raise TypeError("companies must contain only CompanyState values")
     if not all(isinstance(item, UnitState) for item in units):
         raise TypeError("units must contain only UnitState values")
+    if not all(isinstance(item, ObservedProduct) for item in products):
+        raise TypeError("products must contain only ObservedProduct values")
+    if not all(isinstance(item, UnitProductState) for item in unit_products):
+        raise TypeError("unit_products must contain only UnitProductState values")
+    if not all(isinstance(item, ProductSurfaceState) for item in surfaces):
+        raise TypeError("surfaces must contain only ProductSurfaceState values")
+
     if len({item.company_id for item in companies}) != len(companies):
         raise ValueError("Current State contains duplicate company_id values")
     if len({item.unit_id for item in units}) != len(units):
         raise ValueError("Current State contains duplicate unit_id values")
+    if len({item.product_numeric_id for item in products}) != len(products):
+        raise ValueError("Current State contains duplicate product_numeric_id values")
+    if (
+        len({(item.unit_id, item.product_numeric_id) for item in unit_products})
+        != len(unit_products)
+    ):
+        raise ValueError("Current State contains duplicate unit-product values")
+    if len({(item.unit_id, item.surface) for item in surfaces}) != len(surfaces):
+        raise ValueError("Current State contains duplicate surface values")
+
     if companies != tuple(sorted(companies, key=lambda item: item.company_id)):
         raise ValueError("companies must be ordered by company_id")
     if units != tuple(sorted(units, key=lambda item: item.unit_id)):
         raise ValueError("units must be ordered by unit_id")
+    if products != tuple(
+        sorted(products, key=lambda item: item.product_numeric_id)
+    ):
+        raise ValueError("products must be ordered by product_numeric_id")
+    if unit_products != tuple(
+        sorted(
+            unit_products,
+            key=lambda item: (item.unit_id, item.product_numeric_id),
+        )
+    ):
+        raise ValueError(
+            "unit_products must be ordered by unit_id/product_numeric_id"
+        )
+    if surfaces != tuple(
+        sorted(surfaces, key=lambda item: (item.unit_id, item.surface))
+    ):
+        raise ValueError("surfaces must be ordered by unit_id/surface")
 
     session_by_id = {item.session_id: item for item in sessions}
     company_ids = {item.company_id for item in companies}
+    unit_ids = {item.unit_id for item in units}
+    product_ids = {item.product_numeric_id for item in products}
     for value in (*companies, *units):
         session = session_by_id.get(value.source_session_id)
         if session is None:
@@ -283,8 +481,39 @@ def _validate_snapshot_domain(
     for unit in units:
         if unit.company_id not in company_ids:
             raise ValueError("unit references a company absent from Current State")
+    for value in unit_products:
+        session = session_by_id.get(value.source_session_id)
+        if session is None:
+            raise ValueError(
+                "unit-product provenance references an unreplayed session"
+            )
+        if value.source_sequence >= session.event_count:
+            raise ValueError(
+                "unit-product provenance sequence exceeds replayed session"
+            )
+        if value.unit_id not in unit_ids:
+            raise ValueError("unit-product references a unit absent from Current State")
+        if value.product_numeric_id not in product_ids:
+            raise ValueError(
+                "unit-product references an observed product absent from Current State"
+            )
+    for surface in surfaces:
+        if surface.unit_id not in unit_ids:
+            raise ValueError("surface references a unit absent from Current State")
+        if surface.source_session_id is None:
+            continue
+        session = session_by_id.get(surface.source_session_id)
+        if session is None:
+            raise ValueError("surface provenance references an unreplayed session")
+        if (
+            surface.source_sequence is None
+            or surface.source_sequence >= session.event_count
+        ):
+            raise ValueError(
+                "surface provenance sequence exceeds replayed session"
+            )
 
-    return companies, units
+    return companies, units, products, unit_products, surfaces
 
 
 def _validate_snapshot_fingerprints(
@@ -292,12 +521,17 @@ def _validate_snapshot_fingerprints(
     sessions: tuple[ReplaySession, ...],
     companies: tuple[CompanyState, ...],
     units: tuple[UnitState, ...],
+    products: tuple[ObservedProduct, ...],
+    unit_products: tuple[UnitProductState, ...],
+    surfaces: tuple[ProductSurfaceState, ...],
 ) -> None:
     expected_input = current_input_fingerprint(
         CurrentProjectionSpec(
             projection_name=metadata.projection_name,
             projection_version=metadata.projection_version,
             analysis_profile_sha256=metadata.analysis_profile_sha256,
+            unit_economics_contract=metadata.unit_economics_contract,
+            catalog_resolver_sha256=metadata.catalog_resolver_sha256,
         ),
         sessions,
     )
@@ -314,10 +548,12 @@ def _validate_snapshot_fingerprints(
         sessions=sessions,
         companies=companies,
         units=units,
+        products=products,
+        unit_products=unit_products,
+        surfaces=surfaces,
     )
     if metadata.state_fingerprint != expected_state:
         raise ValueError("Current State state_fingerprint is inconsistent")
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -326,20 +562,39 @@ class CurrentStateSnapshot:
     sessions: tuple[ReplaySession, ...]
     companies: tuple[CompanyState, ...] = ()
     units: tuple[UnitState, ...] = ()
+    products: tuple[ObservedProduct, ...] = ()
+    unit_products: tuple[UnitProductState, ...] = ()
+    surfaces: tuple[ProductSurfaceState, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.metadata, CurrentStateMetadata):
             raise TypeError("metadata must be CurrentStateMetadata")
         sessions = _validate_snapshot_ledger(self.metadata, self.sessions)
-        companies, units = _validate_snapshot_domain(
-            sessions, self.companies, self.units,
+        companies, units, products, unit_products, surfaces = (
+            _validate_snapshot_domain(
+                sessions,
+                self.companies,
+                self.units,
+                self.products,
+                self.unit_products,
+                self.surfaces,
+            )
         )
         _validate_snapshot_fingerprints(
-            self.metadata, sessions, companies, units,
+            self.metadata,
+            sessions,
+            companies,
+            units,
+            products,
+            unit_products,
+            surfaces,
         )
         object.__setattr__(self, "sessions", sessions)
         object.__setattr__(self, "companies", companies)
         object.__setattr__(self, "units", units)
+        object.__setattr__(self, "products", products)
+        object.__setattr__(self, "unit_products", unit_products)
+        object.__setattr__(self, "surfaces", surfaces)
 
 
 def _session_semantics(value: ReplaySession) -> dict[str, object]:
@@ -373,6 +628,8 @@ def current_input_fingerprint(
             "projection_name": spec.projection_name,
             "projection_version": spec.projection_version,
             "analysis_profile_sha256": spec.analysis_profile_sha256,
+            "unit_economics_contract": spec.unit_economics_contract,
+            "catalog_resolver_sha256": spec.catalog_resolver_sha256,
             "sessions": [_session_semantics(item) for item in values],
         }
     )
@@ -401,6 +658,46 @@ def _unit_semantics(value: UnitState) -> dict[str, object]:
     }
 
 
+def _product_semantics(value: ObservedProduct) -> dict[str, object]:
+    return {
+        "product_numeric_id": value.product_numeric_id,
+        "catalog_key": value.catalog_key,
+        "resolution": value.resolution,
+    }
+
+
+def _unit_product_semantics(value: UnitProductState) -> dict[str, object]:
+    return {
+        "unit_id": value.unit_id,
+        "product_numeric_id": value.product_numeric_id,
+        "revenue": value.revenue,
+        "profit": value.profit,
+        "stock_qty": value.stock_qty,
+        "stock_quality": value.stock_quality,
+        "our_price": value.our_price,
+        "city_quality": value.city_quality,
+        "city_price": value.city_price,
+        "sales_volume": value.sales_volume,
+        "supply_qty": value.supply_qty,
+        "supply_cost": value.supply_cost,
+        "source_session_id": value.source_session_id,
+        "source_sequence": value.source_sequence,
+        "observed_at": value.observed_at,
+    }
+
+
+def _surface_semantics(value: ProductSurfaceState) -> dict[str, object]:
+    return {
+        "unit_id": value.unit_id,
+        "surface": value.surface,
+        "status": value.status,
+        "stale_reason": value.stale_reason,
+        "source_session_id": value.source_session_id,
+        "source_sequence": value.source_sequence,
+        "observed_at": value.observed_at,
+    }
+
+
 def current_state_fingerprint(
     *,
     projection_name: str,
@@ -412,6 +709,9 @@ def current_state_fingerprint(
     sessions: tuple[ReplaySession, ...],
     companies: tuple[CompanyState, ...] = (),
     units: tuple[UnitState, ...] = (),
+    products: tuple[ObservedProduct, ...] = (),
+    unit_products: tuple[UnitProductState, ...] = (),
+    surfaces: tuple[ProductSurfaceState, ...] = (),
 ) -> str:
     return canonical_sha256(
         {
@@ -424,6 +724,11 @@ def current_state_fingerprint(
             "sessions": [_session_semantics(item) for item in sessions],
             "companies": [_company_semantics(item) for item in companies],
             "units": [_unit_semantics(item) for item in units],
+            "products": [_product_semantics(item) for item in products],
+            "unit_products": [
+                _unit_product_semantics(item) for item in unit_products
+            ],
+            "surfaces": [_surface_semantics(item) for item in surfaces],
         }
     )
 
@@ -434,6 +739,9 @@ def build_current_snapshot(
     *,
     companies: tuple[CompanyState, ...] = (),
     units: tuple[UnitState, ...] = (),
+    products: tuple[ObservedProduct, ...] = (),
+    unit_products: tuple[UnitProductState, ...] = (),
+    surfaces: tuple[ProductSurfaceState, ...] = (),
     status: str = "ready",
     stale_reason: str | None = None,
 ) -> CurrentStateSnapshot:
@@ -453,12 +761,17 @@ def build_current_snapshot(
         sessions=values,
         companies=tuple(companies),
         units=tuple(units),
+        products=tuple(products),
+        unit_products=tuple(unit_products),
+        surfaces=tuple(surfaces),
     )
     last = values[-1] if values else None
     metadata = CurrentStateMetadata(
         projection_name=spec.projection_name,
         projection_version=spec.projection_version,
         analysis_profile_sha256=spec.analysis_profile_sha256,
+        unit_economics_contract=spec.unit_economics_contract,
+        catalog_resolver_sha256=spec.catalog_resolver_sha256,
         input_fingerprint=input_fingerprint,
         state_fingerprint=state_fingerprint,
         status=status,
@@ -472,6 +785,9 @@ def build_current_snapshot(
         sessions=values,
         companies=tuple(companies),
         units=tuple(units),
+        products=tuple(products),
+        unit_products=tuple(unit_products),
+        surfaces=tuple(surfaces),
     )
 
 
@@ -482,7 +798,10 @@ __all__ = [
     "CurrentProjectionSpec",
     "CurrentStateMetadata",
     "CurrentStateSnapshot",
+    "ObservedProduct",
+    "ProductSurfaceState",
     "ReplaySession",
+    "UnitProductState",
     "UnitState",
     "build_current_snapshot",
     "current_input_fingerprint",

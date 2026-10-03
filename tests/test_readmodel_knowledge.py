@@ -9,7 +9,6 @@ import tempfile
 import unittest
 
 from bizman.readmodel import (
-    EvaluationCase,
     KnowledgeIndex,
     KnowledgeProjection,
     KnowledgeRecord,

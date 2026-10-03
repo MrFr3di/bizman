@@ -41,6 +41,10 @@ EXPECTED_TOOLS = frozenset(
         "sessions.anomalies",
         "changes.list",
         "changes.get",
+        "current.status",
+        "current.companies",
+        "current.units",
+        "current.products",
     }
 )
 FORBIDDEN_INPUT_TERMS = (

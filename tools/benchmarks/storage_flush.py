@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.bizman_collector.storage import SessionWriter
+from tools.bizman_collector.storage import SessionWriter  # noqa: E402
 
 SESSION_ID = "01991c7d-a400-7000-8000-000000000002"
 

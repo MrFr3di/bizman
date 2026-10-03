@@ -23,8 +23,9 @@
 - `BizManData/state/current.sqlite3` — external rebuildable Current State database; never source of truth and never committed.
 - P4-A establishes projection/profile identity, replay ledger, `input_fingerprint`, `state_fingerprint`, ready/stale state and atomic rebuild semantics.
 - `bizman.core.rebuild_current_state` — path-free Core rebuild use case; callers do not provide a DB path or arbitrary profile hash.
-- Delete/replay equivalence is a tested contract. The next slice is P4-B companies/units projection.
-- No Current State MCP/CLI surface exists yet.
+- Delete/replay equivalence is a tested contract. P4-B companies/units projection is complete; P4-C's C0 product-identity evidence gate passed 2026-10-03 (`docs/research/p4c-product-evidence.md`), and the next slice is Current State schema v3 unit economics (runbook: `docs/research/p4c-c0-runbook.md`).
+- `bizman.core` exposes bounded path-free Current State reads: `current_status`, `list_current_companies`, `list_current_units`, `list_current_products`. List cursors are operation-scoped to the request filter and bound to `state_fingerprint`.
+- CLI surface: `bizman current rebuild|status|companies|units|products`; MCP surface: read-only `current.status`, `current.companies`, `current.units`, `current.products`.
 
 ## Agent Index / read model
 
@@ -34,7 +35,8 @@
 - P2-D предоставляет bounded path-free read API через `bizman.core`: knowledge resolve/search/get, session list/get и profile-scoped change list/get.
 - `docs/benchmarks/p2e-readmodel-baseline-2026-09-28.md` — durable P2-E baseline: v1/v2/v3 retrieval quality, cold/warm latency, rebuild scaling, result budgets and query-plan decisions.
 - `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md` — durable P3-E baseline: retrieval parity, action provenance, call budgets, bounded schemas/results, sanitized errors and installed stdio proof.
-- `src/bizman/mcp/` — завершённый read-only stdio adapter из 10 Core-backed tools.
+- `src/bizman/mcp/` — завершённый read-only stdio adapter из 14 Core-backed tools.
+- `src/bizman/telegram/` — read-only Telegram adapter (long polling, 16 команд) над тем же Core; токен и allowlist chat-id только через env.
 - Обычные agent/read/MCP запросы должны идти через Core, а не читать repository JSON/JSONL, detector SQLite или Agent Index напрямую.
 
 ## HTTP / протокол
@@ -75,7 +77,7 @@
 ```bash
 uv lock --check
 uv sync --locked
-uv run ruff check src
+uv run ruff check
 uv run lint-imports
 uv run python -m compileall -q src tools tests
 uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v

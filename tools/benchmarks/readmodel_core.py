@@ -11,7 +11,7 @@ import statistics
 import tempfile
 import time
 import tracemalloc
-from typing import Any, Callable
+from typing import Callable
 
 from bizman.core import (
     ChangeGetRequest,
