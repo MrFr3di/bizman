@@ -815,6 +815,43 @@ class GoodsReplayTests(unittest.TestCase):
         self.assertEqual(orphan.reason, "unit_not_in_verified_roster")
         self.assertEqual(snapshot.metadata.status, "ready")
 
+    def test_orphan_row_tamper_fails_closed_on_store_open(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            ref = _put_artifact(
+                data_dir,
+                _goods_artifact(UNIT_ID, [_typed_row(PRODUCT_1)]),
+            )
+            _write_session(
+                data_dir,
+                session_id=SESSION_A,
+                started_at="2026-09-30T10:00:00Z",
+                ended_at="2026-09-30T10:01:00Z",
+                events=[
+                    _goods_event(
+                        SESSION_A,
+                        0,
+                        EVENT_A0,
+                        ref,
+                        observed_at="2026-09-30T10:00:30Z",
+                    )
+                ],
+            )
+            rebuild_current_state(REPO_ROOT, data_dir, _redaction())
+            state_path = data_dir / "state" / "current.sqlite3"
+            connection = sqlite3.connect(state_path)
+            try:
+                connection.execute(
+                    "UPDATE orphan_unit_product SET reason = ?",
+                    ("tampered-orphan-reason",),
+                )
+                connection.commit()
+            finally:
+                connection.close()
+
+            with self.assertRaises(CurrentStateIntegrityError):
+                CurrentStateStore.open_read_only_if_exists(state_path)
+
     def test_malformed_artifact_fails_replay_as_integrity_error(self):
         malformed = (
             b"this is not json",
