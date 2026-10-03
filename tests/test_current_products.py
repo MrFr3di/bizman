@@ -591,12 +591,15 @@ class GoodsReplayTests(unittest.TestCase):
         self.assertEqual(by_product[PRODUCT_2].revenue, 2222)
         self.assertEqual(by_product[PRODUCT_2].source_session_id, SESSION_A)
 
-        self.assertEqual(len(snapshot.surfaces), 1)
-        surface = snapshot.surfaces[0]
-        self.assertEqual((surface.unit_id, surface.surface), (UNIT_ID, SURFACE))
+        self.assertEqual(len(snapshot.surfaces), 2)
+        surfaces = {
+            (item.unit_id, item.surface): item for item in snapshot.surfaces
+        }
+        surface = surfaces[(UNIT_ID, SURFACE)]
         self.assertEqual(surface.status, "ready")
         self.assertEqual(surface.source_session_id, SESSION_B)
         self.assertIsNone(surface.stale_reason)
+        self.assertEqual(surfaces[(UNIT_ID_2, SURFACE)].status, "unknown")
 
         self.assertEqual(
             [item.product_numeric_id for item in snapshot.products],
@@ -738,7 +741,7 @@ class GoodsReplayTests(unittest.TestCase):
                 with self.assertRaises(CurrentStateIntegrityError):
                     build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
 
-    def test_unknown_surface_is_absence_never_inferred(self):
+    def test_missing_goods_evidence_materializes_explicit_unknown_surface(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
             roster_ref = _put_artifact(data_dir, _roster_artifact())
@@ -760,18 +763,23 @@ class GoodsReplayTests(unittest.TestCase):
             snapshot = build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
 
         self.assertEqual(len(snapshot.units), 2)
-        self.assertEqual(snapshot.surfaces, ())
         self.assertEqual(snapshot.unit_products, ())
-        explicit = ProductSurfaceState(
-            unit_id=UNIT_ID,
-            surface=SURFACE,
-            status="unknown",
-            stale_reason=None,
-            source_session_id=None,
-            source_sequence=None,
-            observed_at=None,
+        self.assertEqual(len(snapshot.surfaces), 2)
+        self.assertEqual(
+            {
+                (item.unit_id, item.surface, item.status)
+                for item in snapshot.surfaces
+            },
+            {
+                (UNIT_ID, SURFACE, "unknown"),
+                (UNIT_ID_2, SURFACE, "unknown"),
+            },
         )
-        self.assertEqual(explicit.status, "unknown")
+        for surface in snapshot.surfaces:
+            self.assertIsNone(surface.stale_reason)
+            self.assertIsNone(surface.source_session_id)
+            self.assertIsNone(surface.source_sequence)
+            self.assertIsNone(surface.observed_at)
 
     def test_delete_and_replay_produce_identical_product_snapshot(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -818,7 +826,16 @@ class GoodsReplayTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(len(first.unit_products), 2)
         self.assertEqual(len(first.products), 2)
-        self.assertEqual(len(first.surfaces), 1)
+        self.assertEqual(len(first.surfaces), 2)
+        self.assertEqual(
+            {
+                (item.unit_id, item.status) for item in first.surfaces
+            },
+            {
+                (UNIT_ID, "ready"),
+                (UNIT_ID_2, "unknown"),
+            },
+        )
 
     def test_privacy_canary_never_reaches_artifact_or_database(self):
         canary_label = "SYNTHETIC_LABEL_CANARY_99"
