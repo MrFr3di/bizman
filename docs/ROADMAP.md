@@ -450,7 +450,7 @@ A == B
 A.state_fingerprint == B.state_fingerprint
 ```
 
-### P4-C — verified product identity and unit economics (current completion)
+### P4-C — verified product identity and unit economics (complete 2026-10-03)
 
 C0 passed on 2026-10-03. The authorized product identity is the numeric
 `product=N` carried by two agreeing row-bound links in `table#goods` on
@@ -480,21 +480,41 @@ Implemented:
 - Core/CLI/MCP expose bounded read-only current-product reads; no write
   semantics are introduced.
 
-C3 acceptance/hardening is the active slice. The real Chrome fixture exercises
+C3 acceptance/hardening is complete. The real Chrome fixture exercises
 the same typed goods capture/parser path with two stable product IDs and seeded
 privacy canaries, then proves unit/product provenance and delete/replay
 fingerprint equivalence. Orphan goods evidence for a unit that never appears in
 the verified company roster is persisted separately with unit/product identity,
 source session/sequence/time, typed-artifact SHA/schema and an explicit orphan
 reason; it never becomes an FK-backed authoritative unit-product association.
+Issue #40 is closed with the final acceptance evidence.
 
-Remaining domain priority after P4-C:
+### P4-D — supply-link evidence gate (current)
 
-1. inventory/stock;
-2. supply links/orders;
-3. retail/prices;
-4. production;
-5. finance only when evidence is sufficiently trustworthy.
+P4-D starts from a fresh evidence boundary. P4-C's `shop.goods` identity does
+not authorize `shop.supply`, supplier identity or order semantics.
+
+D0 is research-only:
+
+- exact route: `GET /units/shop/?id=<unit>&tab=supply`;
+- local response bodies are inspected transiently and never copied into
+  BizManData/CAS/Git;
+- `bizman probe-supply-evidence` emits only bounded structural link/query-key
+  and input-name/index metadata; visible text and input values are excluded;
+- malformed/ambiguous/overflow structures fail closed;
+- no collector allowlist, production artifact, Current State table or schema
+  bump is allowed before the gate records PASS.
+
+The durable gate and PASS/NO-GO matrix live in
+`docs/research/p4d-supply-evidence.md` / issue #47.
+
+Remaining domain priority after P4-D:
+
+1. complete supplier/order association only after D0 PASS;
+2. production/throughput evidence;
+3. finance only when evidence is sufficiently trustworthy;
+4. broaden inventory/retail semantics only where existing unit-economics and
+   market evidence do not already provide authoritative fields.
 
 A projection must refuse or explicitly mark itself stale when D1 reports an incompatible/unknown structural change affecting parser assumptions. P4-A provides the explicit stale-state storage contract; automatic D1 binding remains a later P4 slice.
 
