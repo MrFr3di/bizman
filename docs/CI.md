@@ -135,7 +135,7 @@ The heavy jobs depend on both `validate` and `compatibility`, so a Python-floor 
 
 It requires:
 
-- exactly 10 read-only/closed-world tools;
+- exactly 14 read-only/closed-world tools;
 - explicit input/output schemas with bounded output collections;
 - no arbitrary path/SQL/database tool parameters;
 - v1/v2/v3 retrieval metrics no lower than the P2-E baseline;
