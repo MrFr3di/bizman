@@ -127,6 +127,147 @@ def _action_records(root: Path) -> list[KnowledgeRecord]:
     return records
 
 
+def _product_category_enrichment(
+    root: Path,
+) -> dict[str, tuple[tuple[str, ...], tuple[str, ...]]]:
+    dataset_root = root / "knowledge" / "domain" / "product-categories"
+    index_path = dataset_root / "index.json"
+    if not index_path.is_file():
+        return {}
+
+    index = _require_mapping(_load_json(index_path), source=index_path.as_posix())
+    if index.get("schema_version") != "1.0":
+        raise ValueError(f"{index_path}: unsupported schema_version")
+    declared_total = _non_negative_int(
+        index.get("total_records"),
+        source=index_path.as_posix(),
+        field="total_records",
+    )
+    parts = index.get("parts")
+    if not isinstance(parts, list):
+        raise ValueError(f"{index_path}: parts must be an array")
+
+    terms_by_product: dict[str, list[str]] = {}
+    evidence_by_product: dict[str, list[str]] = {}
+    expected_offset = 0
+    observed_categories = 0
+    seen_categories: set[str] = set()
+    for part_index, raw_part in enumerate(parts):
+        part_source = f"{index_path.as_posix()}#part-{part_index}"
+        part = _require_mapping(raw_part, source=part_source)
+        offset = _non_negative_int(
+            part.get("offset"), source=part_source, field="offset"
+        )
+        count = _non_negative_int(
+            part.get("records"), source=part_source, field="records"
+        )
+        if offset != expected_offset:
+            raise ValueError(
+                f"{part_source}: offset {offset} != expected {expected_offset}"
+            )
+        part_path = _safe_child(
+            dataset_root,
+            part.get("file"),
+            source=part_source,
+            field="part file",
+        )
+        document = _require_mapping(_load_json(part_path), source=part_path.as_posix())
+        if document.get("schema_version") != "1.0":
+            raise ValueError(f"{part_path}: unsupported schema_version")
+        records = document.get("records")
+        if not isinstance(records, list) or len(records) != count:
+            raise ValueError(
+                f"{part_path}: records must match declared count {count}"
+            )
+
+        for record_index, raw_record in enumerate(records):
+            source = f"{part_path.as_posix()}#record-{record_index}"
+            record = _require_mapping(raw_record, source=source)
+            if record.get("confidence") != "documented":
+                raise ValueError(
+                    f"{source}: product category confidence must be documented"
+                )
+            category_id = _require_string(
+                record.get("id"), source=source, field="id"
+            )
+            if category_id in seen_categories:
+                raise ValueError(
+                    f"{source}: duplicate product category id {category_id!r}"
+                )
+            seen_categories.add(category_id)
+            category_name = _require_string(
+                record.get("name"), source=source, field="name"
+            )
+            evidence = _string_list(
+                record.get("evidence"), source=source, field="evidence"
+            )
+            if not evidence:
+                raise ValueError(f"{source}: product category requires evidence")
+            products = record.get("products")
+            if not isinstance(products, list):
+                raise ValueError(f"{source}: products must be an array")
+            declared_products = _non_negative_int(
+                record.get("product_count"),
+                source=source,
+                field="product_count",
+            )
+            if declared_products != len(products):
+                raise ValueError(
+                    f"{source}: product_count {declared_products} "
+                    f"!= {len(products)} products"
+                )
+
+            for product_index, raw_product in enumerate(products):
+                product_source = f"{source}.products[{product_index}]"
+                product = _require_mapping(raw_product, source=product_source)
+                _require_string(
+                    product.get("name"),
+                    source=product_source,
+                    field="name",
+                )
+                product_ids = _string_list(
+                    product.get("product_ids"),
+                    source=product_source,
+                    field="product_ids",
+                )
+                if not product_ids:
+                    raise ValueError(
+                        f"{product_source}: product_ids must not be empty"
+                    )
+                for product_id in product_ids:
+                    if not product_id.startswith("bm.product."):
+                        raise ValueError(
+                            f"{product_source}: invalid product id {product_id!r}"
+                        )
+                    terms_by_product.setdefault(product_id, []).append(category_name)
+                    evidence_by_product.setdefault(product_id, []).extend(evidence)
+
+            unresolved = record.get("unresolved_names", [])
+            if not isinstance(unresolved, list) or not all(
+                isinstance(value, str) and value for value in unresolved
+            ):
+                raise ValueError(
+                    f"{source}: unresolved_names must be an array of text"
+                )
+            observed_categories += 1
+
+        expected_offset += count
+
+    if observed_categories != declared_total:
+        raise ValueError(
+            f"{index_path}: declared total_records {declared_total} "
+            f"!= {observed_categories} categories"
+        )
+
+    return {
+        product_id: (
+            tuple(dict.fromkeys(terms_by_product.get(product_id, []))),
+            tuple(dict.fromkeys(evidence_by_product.get(product_id, []))),
+        )
+        for product_id in sorted(terms_by_product)
+    }
+
+
 def _product_attribute_enrichment(
     root: Path,
 ) -> dict[str, tuple[tuple[str, ...], tuple[str, ...]]]:
@@ -336,6 +477,7 @@ def _product_records(root: Path) -> list[KnowledgeRecord]:
 
     records: list[KnowledgeRecord] = []
     attribute_enrichment = _product_attribute_enrichment(root)
+    category_enrichment = _product_category_enrichment(root)
     product_refs: set[str] = set()
     declared_total = _non_negative_int(
         index.get("total_count"), source=index_path.as_posix(), field="total_count"
@@ -406,7 +548,11 @@ def _product_records(root: Path) -> list[KnowledgeRecord]:
                 item.get("categories", []), source=item_source, field="categories"
             )
             product_refs.add(ref)
-            extra_terms, extra_evidence = attribute_enrichment.get(
+            attribute_terms, attribute_evidence = attribute_enrichment.get(
+                ref,
+                ((), ()),
+            )
+            category_terms, category_evidence = category_enrichment.get(
                 ref,
                 ((), ()),
             )
@@ -417,8 +563,22 @@ def _product_records(root: Path) -> list[KnowledgeRecord]:
                     kind=RefKind.PRODUCT,
                     title=name,
                     aliases=aliases,
-                    body=" ".join((name, slug, *categories, *extra_terms)),
-                    evidence_refs=tuple((*evidence, *extra_evidence)),
+                    body=" ".join(
+                        (
+                            name,
+                            slug,
+                            *categories,
+                            *category_terms,
+                            *attribute_terms,
+                        )
+                    ),
+                    evidence_refs=tuple(
+                        (
+                            *evidence,
+                            *category_evidence,
+                            *attribute_evidence,
+                        )
+                    ),
                     source_dataset="products",
                 )
             )
@@ -433,6 +593,12 @@ def _product_records(root: Path) -> list[KnowledgeRecord]:
         raise ValueError(
             f"{index_path}: product attributes reference unknown products: "
             f"{sorted(unknown_attribute_products)!r}"
+        )
+    unknown_category_products = set(category_enrichment).difference(product_refs)
+    if unknown_category_products:
+        raise ValueError(
+            f"{index_path}: product categories reference unknown products: "
+            f"{sorted(unknown_category_products)!r}"
         )
     return records
 
