@@ -20,6 +20,7 @@ from bizman.current import (
     CurrentStateOperationError,
     CurrentStateStore,
     ObservedProduct,
+    OrphanUnitProductObservation,
     ProductSurfaceState,
     ReplaySession,
     UnitProductState,
@@ -62,13 +63,14 @@ COMPANY_ID = "13393"
 PRODUCT_1 = 880001
 PRODUCT_2 = 880002
 PRODUCT_3 = 880003
-V3_TABLES = {
+V4_TABLES = {
     "projection_meta",
     "replayed_session",
     "company",
     "unit",
     "observed_product",
     "unit_product",
+    "orphan_unit_product",
     "product_surface_state",
 }
 _ROSTER_TEXT = (
@@ -505,6 +507,17 @@ class GoodsEventRecognitionTests(unittest.TestCase):
         self.assertEqual(snapshot.products, ())
         self.assertEqual(snapshot.unit_products, ())
         self.assertEqual(snapshot.surfaces, ())
+        self.assertEqual(len(snapshot.orphan_unit_products), 1)
+        orphan = snapshot.orphan_unit_products[0]
+        self.assertEqual(orphan.unit_id, UNIT_ID)
+        self.assertEqual(orphan.product_numeric_id, PRODUCT_1)
+        self.assertEqual(orphan.surface, SURFACE)
+        self.assertEqual(orphan.source_session_id, SESSION_A)
+        self.assertEqual(orphan.source_sequence, 0)
+        self.assertEqual(orphan.observed_at, "2026-09-30T10:00:30Z")
+        self.assertEqual(orphan.artifact_sha256, ref.split(":", 1)[1])
+        self.assertEqual(orphan.artifact_schema, SCHEMA)
+        self.assertEqual(orphan.reason, "unit_not_in_verified_roster")
         self.assertEqual(snapshot.metadata.status, "ready")
 
 
@@ -949,6 +962,45 @@ class ProductFingerprintTests(unittest.TestCase):
         self.assertNotEqual(
             without_rows.metadata.state_fingerprint,
             with_rows.metadata.state_fingerprint,
+        )
+
+    def test_orphan_row_participates_in_state_fingerprint_not_input(self):
+        sessions = (_session_record(),)
+        product = ObservedProduct(
+            product_numeric_id=PRODUCT_1,
+            catalog_key=None,
+            resolution="unresolved",
+        )
+        orphan = OrphanUnitProductObservation(
+            unit_id=UNIT_ID,
+            product_numeric_id=PRODUCT_1,
+            surface=SURFACE,
+            source_session_id=SESSION_A,
+            source_sequence=0,
+            observed_at="2026-09-30T10:00:30Z",
+            artifact_sha256=SHA_A,
+            artifact_schema=SCHEMA,
+            reason="unit_not_in_verified_roster",
+        )
+        without_orphan = build_current_snapshot(
+            _spec(),
+            sessions,
+            products=(product,),
+        )
+        with_orphan = build_current_snapshot(
+            _spec(),
+            sessions,
+            products=(product,),
+            orphan_unit_products=(orphan,),
+        )
+
+        self.assertEqual(
+            without_orphan.metadata.input_fingerprint,
+            with_orphan.metadata.input_fingerprint,
+        )
+        self.assertNotEqual(
+            without_orphan.metadata.state_fingerprint,
+            with_orphan.metadata.state_fingerprint,
         )
 
     def test_unknown_surface_row_participates_in_state_fingerprint(self):
