@@ -37,6 +37,8 @@ EVENT_B0 = "01991c7d-a400-7000-8000-000000000103"
 SHA_A = "a" * 64
 SHA_B = "b" * 64
 SHA_C = "c" * 64
+SHA_D = "d" * 64
+UNIT_CONTRACT = "unit-economics-contract-fixture"
 
 
 def _manifest(
@@ -200,15 +202,27 @@ def _session_record(
     )
 
 
+def _spec(
+    *,
+    analysis_profile_sha256: str = SHA_C,
+    unit_economics_contract: str = UNIT_CONTRACT,
+    catalog_resolver_sha256: str = SHA_D,
+) -> CurrentProjectionSpec:
+    return CurrentProjectionSpec(
+        analysis_profile_sha256=analysis_profile_sha256,
+        unit_economics_contract=unit_economics_contract,
+        catalog_resolver_sha256=catalog_resolver_sha256,
+    )
+
+
 def _snapshot() -> CurrentStateSnapshot:
-    spec = CurrentProjectionSpec(analysis_profile_sha256=SHA_C)
-    return build_current_snapshot(spec, (_session_record(),))
+    return build_current_snapshot(_spec(), (_session_record(),))
 
 
 class CurrentStateModelTests(unittest.TestCase):
     def test_dtos_are_frozen_slotted_and_semantically_validated(self):
         values = (
-            CurrentProjectionSpec(analysis_profile_sha256=SHA_C),
+            _spec(),
             _session_record(),
             _snapshot().metadata,
             _snapshot(),
@@ -256,7 +270,7 @@ class CurrentStateModelTests(unittest.TestCase):
             )
 
     def test_ready_and_stale_status_have_distinct_state_identity(self):
-        spec = CurrentProjectionSpec(analysis_profile_sha256=SHA_C)
+        spec = _spec()
         sessions = (_session_record(),)
         ready = build_current_snapshot(spec, sessions)
         stale = build_current_snapshot(
@@ -315,6 +329,9 @@ class CurrentStateStoreTests(unittest.TestCase):
                         "replayed_session",
                         "company",
                         "unit",
+                        "observed_product",
+                        "unit_product",
+                        "product_surface_state",
                     }
                 }
                 self.assertEqual(
@@ -324,6 +341,9 @@ class CurrentStateStoreTests(unittest.TestCase):
                         "replayed_session": 1,
                         "company": 1,
                         "unit": 1,
+                        "observed_product": 1,
+                        "unit_product": 1,
+                        "product_surface_state": 1,
                     },
                 )
                 store.replace_snapshot(_snapshot())
@@ -402,9 +422,7 @@ class CurrentStateStoreTests(unittest.TestCase):
             self.assertEqual(first.snapshot(), before)
 
             replacement = build_current_snapshot(
-                CurrentProjectionSpec(
-                    analysis_profile_sha256="d" * 64,
-                ),
+                _spec(analysis_profile_sha256="d" * 64),
                 (_session_record(),),
             )
             with patch.object(

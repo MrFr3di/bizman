@@ -7,11 +7,22 @@ from bizman.current.model import (
     CurrentProjectionSpec,
     CurrentStateMetadata,
     CurrentStateSnapshot,
+    ObservedProduct,
+    ProductSurfaceState,
     ReplaySession,
+    UnitProductState,
     UnitState,
     build_current_snapshot,
     current_input_fingerprint,
     current_state_fingerprint,
+)
+from bizman.current.products import (
+    CatalogResolver,
+    CatalogResolverError,
+    UnitEconomicsArtifactError,
+    UnitEconomicsParserIncompatible,
+    catalog_resolver_sha256,
+    is_unit_goods_event,
 )
 from bizman.current.replay import build_replay_snapshot, rebuild_current_state
 from bizman.current.state import (
@@ -27,9 +38,13 @@ from bizman.current.state import (
 
 __all__ = [
     "APPLICATION_ID",
+    "CatalogResolver",
+    "CatalogResolverError",
     "CompanyState",
+    "ObservedProduct",
     "PROJECTION_NAME",
     "PROJECTION_VERSION",
+    "ProductSurfaceState",
     "USER_VERSION",
     "CurrentProjectionSpec",
     "CurrentStateCompatibilityError",
@@ -40,10 +55,15 @@ __all__ = [
     "CurrentStateSnapshot",
     "CurrentStateStore",
     "ReplaySession",
+    "UnitEconomicsArtifactError",
+    "UnitEconomicsParserIncompatible",
+    "UnitProductState",
     "UnitState",
     "build_current_snapshot",
     "build_replay_snapshot",
+    "catalog_resolver_sha256",
     "current_input_fingerprint",
     "current_state_fingerprint",
+    "is_unit_goods_event",
     "rebuild_current_state",
 ]
