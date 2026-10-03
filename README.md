@@ -15,7 +15,7 @@ Completed foundations include:
 - privacy-safe DOM action context and deterministic action-to-HTTP correlation;
 - deterministic Change Detector with versioned rules, analysis profiles, SQLite checkpoints/outbox and Promotion Bundles;
 - installable `src/bizman` package and stable `bizman.core` application boundary;
-- deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
+- deterministic `bizman.readmodel` Agent Index over 632 curated records plus verified session/change intelligence;
 - bounded path-free `bizman.core` read API for knowledge, provenance, sessions and profile-scoped changes;
 - read-only `bizman-mcp` stdio adapter with 14 bounded Core-backed tools;
 - read-only `bizman-telegram` long-polling adapter with 16 bounded Core-backed commands;
