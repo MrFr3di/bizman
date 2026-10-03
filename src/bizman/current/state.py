@@ -10,6 +10,7 @@ from bizman.current.model import (
     CurrentStateMetadata,
     CurrentStateSnapshot,
     ObservedProduct,
+    OrphanUnitProductObservation,
     ProductSurfaceState,
     ReplaySession,
     UnitProductState,
@@ -19,7 +20,7 @@ from bizman.current.model import (
 
 
 APPLICATION_ID: Final[int] = 0x424D4331
-USER_VERSION: Final[int] = 3
+USER_VERSION: Final[int] = 4
 _MIN_SQLITE_VERSION: Final[tuple[int, int, int]] = (3, 37, 0)
 _EXPECTED_TABLES = frozenset(
     {
@@ -29,6 +30,7 @@ _EXPECTED_TABLES = frozenset(
         "unit",
         "observed_product",
         "unit_product",
+        "orphan_unit_product",
         "product_surface_state",
     }
 )
@@ -162,6 +164,24 @@ _SCHEMA = (
         observed_at TEXT NOT NULL,
         PRIMARY KEY (unit_id, product_numeric_id),
         FOREIGN KEY (unit_id) REFERENCES unit(unit_id),
+        FOREIGN KEY (product_numeric_id)
+            REFERENCES observed_product(product_numeric_id),
+        FOREIGN KEY (source_session_id)
+            REFERENCES replayed_session(session_id)
+    ) STRICT
+    """,
+    """
+    CREATE TABLE orphan_unit_product (
+        unit_id TEXT NOT NULL,
+        product_numeric_id INTEGER NOT NULL,
+        surface TEXT NOT NULL CHECK (length(surface) > 0),
+        source_session_id TEXT NOT NULL,
+        source_sequence INTEGER NOT NULL CHECK (source_sequence >= 0),
+        observed_at TEXT NOT NULL,
+        artifact_sha256 TEXT NOT NULL CHECK (length(artifact_sha256) = 64),
+        artifact_schema TEXT NOT NULL CHECK (length(artifact_schema) > 0),
+        reason TEXT NOT NULL CHECK (length(reason) > 0),
+        PRIMARY KEY (unit_id, product_numeric_id),
         FOREIGN KEY (product_numeric_id)
             REFERENCES observed_product(product_numeric_id),
         FOREIGN KEY (source_session_id)
@@ -456,7 +476,7 @@ class CurrentStateStore:
         tables = _user_tables(self._connection)
         if tables != _EXPECTED_TABLES:
             raise CurrentStateCompatibilityError(
-                "Current State database user tables do not match schema v3"
+                f"Current State database user tables do not match schema v{USER_VERSION}"
             )
         strict = {
             str(row[1]): int(row[5])
@@ -519,6 +539,11 @@ class CurrentStateStore:
                 "SELECT count(*) FROM unit_product"
             ).fetchone()[0]
         )
+        orphan_count = int(
+            self._connection.execute(
+                "SELECT count(*) FROM orphan_unit_product"
+            ).fetchone()[0]
+        )
         surface_count = int(
             self._connection.execute(
                 "SELECT count(*) FROM product_surface_state"
@@ -534,6 +559,7 @@ class CurrentStateStore:
             or unit_count
             or product_count
             or unit_product_count
+            or orphan_count
             or surface_count
         ):
             raise CurrentStateIntegrityError(
@@ -720,6 +746,38 @@ class CurrentStateStore:
                 """
             )
         )
+        orphan_unit_products = tuple(
+            OrphanUnitProductObservation(
+                unit_id=str(unit_id),
+                product_numeric_id=int(product_numeric_id),
+                surface=str(surface),
+                source_session_id=str(source_session_id),
+                source_sequence=int(source_sequence),
+                observed_at=str(observed_at),
+                artifact_sha256=str(artifact_sha256),
+                artifact_schema=str(artifact_schema),
+                reason=str(reason),
+            )
+            for (
+                unit_id,
+                product_numeric_id,
+                surface,
+                source_session_id,
+                source_sequence,
+                observed_at,
+                artifact_sha256,
+                artifact_schema,
+                reason,
+            ) in self._connection.execute(
+                """
+                SELECT unit_id, product_numeric_id, surface,
+                       source_session_id, source_sequence, observed_at,
+                       artifact_sha256, artifact_schema, reason
+                FROM orphan_unit_product
+                ORDER BY unit_id, product_numeric_id
+                """
+            )
+        )
         surfaces = tuple(
             ProductSurfaceState(
                 unit_id=str(unit_id),
@@ -787,6 +845,7 @@ class CurrentStateStore:
             units=units,
             products=products,
             unit_products=unit_products,
+            orphan_unit_products=orphan_unit_products,
             surfaces=surfaces,
         )
 
@@ -812,6 +871,7 @@ class CurrentStateStore:
         meta = snapshot.metadata
         with self._immediate_transaction():
             self._connection.execute("DELETE FROM product_surface_state")
+            self._connection.execute("DELETE FROM orphan_unit_product")
             self._connection.execute("DELETE FROM unit_product")
             self._connection.execute("DELETE FROM observed_product")
             self._connection.execute("DELETE FROM unit")
@@ -926,6 +986,29 @@ class CurrentStateStore:
             )
             self._connection.executemany(
                 """
+                INSERT INTO orphan_unit_product(
+                    unit_id, product_numeric_id, surface,
+                    source_session_id, source_sequence, observed_at,
+                    artifact_sha256, artifact_schema, reason
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        item.unit_id,
+                        item.product_numeric_id,
+                        item.surface,
+                        item.source_session_id,
+                        item.source_sequence,
+                        item.observed_at,
+                        item.artifact_sha256,
+                        item.artifact_schema,
+                        item.reason,
+                    )
+                    for item in snapshot.orphan_unit_products
+                ),
+            )
+            self._connection.executemany(
+                """
                 INSERT INTO product_surface_state(
                     unit_id, surface, status, stale_reason,
                     source_session_id, source_sequence, observed_at
@@ -1002,6 +1085,7 @@ class CurrentStateStore:
             units=current.units,
             products=current.products,
             unit_products=current.unit_products,
+            orphan_unit_products=current.orphan_unit_products,
             surfaces=current.surfaces,
             status="stale",
             stale_reason=reason,
