@@ -1,0 +1,13 @@
+{
+ "schema_version": "1.0",
+ "source_id": "src.webcopy.bizmania.2026-10-03.01",
+ "source": "https://bizmania.ru/help/units/?unit=<slug>",
+ "total_count": 49,
+ "part_count": 2,
+ "parts": [
+  {"path": "part-000.json", "offset": 0, "count": 25},
+  {"path": "part-001.json", "offset": 25, "count": 24}
+ ],
+ "confidence": "documented",
+ "note": "Enterprise type reference captured from the game help pages on 2026-10-03: required characteristic, required company level, subdivisions and production schemes."
+}

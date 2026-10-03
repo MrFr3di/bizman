@@ -47,11 +47,11 @@ Repository validation checks the registry schemas and prevents source-id collisi
 It returns a frozen, path-free `EvidenceTraceResult` containing bounded metadata such as:
 
 - original evidence ref and source id;
-- source kind (`har_capture` / `promoted_session`);
+- source kind (`har_capture` / `promoted_session` / `webcopy_snapshot`);
 - locator kind and ordinal;
 - source record/event count;
 - whether raw source bytes are committed;
-- exact HAR SHA-256 when available;
+- source-level SHA-256 when available (raw HAR hash or webcopy origin-index hash);
 - runtime session UUIDv7 when available;
 - documented observation time/window;
 - source privacy statement and provenance policy.
@@ -85,11 +85,26 @@ This keeps a known item’s provenance reachable in one or two MCP calls without
 Knowledge records use stable IDs:
 
 - `bm.endpoint.*` — HTTP endpoints
+- `bm.asset.*` — static resource observations
 - `bm.form.*` — HTML form signatures
 - `bm.observation.*` — captured events/actions
+- `bm.querykey.*` — observed query-key families
 - `bm.snapshot.*` — normalized HTML snapshots
+- `bm.surfaceprobe.*` — per-surface probe outcome, including
+  `bm.surfaceprobe.withheld.*` for state-changing surfaces not requested
 - `bm.wiki.*` — Wiki articles
 - `bm.product.*` — product entities
+
+Exact request patterns that differ only by query values keep a readable slug and
+add a short digest of the pattern, so one surface probed under several query sets
+never collapses onto one ID:
+
+```text
+bm.surfaceprobe.units-shop--q-id+tab--3f1c9a20
+```
+
+A `confidence: observed` record must carry at least one evidence locator. A record
+without a locator is `hypothesis`, never `observed`.
 
 Confidence values:
 

@@ -1,0 +1,50 @@
+{
+ "schema_version": "1.0",
+ "source_id": "src.webcopy.bizmania.2026-10-03.01",
+ "source": {
+  "uri": "https://bizmania.ru/help/currencyrates/",
+  "html_sha256": "62481381393dedc9467a96db3eefa8c34c856c0af370b0b436cccde92a4a02e4"
+ },
+ "evidence": [
+  "src.webcopy.bizmania.2026-10-03.01#entry-982"
+ ],
+ "confidence": "documented",
+ "note": "Official exchange rates exactly as captured from the help page; the base row is the Russian ruble at 1 p.",
+ "items": [
+  {
+   "code": "jpy",
+   "name": "Японская иена",
+   "rate_text": "0.60 p."
+  },
+  {
+   "code": "eur",
+   "name": "Евро",
+   "rate_text": "100 p."
+  },
+  {
+   "code": "gbp",
+   "name": "Британский фунт",
+   "rate_text": "120 p."
+  },
+  {
+   "code": "usd",
+   "name": "Доллар США",
+   "rate_text": "90 p."
+  },
+  {
+   "code": "uah",
+   "name": "Гривна",
+   "rate_text": "2.50 p."
+  },
+  {
+   "code": "rub",
+   "name": "Российский рубль",
+   "rate_text": "1 p."
+  },
+  {
+   "code": "cny",
+   "name": "Юань",
+   "rate_text": "13 p."
+  }
+ ]
+}

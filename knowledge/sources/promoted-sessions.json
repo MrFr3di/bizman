@@ -9,6 +9,14 @@
       "event_count": 32128,
       "raw_source_committed": false,
       "privacy": "external sanitized collector evidence; promoted derived observations committed"
+    },
+    {
+      "source_id": "src.session.walk.2026-10-03.01",
+      "runtime_session_id": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+      "started_at": "2026-10-03T09:59:38.895087Z",
+      "event_count": 13298,
+      "raw_source_committed": false,
+      "privacy": "external sanitized collector evidence; read-only GET navigation of first-party surfaces in an isolated local Chrome profile; promoted structural observations committed without page text, form values or cookies"
     }
   ]
 }

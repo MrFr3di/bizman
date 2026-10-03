@@ -74,7 +74,7 @@ class KnowledgeProjectionTests(unittest.TestCase):
 
     def test_projection_has_expected_initial_curated_scope(self):
         projection = project_curated_knowledge(REPO_ROOT)
-        self.assertEqual(len(projection.records), 590)
+        self.assertEqual(len(projection.records), 632)
         counts: dict[str, int] = {}
         for record in projection.records:
             counts[record.kind.value] = counts.get(record.kind.value, 0) + 1
@@ -87,7 +87,7 @@ class KnowledgeProjectionTests(unittest.TestCase):
                 "company": 1,
                 "product": 303,
                 "unit": 16,
-                "endpoint": 68,
+                "endpoint": 110,
                 "operation": 15,
                 "form": 87,
                 "wiki_topic": 87,
@@ -125,12 +125,35 @@ class KnowledgeProjectionTests(unittest.TestCase):
             endpoint.evidence_refs,
         )
 
+        promoted_endpoint = records[
+            "bm.endpoint.v1.01999dbd21e066fe6843650b"
+        ]
+        self.assertEqual(promoted_endpoint.title, "/analitics/cities")
+        self.assertIn("new-endpoint", promoted_endpoint.body)
+        self.assertIn(
+            "src.session.walk.2026-10-03.01#seq-743",
+            promoted_endpoint.evidence_refs,
+        )
+
         wiki = records["bm.wiki.v1.b3142a5c857c9885c7d64247"]
         self.assertEqual(wiki.title, "Авторегулирование снабжения")
         self.assertIn("автозакупка", wiki.body.casefold())
         self.assertEqual(
             wiki.evidence_refs,
             ("src.har.bizmania-faq.2026-09-06.01#entry-2296",),
+        )
+
+        product = records["bm.product.antiseptic"]
+        self.assertIn("Фармацевтический завод", product.body)
+        self.assertIn("Спирт", product.body)
+        self.assertIn(
+            "src.webcopy.bizmania.2026-10-03.01#entry-1005",
+            product.evidence_refs,
+        )
+        self.assertIn("Фармацевтика", product.body)
+        self.assertIn(
+            "src.har.bizmania-faq.2026-09-06.01#entry-442",
+            product.evidence_refs,
         )
 
     def test_projection_rejects_malformed_capture_provenance_at_boundary(self):
@@ -257,13 +280,13 @@ class KnowledgeIndexTests(unittest.TestCase):
                     )
                     self.assertEqual(
                         connection.execute("SELECT COUNT(*) FROM ref").fetchone()[0],
-                        590,
+                        632,
                     )
 
             with KnowledgeIndex(first_path) as index:
                 meta = index.metadata()
             self.assertEqual(meta["generation"], first_generation)
-            self.assertEqual(meta["item_count"], "590")
+            self.assertEqual(meta["item_count"], "632")
             self.assertEqual(meta["completed_at"], FIXED_COMPLETED_AT)
 
     def test_foreign_database_is_rejected(self):

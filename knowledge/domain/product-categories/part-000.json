@@ -1,0 +1,2065 @@
+{
+ "schema_version": "1.0",
+ "records": [
+  {
+   "id": "bm.productcategory.01",
+   "name": "Автомобильные товары",
+   "product_count": 14,
+   "products": [
+    {
+     "name": "Автомобиль",
+     "product_ids": [
+      "bm.product.car"
+     ]
+    },
+    {
+     "name": "Аккумулятор",
+     "product_ids": [
+      "bm.product.batterypack"
+     ]
+    },
+    {
+     "name": "Аксессуары",
+     "product_ids": [
+      "bm.product.accessories"
+     ]
+    },
+    {
+     "name": "Домкрат",
+     "product_ids": [
+      "bm.product.jack"
+     ]
+    },
+    {
+     "name": "Квадроцикл",
+     "product_ids": [
+      "bm.product.quadbike"
+     ]
+    },
+    {
+     "name": "Компрессор",
+     "product_ids": [
+      "bm.product.compressor"
+     ]
+    },
+    {
+     "name": "Кузовные детали",
+     "product_ids": [
+      "bm.product.bodyparts"
+     ]
+    },
+    {
+     "name": "Машинное масло",
+     "product_ids": [
+      "bm.product.machineoil"
+     ]
+    },
+    {
+     "name": "Мотоцикл",
+     "product_ids": [
+      "bm.product.moto"
+     ]
+    },
+    {
+     "name": "Омывающая жидкость",
+     "product_ids": [
+      "bm.product.washerfluid"
+     ]
+    },
+    {
+     "name": "Сабвуфер",
+     "product_ids": [
+      "bm.product.subwoofer"
+     ]
+    },
+    {
+     "name": "Скутер",
+     "product_ids": [
+      "bm.product.scooter"
+     ]
+    },
+    {
+     "name": "Шины",
+     "product_ids": [
+      "bm.product.tire"
+     ]
+    },
+    {
+     "name": "Электромобиль",
+     "product_ids": [
+      "bm.product.electriccar"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.02",
+   "name": "Одежда и обувь",
+   "product_count": 25,
+   "products": [
+    {
+     "name": "Блузка",
+     "product_ids": [
+      "bm.product.blouse"
+     ]
+    },
+    {
+     "name": "Джинсы",
+     "product_ids": [
+      "bm.product.jeans"
+     ]
+    },
+    {
+     "name": "Туфли",
+     "product_ids": [
+      "bm.product.womanshoes"
+     ]
+    },
+    {
+     "name": "Костюм",
+     "product_ids": [
+      "bm.product.suit"
+     ]
+    },
+    {
+     "name": "Куртка",
+     "product_ids": [
+      "bm.product.jacket"
+     ]
+    },
+    {
+     "name": "Ботинки",
+     "product_ids": [
+      "bm.product.manshoes"
+     ]
+    },
+    {
+     "name": "Носки",
+     "product_ids": [
+      "bm.product.socks"
+     ]
+    },
+    {
+     "name": "Пальто",
+     "product_ids": [
+      "bm.product.mancoat"
+     ]
+    },
+    {
+     "name": "Перчатки",
+     "product_ids": [
+      "bm.product.gloves"
+     ]
+    },
+    {
+     "name": "Платье",
+     "product_ids": [
+      "bm.product.dress"
+     ]
+    },
+    {
+     "name": "Ремень",
+     "product_ids": [
+      "bm.product.belt"
+     ]
+    },
+    {
+     "name": "Рубашка",
+     "product_ids": [
+      "bm.product.shirt"
+     ]
+    },
+    {
+     "name": "Футболка",
+     "product_ids": [
+      "bm.product.tshirt"
+     ]
+    },
+    {
+     "name": "Шапка",
+     "product_ids": [
+      "bm.product.cap"
+     ]
+    },
+    {
+     "name": "Шуба",
+     "product_ids": [
+      "bm.product.furcoat"
+     ]
+    },
+    {
+     "name": "Шарф",
+     "product_ids": [
+      "bm.product.scarf"
+     ]
+    },
+    {
+     "name": "Юбка",
+     "product_ids": [
+      "bm.product.skirt"
+     ]
+    },
+    {
+     "name": "Шорты",
+     "product_ids": [
+      "bm.product.shorts"
+     ]
+    },
+    {
+     "name": "Пуховик",
+     "product_ids": [
+      "bm.product.downjacket"
+     ]
+    },
+    {
+     "name": "Толстовка",
+     "product_ids": [
+      "bm.product.sweatshirt"
+     ]
+    },
+    {
+     "name": "Сапоги",
+     "product_ids": [
+      "bm.product.boots"
+     ]
+    },
+    {
+     "name": "Сланцы",
+     "product_ids": [
+      "bm.product.slates"
+     ]
+    },
+    {
+     "name": "Дубленка",
+     "product_ids": [
+      "bm.product.sheepskin"
+     ]
+    },
+    {
+     "name": "Свитер",
+     "product_ids": [
+      "bm.product.sweater"
+     ]
+    },
+    {
+     "name": "Галстук",
+     "product_ids": [
+      "bm.product.tie"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.03",
+   "name": "Продукты питания",
+   "product_count": 18,
+   "products": [
+    {
+     "name": "Вино",
+     "product_ids": [
+      "bm.product.wine"
+     ]
+    },
+    {
+     "name": "Йогурт",
+     "product_ids": [
+      "bm.product.yogurt"
+     ]
+    },
+    {
+     "name": "Колбаса",
+     "product_ids": [
+      "bm.product.sausages"
+     ]
+    },
+    {
+     "name": "Крепкий алкоголь",
+     "product_ids": [
+      "bm.product.vodka"
+     ]
+    },
+    {
+     "name": "Крупа",
+     "product_ids": [
+      "bm.product.croup"
+     ]
+    },
+    {
+     "name": "Макаронные изделия",
+     "product_ids": [
+      "bm.product.macaron"
+     ]
+    },
+    {
+     "name": "Масло",
+     "product_ids": [
+      "bm.product.butter"
+     ]
+    },
+    {
+     "name": "Мука",
+     "product_ids": [
+      "bm.product.flour"
+     ]
+    },
+    {
+     "name": "Печенье",
+     "product_ids": [
+      "bm.product.cookies"
+     ]
+    },
+    {
+     "name": "Пиво",
+     "product_ids": [
+      "bm.product.beer"
+     ]
+    },
+    {
+     "name": "Прохладительные напитки",
+     "product_ids": [
+      "bm.product.gaswater"
+     ]
+    },
+    {
+     "name": "Растительное масло",
+     "product_ids": [
+      "bm.product.fat"
+     ]
+    },
+    {
+     "name": "Сахар",
+     "product_ids": [
+      "bm.product.sugar"
+     ]
+    },
+    {
+     "name": "Сок",
+     "product_ids": [
+      "bm.product.juice"
+     ]
+    },
+    {
+     "name": "Сыр",
+     "product_ids": [
+      "bm.product.cheese"
+     ]
+    },
+    {
+     "name": "Торт",
+     "product_ids": [
+      "bm.product.cake"
+     ]
+    },
+    {
+     "name": "Хлеб",
+     "product_ids": [
+      "bm.product.bread"
+     ]
+    },
+    {
+     "name": "Шоколад",
+     "product_ids": [
+      "bm.product.chocolate"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.04",
+   "name": "Блюда",
+   "product_count": 20,
+   "products": [
+    {
+     "name": "Борщ",
+     "product_ids": [
+      "bm.product.borsch"
+     ]
+    },
+    {
+     "name": "Винегрет",
+     "product_ids": [
+      "bm.product.venigret"
+     ]
+    },
+    {
+     "name": "Гамбургер",
+     "product_ids": [
+      "bm.product.hamburger"
+     ]
+    },
+    {
+     "name": "Глинтвейн",
+     "product_ids": [
+      "bm.product.mulledwine"
+     ]
+    },
+    {
+     "name": "Жареная рыба",
+     "product_ids": [
+      "bm.product.friedfish"
+     ]
+    },
+    {
+     "name": "Запеканка",
+     "product_ids": [
+      "bm.product.casserol"
+     ]
+    },
+    {
+     "name": "Итальянское ассорти",
+     "product_ids": [
+      "bm.product.italianassorted"
+     ]
+    },
+    {
+     "name": "Молочный коктейль",
+     "product_ids": [
+      "bm.product.milkshake"
+     ]
+    },
+    {
+     "name": "Мясо по-французски",
+     "product_ids": [
+      "bm.product.frenchmeat"
+     ]
+    },
+    {
+     "name": "Пивной сет",
+     "product_ids": [
+      "bm.product.beerset"
+     ]
+    },
+    {
+     "name": "Пицца",
+     "product_ids": [
+      "bm.product.pizza"
+     ]
+    },
+    {
+     "name": "Плов",
+     "product_ids": [
+      "bm.product.pilaf"
+     ]
+    },
+    {
+     "name": "Ребрышки по-фламандски",
+     "product_ids": [
+      "bm.product.flemishribs"
+     ]
+    },
+    {
+     "name": "Салат Греческий",
+     "product_ids": [
+      "bm.product.saladgreece"
+     ]
+    },
+    {
+     "name": "Салат Столичный",
+     "product_ids": [
+      "bm.product.saladcapital"
+     ]
+    },
+    {
+     "name": "Сельдь под шубой",
+     "product_ids": [
+      "bm.product.saladherring"
+     ]
+    },
+    {
+     "name": "Сидр",
+     "product_ids": [
+      "bm.product.cider"
+     ]
+    },
+    {
+     "name": "Солянка",
+     "product_ids": [
+      "bm.product.saltwort"
+     ]
+    },
+    {
+     "name": "Шаурма",
+     "product_ids": [
+      "bm.product.shawarma"
+     ]
+    },
+    {
+     "name": "Штрудель",
+     "product_ids": [
+      "bm.product.strudel"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.05",
+   "name": "Электроника",
+   "product_count": 20,
+   "products": [
+    {
+     "name": "Аудиотехника",
+     "product_ids": [
+      "bm.product.audio"
+     ]
+    },
+    {
+     "name": "Варочная панель",
+     "product_ids": [
+      "bm.product.hob"
+     ]
+    },
+    {
+     "name": "Вытяжка",
+     "product_ids": [
+      "bm.product.hood"
+     ]
+    },
+    {
+     "name": "Игровая приставка",
+     "product_ids": [
+      "bm.product.xbox"
+     ]
+    },
+    {
+     "name": "Кухонный комбайн",
+     "product_ids": [
+      "bm.product.foodprocessor"
+     ]
+    },
+    {
+     "name": "Микроволновка",
+     "product_ids": [
+      "bm.product.microwave"
+     ]
+    },
+    {
+     "name": "Смартфон",
+     "product_ids": [
+      "bm.product.mobile",
+      "bm.product.smartphone"
+     ]
+    },
+    {
+     "name": "Настольный компьютер",
+     "product_ids": [
+      "bm.product.desktop",
+      "bm.product.computer"
+     ]
+    },
+    {
+     "name": "Наушники",
+     "product_ids": [
+      "bm.product.headphones"
+     ]
+    },
+    {
+     "name": "Ноутбук",
+     "product_ids": [
+      "bm.product.notebook"
+     ]
+    },
+    {
+     "name": "Планшет",
+     "product_ids": [
+      "bm.product.tablet"
+     ]
+    },
+    {
+     "name": "Посудомоечная машина",
+     "product_ids": [
+      "bm.product.dishwasher"
+     ]
+    },
+    {
+     "name": "Принтер",
+     "product_ids": [
+      "bm.product.printer"
+     ]
+    },
+    {
+     "name": "Смарт часы",
+     "product_ids": [
+      "bm.product.smartwatch"
+     ]
+    },
+    {
+     "name": "Стиральная машина",
+     "product_ids": [
+      "bm.product.washer"
+     ]
+    },
+    {
+     "name": "Телевизор",
+     "product_ids": [
+      "bm.product.tv"
+     ]
+    },
+    {
+     "name": "Фотоаппарат",
+     "product_ids": [
+      "bm.product.photo"
+     ]
+    },
+    {
+     "name": "Холодильник",
+     "product_ids": [
+      "bm.product.refrigirator"
+     ]
+    },
+    {
+     "name": "Спутниковое оборудование",
+     "product_ids": [
+      "bm.product.satellite"
+     ]
+    },
+    {
+     "name": "Умная колонка",
+     "product_ids": [
+      "bm.product.speaker"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.06",
+   "name": "Услуги",
+   "product_count": 8,
+   "products": [
+    {
+     "name": "Мужская стрижка",
+     "product_ids": [
+      "bm.product.menhaircut"
+     ]
+    },
+    {
+     "name": "Женская стрижка",
+     "product_ids": [
+      "bm.product.womenhaircut"
+     ]
+    },
+    {
+     "name": "Маникюр",
+     "product_ids": [
+      "bm.product.manicure"
+     ]
+    },
+    {
+     "name": "Ночь в отеле",
+     "product_ids": [
+      "bm.product.regularnight"
+     ]
+    },
+    {
+     "name": "ТО автомобиля",
+     "product_ids": [
+      "bm.product.automaintenance"
+     ]
+    },
+    {
+     "name": "Шиномонтаж",
+     "product_ids": [
+      "bm.product.tirefit"
+     ]
+    },
+    {
+     "name": "Кузовной ремонт",
+     "product_ids": [
+      "bm.product.autobodyrepair"
+     ]
+    },
+    {
+     "name": "Капремонт",
+     "product_ids": [
+      "bm.product.autooverhaul"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.07",
+   "name": "Детские товары",
+   "product_count": 20,
+   "products": [
+    {
+     "name": "Детская обувь",
+     "product_ids": [
+      "bm.product.childshoes"
+     ]
+    },
+    {
+     "name": "Детская одежда",
+     "product_ids": [
+      "bm.product.childclothes"
+     ]
+    },
+    {
+     "name": "Мягкая игрушка",
+     "product_ids": [
+      "bm.product.toys"
+     ]
+    },
+    {
+     "name": "Конструктор",
+     "product_ids": [
+      "bm.product.constructor"
+     ]
+    },
+    {
+     "name": "Детская смесь",
+     "product_ids": [
+      "bm.product.babyfood"
+     ]
+    },
+    {
+     "name": "Подгузники",
+     "product_ids": [
+      "bm.product.diapers"
+     ]
+    },
+    {
+     "name": "Коляска",
+     "product_ids": [
+      "bm.product.stroller"
+     ]
+    },
+    {
+     "name": "Детские книги",
+     "product_ids": [
+      "bm.product.books"
+     ]
+    },
+    {
+     "name": "Канцтовары",
+     "product_ids": [
+      "bm.product.stationery"
+     ]
+    },
+    {
+     "name": "Кукла",
+     "product_ids": [
+      "bm.product.doll"
+     ]
+    },
+    {
+     "name": "Трансформер",
+     "product_ids": [
+      "bm.product.transformer"
+     ]
+    },
+    {
+     "name": "Настольные игры",
+     "product_ids": [
+      "bm.product.boardgames"
+     ]
+    },
+    {
+     "name": "Тетрадь",
+     "product_ids": [
+      "bm.product.exercisebook"
+     ]
+    },
+    {
+     "name": "Мебель для детей",
+     "product_ids": [
+      "bm.product.furniture"
+     ]
+    },
+    {
+     "name": "Бутылочка",
+     "product_ids": [
+      "bm.product.bottle"
+     ]
+    },
+    {
+     "name": "Автокресло",
+     "product_ids": [
+      "bm.product.carseat"
+     ]
+    },
+    {
+     "name": "Пианино",
+     "product_ids": [
+      "bm.product.piano"
+     ]
+    },
+    {
+     "name": "Спорткомплекс",
+     "product_ids": [
+      "bm.product.playset"
+     ]
+    },
+    {
+     "name": "Радионяня",
+     "product_ids": [
+      "bm.product.babymonitor"
+     ]
+    },
+    {
+     "name": "Эргорюкзак",
+     "product_ids": [
+      "bm.product.carrier"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.08",
+   "name": "Спорттовары",
+   "product_count": 25,
+   "products": [
+    {
+     "name": "Кросcовки",
+     "product_ids": [
+      "bm.product.sportshoes"
+     ]
+    },
+    {
+     "name": "Спортивная одежда",
+     "product_ids": [
+      "bm.product.sportclothes"
+     ]
+    },
+    {
+     "name": "Велосипед",
+     "product_ids": [
+      "bm.product.bicycle"
+     ]
+    },
+    {
+     "name": "Гантели",
+     "product_ids": [
+      "bm.product.dumbbells"
+     ]
+    },
+    {
+     "name": "Коврик",
+     "product_ids": [
+      "bm.product.rug"
+     ]
+    },
+    {
+     "name": "Компрессионная одежда",
+     "product_ids": [
+      "bm.product.compression"
+     ]
+    },
+    {
+     "name": "Коньки",
+     "product_ids": [
+      "bm.product.skates"
+     ]
+    },
+    {
+     "name": "Лыжи",
+     "product_ids": [
+      "bm.product.skiing"
+     ]
+    },
+    {
+     "name": "Мяч",
+     "product_ids": [
+      "bm.product.ball"
+     ]
+    },
+    {
+     "name": "Надувной матрас",
+     "product_ids": [
+      "bm.product.mattress"
+     ]
+    },
+    {
+     "name": "Палатка",
+     "product_ids": [
+      "bm.product.tent"
+     ]
+    },
+    {
+     "name": "Ракетки",
+     "product_ids": [
+      "bm.product.rackets"
+     ]
+    },
+    {
+     "name": "Резиновая лодка",
+     "product_ids": [
+      "bm.product.rubberboat"
+     ]
+    },
+    {
+     "name": "Роликовые коньки",
+     "product_ids": [
+      "bm.product.roller"
+     ]
+    },
+    {
+     "name": "Рюкзак",
+     "product_ids": [
+      "bm.product.backpack"
+     ]
+    },
+    {
+     "name": "Электросамокат",
+     "product_ids": [
+      "bm.product.kickscooter"
+     ]
+    },
+    {
+     "name": "Спальный мешок",
+     "product_ids": [
+      "bm.product.sleeping"
+     ]
+    },
+    {
+     "name": "Термос",
+     "product_ids": [
+      "bm.product.thermos"
+     ]
+    },
+    {
+     "name": "Топор",
+     "product_ids": [
+      "bm.product.axe"
+     ]
+    },
+    {
+     "name": "Тренажер",
+     "product_ids": [
+      "bm.product.training"
+     ]
+    },
+    {
+     "name": "Фонарь",
+     "product_ids": [
+      "bm.product.flashlight"
+     ]
+    },
+    {
+     "name": "Шлем",
+     "product_ids": [
+      "bm.product.helmet"
+     ]
+    },
+    {
+     "name": "Удочка",
+     "product_ids": [
+      "bm.product.rod"
+     ]
+    },
+    {
+     "name": "Спортивное питание",
+     "product_ids": [
+      "bm.product.nutrition"
+     ]
+    },
+    {
+     "name": "Гамак",
+     "product_ids": [
+      "bm.product.hammock"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.09",
+   "name": "Предметы роскоши",
+   "product_count": 20,
+   "products": [
+    {
+     "name": "Белье",
+     "product_ids": [
+      "bm.product.underwear"
+     ]
+    },
+    {
+     "name": "Бижутерия",
+     "product_ids": [
+      "bm.product.bijouterie"
+     ]
+    },
+    {
+     "name": "Бритва",
+     "product_ids": [
+      "bm.product.razor"
+     ]
+    },
+    {
+     "name": "Золотые часы",
+     "product_ids": [
+      "bm.product.watches"
+     ]
+    },
+    {
+     "name": "Колготки",
+     "product_ids": [
+      "bm.product.tights"
+     ]
+    },
+    {
+     "name": "Косметика",
+     "product_ids": [
+      "bm.product.makeup"
+     ]
+    },
+    {
+     "name": "Парфюмерия",
+     "product_ids": [
+      "bm.product.parfume"
+     ]
+    },
+    {
+     "name": "Сувенир",
+     "product_ids": [
+      "bm.product.souvenir"
+     ]
+    },
+    {
+     "name": "Фен",
+     "product_ids": [
+      "bm.product.hairdryer"
+     ]
+    },
+    {
+     "name": "Цветы",
+     "product_ids": [
+      "bm.product.flowers"
+     ]
+    },
+    {
+     "name": "Эпилятор",
+     "product_ids": [
+      "bm.product.epilator"
+     ]
+    },
+    {
+     "name": "Ювелирные украшения",
+     "product_ids": [
+      "bm.product.jewelry"
+     ]
+    },
+    {
+     "name": "Арома-палочки",
+     "product_ids": [
+      "bm.product.aroma"
+     ]
+    },
+    {
+     "name": "Массажер",
+     "product_ids": [
+      "bm.product.massager"
+     ]
+    },
+    {
+     "name": "Сумка",
+     "product_ids": [
+      "bm.product.bag"
+     ]
+    },
+    {
+     "name": "Солнечные очки",
+     "product_ids": [
+      "bm.product.sunglasses"
+     ]
+    },
+    {
+     "name": "Зонт",
+     "product_ids": [
+      "bm.product.umbrella"
+     ]
+    },
+    {
+     "name": "Солнцезащитный крем",
+     "product_ids": [
+      "bm.product.sunblock"
+     ]
+    },
+    {
+     "name": "Кошелек",
+     "product_ids": [
+      "bm.product.wallet"
+     ]
+    },
+    {
+     "name": "Средства для ухода",
+     "product_ids": [
+      "bm.product.skincare"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.10",
+   "name": "Товары народного потребления",
+   "product_count": 23,
+   "products": [
+    {
+     "name": "Зубная паста",
+     "product_ids": [
+      "bm.product.toothpaste"
+     ]
+    },
+    {
+     "name": "Кресло",
+     "product_ids": [
+      "bm.product.chair"
+     ]
+    },
+    {
+     "name": "Кровать",
+     "product_ids": [
+      "bm.product.bed"
+     ]
+    },
+    {
+     "name": "Кухонный гарнитур",
+     "product_ids": [
+      "bm.product.kitchen"
+     ]
+    },
+    {
+     "name": "Моющее средство",
+     "product_ids": [
+      "bm.product.detergent"
+     ]
+    },
+    {
+     "name": "Мыло",
+     "product_ids": [
+      "bm.product.soap"
+     ]
+    },
+    {
+     "name": "Диван",
+     "product_ids": [
+      "bm.product.sofa"
+     ]
+    },
+    {
+     "name": "Постельные принадлежности",
+     "product_ids": [
+      "bm.product.beddress"
+     ]
+    },
+    {
+     "name": "Посуда",
+     "product_ids": [
+      "bm.product.dishes"
+     ]
+    },
+    {
+     "name": "Пылесос",
+     "product_ids": [
+      "bm.product.cleaner"
+     ]
+    },
+    {
+     "name": "Сковорода",
+     "product_ids": [
+      "bm.product.pan"
+     ]
+    },
+    {
+     "name": "Стиральный порошок",
+     "product_ids": [
+      "bm.product.soappowder"
+     ]
+    },
+    {
+     "name": "Стол",
+     "product_ids": [
+      "bm.product.table"
+     ]
+    },
+    {
+     "name": "Стул",
+     "product_ids": [
+      "bm.product.stool"
+     ]
+    },
+    {
+     "name": "Чайник",
+     "product_ids": [
+      "bm.product.teapot"
+     ]
+    },
+    {
+     "name": "Шкаф",
+     "product_ids": [
+      "bm.product.wardrobe"
+     ]
+    },
+    {
+     "name": "Комод",
+     "product_ids": [
+      "bm.product.dresser"
+     ]
+    },
+    {
+     "name": "Кастрюля",
+     "product_ids": [
+      "bm.product.casserole"
+     ]
+    },
+    {
+     "name": "Батарейка",
+     "product_ids": [
+      "bm.product.battery"
+     ]
+    },
+    {
+     "name": "Полотенце",
+     "product_ids": [
+      "bm.product.towel"
+     ]
+    },
+    {
+     "name": "Кофемашина",
+     "product_ids": [
+      "bm.product.coffeemachine"
+     ]
+    },
+    {
+     "name": "Утюг",
+     "product_ids": [
+      "bm.product.iron"
+     ]
+    },
+    {
+     "name": "Чемодан",
+     "product_ids": [
+      "bm.product.suitcase"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.11",
+   "name": "Животные",
+   "product_count": 5,
+   "products": [
+    {
+     "name": "Коровы",
+     "product_ids": [
+      "bm.product.cows"
+     ]
+    },
+    {
+     "name": "Куры",
+     "product_ids": [
+      "bm.product.hens"
+     ]
+    },
+    {
+     "name": "Овцы",
+     "product_ids": [
+      "bm.product.sheeps"
+     ]
+    },
+    {
+     "name": "Свиньи",
+     "product_ids": [
+      "bm.product.pigs"
+     ]
+    },
+    {
+     "name": "Соболь",
+     "product_ids": [
+      "bm.product.sable"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.12",
+   "name": "Материалы",
+   "product_count": 18,
+   "products": [
+    {
+     "name": "Бумага",
+     "product_ids": [
+      "bm.product.paper"
+     ]
+    },
+    {
+     "name": "Алюминий",
+     "product_ids": [
+      "bm.product.aluminium"
+     ]
+    },
+    {
+     "name": "Ароматизатор",
+     "product_ids": [
+      "bm.product.aromatisator"
+     ]
+    },
+    {
+     "name": "Дизельное топливо",
+     "product_ids": [
+      "bm.product.dieselfuel"
+     ]
+    },
+    {
+     "name": "Кислота",
+     "product_ids": [
+      "bm.product.acid"
+     ]
+    },
+    {
+     "name": "Кожа",
+     "product_ids": [
+      "bm.product.leather"
+     ]
+    },
+    {
+     "name": "Кремний",
+     "product_ids": [
+      "bm.product.silicon"
+     ]
+    },
+    {
+     "name": "Медь",
+     "product_ids": [
+      "bm.product.copper"
+     ]
+    },
+    {
+     "name": "Пластик",
+     "product_ids": [
+      "bm.product.plastic"
+     ]
+    },
+    {
+     "name": "Реактивы",
+     "product_ids": [
+      "bm.product.reagent"
+     ]
+    },
+    {
+     "name": "Резина",
+     "product_ids": [
+      "bm.product.rubber"
+     ]
+    },
+    {
+     "name": "Синтетика",
+     "product_ids": [
+      "bm.product.synthetics"
+     ]
+    },
+    {
+     "name": "Спирт",
+     "product_ids": [
+      "bm.product.spirits"
+     ]
+    },
+    {
+     "name": "Сталь",
+     "product_ids": [
+      "bm.product.steel"
+     ]
+    },
+    {
+     "name": "Стекло",
+     "product_ids": [
+      "bm.product.glass"
+     ]
+    },
+    {
+     "name": "Ткань",
+     "product_ids": [
+      "bm.product.fabric"
+     ]
+    },
+    {
+     "name": "Удобрения",
+     "product_ids": [
+      "bm.product.fertilizer"
+     ]
+    },
+    {
+     "name": "Шерсть",
+     "product_ids": [
+      "bm.product.wool"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.13",
+   "name": "Компоненты",
+   "product_count": 6,
+   "products": [
+    {
+     "name": "Комплектующие",
+     "product_ids": [
+      "bm.product.parts"
+     ]
+    },
+    {
+     "name": "Провода",
+     "product_ids": [
+      "bm.product.wires"
+     ]
+    },
+    {
+     "name": "Двигатель",
+     "product_ids": [
+      "bm.product.engine"
+     ]
+    },
+    {
+     "name": "Дисплей",
+     "product_ids": [
+      "bm.product.display"
+     ]
+    },
+    {
+     "name": "Электронные компоненты",
+     "product_ids": [
+      "bm.product.chips"
+     ]
+    },
+    {
+     "name": "Материнская плата",
+     "product_ids": [
+      "bm.product.motherboard"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.14",
+   "name": "Полезные ископаемые",
+   "product_count": 10,
+   "products": [
+    {
+     "name": "Бокситы",
+     "product_ids": [
+      "bm.product.bauxite"
+     ]
+    },
+    {
+     "name": "Глина",
+     "product_ids": [
+      "bm.product.clay"
+     ]
+    },
+    {
+     "name": "Древесина",
+     "product_ids": [
+      "bm.product.wood"
+     ]
+    },
+    {
+     "name": "Железная руда",
+     "product_ids": [
+      "bm.product.ironore"
+     ]
+    },
+    {
+     "name": "Золото",
+     "product_ids": [
+      "bm.product.gold"
+     ]
+    },
+    {
+     "name": "Медная руда",
+     "product_ids": [
+      "bm.product.copperore"
+     ]
+    },
+    {
+     "name": "Минералы",
+     "product_ids": [
+      "bm.product.minerals"
+     ]
+    },
+    {
+     "name": "Нефть",
+     "product_ids": [
+      "bm.product.oil"
+     ]
+    },
+    {
+     "name": "Песок",
+     "product_ids": [
+      "bm.product.sand"
+     ]
+    },
+    {
+     "name": "Уголь",
+     "product_ids": [
+      "bm.product.coal"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.15",
+   "name": "Сельскохозяйственная продукция",
+   "product_count": 16,
+   "products": [
+    {
+     "name": "Виноград",
+     "product_ids": [
+      "bm.product.grape"
+     ]
+    },
+    {
+     "name": "Картофель",
+     "product_ids": [
+      "bm.product.potato"
+     ]
+    },
+    {
+     "name": "Молоко",
+     "product_ids": [
+      "bm.product.milk"
+     ]
+    },
+    {
+     "name": "Мясо",
+     "product_ids": [
+      "bm.product.meat"
+     ]
+    },
+    {
+     "name": "Морковь",
+     "product_ids": [
+      "bm.product.carrot"
+     ]
+    },
+    {
+     "name": "Огурцы",
+     "product_ids": [
+      "bm.product.cucumber"
+     ]
+    },
+    {
+     "name": "Помидоры",
+     "product_ids": [
+      "bm.product.tomato"
+     ]
+    },
+    {
+     "name": "Рыба",
+     "product_ids": [
+      "bm.product.fish"
+     ]
+    },
+    {
+     "name": "Свекла",
+     "product_ids": [
+      "bm.product.beet"
+     ]
+    },
+    {
+     "name": "Фрукты",
+     "product_ids": [
+      "bm.product.fruits"
+     ]
+    },
+    {
+     "name": "Яблоки",
+     "product_ids": [
+      "bm.product.apples"
+     ]
+    },
+    {
+     "name": "Яйца",
+     "product_ids": [
+      "bm.product.eggs"
+     ]
+    },
+    {
+     "name": "Зерно",
+     "product_ids": [
+      "bm.product.grain"
+     ]
+    },
+    {
+     "name": "Какао",
+     "product_ids": [
+      "bm.product.cacao"
+     ]
+    },
+    {
+     "name": "Корм",
+     "product_ids": [
+      "bm.product.feed"
+     ]
+    },
+    {
+     "name": "Мех",
+     "product_ids": [
+      "bm.product.fur"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.16",
+   "name": "Строительные материалы",
+   "product_count": 23,
+   "products": [
+    {
+     "name": "Инструменты",
+     "product_ids": [
+      "bm.product.tools"
+     ]
+    },
+    {
+     "name": "Дверь",
+     "product_ids": [
+      "bm.product.door"
+     ]
+    },
+    {
+     "name": "Керамическая плитка",
+     "product_ids": [
+      "bm.product.tile"
+     ]
+    },
+    {
+     "name": "Герметик",
+     "product_ids": [
+      "bm.product.glue"
+     ]
+    },
+    {
+     "name": "Краска",
+     "product_ids": [
+      "bm.product.paint"
+     ]
+    },
+    {
+     "name": "Крепеж",
+     "product_ids": [
+      "bm.product.fasteners"
+     ]
+    },
+    {
+     "name": "Напольные покрытия",
+     "product_ids": [
+      "bm.product.floor"
+     ]
+    },
+    {
+     "name": "Обогреватель",
+     "product_ids": [
+      "bm.product.heater"
+     ]
+    },
+    {
+     "name": "Обои",
+     "product_ids": [
+      "bm.product.wallpaper"
+     ]
+    },
+    {
+     "name": "Окна",
+     "product_ids": [
+      "bm.product.window"
+     ]
+    },
+    {
+     "name": "Сантехника",
+     "product_ids": [
+      "bm.product.sanitary"
+     ]
+    },
+    {
+     "name": "Светильник",
+     "product_ids": [
+      "bm.product.lamp"
+     ]
+    },
+    {
+     "name": "Трубы",
+     "product_ids": [
+      "bm.product.pipes"
+     ]
+    },
+    {
+     "name": "Шторы",
+     "product_ids": [
+      "bm.product.curtains"
+     ]
+    },
+    {
+     "name": "Стремянка",
+     "product_ids": [
+      "bm.product.ladder"
+     ]
+    },
+    {
+     "name": "Ковер",
+     "product_ids": [
+      "bm.product.carpet"
+     ]
+    },
+    {
+     "name": "Фурнитура",
+     "product_ids": [
+      "bm.product.fittings"
+     ]
+    },
+    {
+     "name": "Штукатурка",
+     "product_ids": [
+      "bm.product.plaster"
+     ]
+    },
+    {
+     "name": "Зеркало",
+     "product_ids": [
+      "bm.product.mirror"
+     ]
+    },
+    {
+     "name": "Кондиционер",
+     "product_ids": [
+      "bm.product.conditioning"
+     ]
+    },
+    {
+     "name": "Бетонный блок",
+     "product_ids": [
+      "bm.product.concrete"
+     ]
+    },
+    {
+     "name": "Кирпич",
+     "product_ids": [
+      "bm.product.brick"
+     ]
+    },
+    {
+     "name": "Цемент",
+     "product_ids": [
+      "bm.product.cement"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.17",
+   "name": "Фармацевтика",
+   "product_count": 18,
+   "products": [
+    {
+     "name": "Антибиотики",
+     "product_ids": [
+      "bm.product.antibiotics"
+     ]
+    },
+    {
+     "name": "Антисептик",
+     "product_ids": [
+      "bm.product.antiseptic"
+     ]
+    },
+    {
+     "name": "БАД",
+     "product_ids": [
+      "bm.product.supplements"
+     ]
+    },
+    {
+     "name": "Вакцина",
+     "product_ids": [
+      "bm.product.vaccine"
+     ]
+    },
+    {
+     "name": "Витамины",
+     "product_ids": [
+      "bm.product.vitamins"
+     ]
+    },
+    {
+     "name": "Контрацептивы",
+     "product_ids": [
+      "bm.product.contraceptives"
+     ]
+    },
+    {
+     "name": "Лечебный крем",
+     "product_ids": [
+      "bm.product.healingcream"
+     ]
+    },
+    {
+     "name": "Мед техника",
+     "product_ids": [
+      "bm.product.medtechnic"
+     ]
+    },
+    {
+     "name": "Настойка",
+     "product_ids": [
+      "bm.product.tincture"
+     ]
+    },
+    {
+     "name": "Ортопедические изделия",
+     "product_ids": [
+      "bm.product.orthopedic"
+     ]
+    },
+    {
+     "name": "Перевязочные средства",
+     "product_ids": [
+      "bm.product.bandage"
+     ]
+    },
+    {
+     "name": "Противопростудные",
+     "product_ids": [
+      "bm.product.cough"
+     ]
+    },
+    {
+     "name": "Рецептурные препараты",
+     "product_ids": [
+      "bm.product.prescription"
+     ]
+    },
+    {
+     "name": "Травяной сбор",
+     "product_ids": [
+      "bm.product.herbal"
+     ]
+    },
+    {
+     "name": "Линзы",
+     "product_ids": [
+      "bm.product.lenses"
+     ]
+    },
+    {
+     "name": "Лекарственные травы",
+     "product_ids": [
+      "bm.product.herbs"
+     ]
+    },
+    {
+     "name": "Микроорганическая культура",
+     "product_ids": [
+      "bm.product.microculture"
+     ]
+    },
+    {
+     "name": "Фармацевтическая субстанция",
+     "product_ids": [
+      "bm.product.substance"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  },
+  {
+   "id": "bm.productcategory.18",
+   "name": "Промышленные товары",
+   "product_count": 12,
+   "products": [
+    {
+     "name": "Автопогрузчик",
+     "product_ids": [
+      "bm.product.autoloader"
+     ]
+    },
+    {
+     "name": "Ветрогенератор",
+     "product_ids": [
+      "bm.product.windgenerator"
+     ]
+    },
+    {
+     "name": "Горное оборудование",
+     "product_ids": [
+      "bm.product.mineequipment"
+     ]
+    },
+    {
+     "name": "Грузовик",
+     "product_ids": [
+      "bm.product.truck"
+     ]
+    },
+    {
+     "name": "Кран",
+     "product_ids": [
+      "bm.product.crane"
+     ]
+    },
+    {
+     "name": "Прибор",
+     "product_ids": [
+      "bm.product.device"
+     ]
+    },
+    {
+     "name": "Производственная линия",
+     "product_ids": [
+      "bm.product.machineline"
+     ]
+    },
+    {
+     "name": "Станки",
+     "product_ids": [
+      "bm.product.machine"
+     ]
+    },
+    {
+     "name": "Трактор",
+     "product_ids": [
+      "bm.product.tractor"
+     ]
+    },
+    {
+     "name": "Тяжелое оборудование",
+     "product_ids": [
+      "bm.product.heavyeq"
+     ]
+    },
+    {
+     "name": "Оборудование салона",
+     "product_ids": [
+      "bm.product.beautyequipment"
+     ]
+    },
+    {
+     "name": "Оборудование отеля",
+     "product_ids": [
+      "bm.product.hotelequipment"
+     ]
+    }
+   ],
+   "unresolved_names": [],
+   "source_topic": "Справочник продуктов",
+   "confidence": "documented",
+   "note": "Category grouping stated by the captured Wiki product directory. The canonical product corpus stores an empty categories field, so this dataset is the authoritative grouping until that field is populated deliberately.",
+   "evidence": [
+    "src.har.bizmania-faq.2026-09-06.01#entry-442"
+   ]
+  }
+ ]
+}

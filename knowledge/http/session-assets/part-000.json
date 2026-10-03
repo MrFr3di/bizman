@@ -1,0 +1,135 @@
+{
+ "schema_version": "1.0",
+ "records": [
+  {
+   "id": "bm.asset.session.css-fonts-PragmaticaC-otf",
+   "path": "/css/fonts/PragmaticaC.otf",
+   "count": 2,
+   "statuses": {
+    "200": 2
+   },
+   "mime_types": {
+    "application/octet-stream": 2
+   },
+   "query_keys": [],
+   "classification": "new-asset-observation",
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.har.bizmania.2026-10-03.01#entry-35",
+    "src.har.bizmania.2026-10-03.01#entry-84"
+   ]
+  },
+  {
+   "id": "bm.asset.session.css-main-css-v164",
+   "path": "/css/main.css/v164",
+   "count": 1,
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/css": 1
+   },
+   "query_keys": [],
+   "classification": "new-asset-observation",
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.har.bizmania.2026-10-03.01#entry-72"
+   ]
+  },
+  {
+   "id": "bm.asset.session.css-main-css-v165",
+   "path": "/css/main.css/v165",
+   "count": 1,
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/css": 1
+   },
+   "query_keys": [],
+   "classification": "new-asset-observation",
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.har.bizmania.2026-10-03.01#entry-2"
+   ]
+  },
+  {
+   "id": "bm.asset.session.img-corporation-icon52873-jpg",
+   "path": "/img/corporation/icon52873.jpg",
+   "count": 1,
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "image/jpeg": 1
+   },
+   "query_keys": [],
+   "classification": "new-asset-observation",
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.har.bizmania.2026-10-03.01#entry-20"
+   ]
+  },
+  {
+   "id": "bm.asset.session.img-menu-corporation-png",
+   "path": "/img/menu/corporation.png",
+   "count": 1,
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "image/png": 1
+   },
+   "query_keys": [],
+   "classification": "new-asset-observation",
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.har.bizmania.2026-10-03.01#entry-43"
+   ]
+  },
+  {
+   "id": "bm.querykey.user-check-message-numeric-family",
+   "path": "/user/check/message",
+   "count": 3,
+   "statuses": {
+    "302": 3
+   },
+   "mime_types": {},
+   "query_keys": [
+    "1718",
+    "2231",
+    "4831"
+   ],
+   "classification": "observed-query-key-family",
+   "known_to_canonical_census": true,
+   "note": "Bare numeric query keys used by the mail poll; the committed census stores only the endpoint pattern, so these literals were previously unrecorded. Their semantics remain unknown.",
+   "confidence": "observed",
+   "evidence": []
+  },
+  {
+   "id": "bm.querykey.static-cache-version-family",
+   "path": "static-resources",
+   "count": 6,
+   "statuses": {},
+   "mime_types": {},
+   "query_keys": [
+    "v11",
+    "v4",
+    "v5",
+    "v6",
+    "v8",
+    "v9"
+   ],
+   "classification": "observed-query-key-family",
+   "known_to_canonical_census": false,
+   "note": "Version-flag query keys observed on first-party static resources; the asset census stores paths without query strings.",
+   "confidence": "observed",
+   "evidence": []
+  }
+ ]
+}

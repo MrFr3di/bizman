@@ -1,0 +1,15 @@
+{
+ "schema_version": "1.0",
+ "source_id": "src.webcopy.bizmania.2026-10-03.01",
+ "source": "https://bizmania.ru/rules/ and https://bizmania.ru/law/",
+ "total_records": 4,
+ "parts": [
+  {
+   "file": "part-000.jsonl",
+   "records": 4,
+   "offset": 0
+  }
+ ],
+ "confidence": "documented",
+ "note": "Game legislation captured 2026-10-03: the game rules and three in-game laws; revision strings are preserved where the captured page states them."
+}

@@ -65,7 +65,7 @@ The full test suite covers, among other invariants:
 - synthetic filesystem -> evidence -> extraction -> diff -> rules -> SQLite/outbox -> bundle E2E;
 - rerun/idempotence and downstream synthetic-secret byte scans;
 - deterministic curated read-model projection, SQLite identity/rebuild and bounded FTS retrieval;
-- 590-record curated read-model coverage across actions/products/entities/endpoints/operations/forms/Wiki;
+- 632-record curated read-model coverage across actions/products/entities/endpoints/operations/forms/Wiki;
 - versioned retrieval evals with Recall@1/5, MRR and evidence correctness;
 - regression proof that expanded corpora do not reduce the earlier P2-A retrieval metrics;
 - exact 10-tool MCP surface, explicit bounded protocol schemas and result budgets;

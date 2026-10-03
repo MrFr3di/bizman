@@ -15,7 +15,7 @@ Completed foundations include:
 - privacy-safe DOM action context and deterministic action-to-HTTP correlation;
 - deterministic Change Detector with versioned rules, analysis profiles, SQLite checkpoints/outbox and Promotion Bundles;
 - installable `src/bizman` package and stable `bizman.core` application boundary;
-- deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
+- deterministic `bizman.readmodel` Agent Index over 632 curated records plus verified session/change intelligence;
 - bounded path-free `bizman.core` read API for knowledge, provenance, sessions and profile-scoped changes;
 - read-only `bizman-mcp` stdio adapter with 14 bounded Core-backed tools;
 - read-only `bizman-telegram` long-polling adapter with 16 bounded Core-backed commands;
@@ -27,10 +27,10 @@ Completed foundations include:
 
 ## Current corpus
 
-Derived from 3 supplied HAR captures:
+Derived from 4 supplied HAR captures (plus one external offline webcopy snapshot used only for documented help pages and domain reference data):
 
-- 17,108 total network entries
-- 16,202 first-party BizMania entries
+- 17,204 total network entries
+- 16,294 first-party BizMania entries
 - 555 significant first-party application events
 - 17 observed POST requests
 - 68 network endpoint signatures
@@ -43,7 +43,12 @@ Derived from 3 supplied HAR captures:
 - 29 unique JavaScript resources
 - 14 protocol-relevant JavaScript snippets
 - 87 captured Wiki topics / 89 Wiki navigation topics
-- 303 products
+- 89 recovered Wiki topic revisions from the 2026-10-03 read-only walk
+- 51 endpoint observations, 94 surface-probe outcomes and 7 asset/query-key records from the 2026-10-03 walk
+- 303 products plus 301 documented product attribute/recipe records from the help-page snapshot
+- 18 recovered product categories covering all 303 curated products
+- 71 buildings: 48 Wiki-stated prices plus numeric construction ids and required materials
+- 49 enterprise types, 34 help/announcement records, 4 legal records and 7 official currency rates
 - 19 observed domain entities
 - 11 normalized state-changing action families
 

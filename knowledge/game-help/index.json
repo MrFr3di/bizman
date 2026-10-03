@@ -1,0 +1,20 @@
+{
+ "schema_version": "1.0",
+ "source_id": "src.webcopy.bizmania.2026-10-03.01",
+ "source": "https://bizmania.ru/help/ and https://bizmania.ru/land/restart8.html",
+ "total_records": 34,
+ "parts": [
+  {
+   "file": "part-000.jsonl",
+   "records": 17,
+   "offset": 0
+  },
+  {
+   "file": "part-001.jsonl",
+   "records": 17,
+   "offset": 17
+  }
+ ],
+ "confidence": "documented",
+ "note": "First-party game help corpus captured 2026-10-03: 27 help topics, 6 reference pages and the BM-8 announcement. Record text, ids and source paths were copied verbatim from the captured pages; stub and error pages were excluded during extraction."
+}

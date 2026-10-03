@@ -1,0 +1,2265 @@
+{
+ "schema_version": "1.0",
+ "records": [
+  {
+   "id": "bm.surfaceprobe.analitics-cities--exact--e7b46920",
+   "path_pattern": "/analitics/cities",
+   "base_path": "/analitics/cities",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 14,
+    "rows": 79,
+    "forms": 1,
+    "links": 106
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-743"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-cities--q-tab--0454a74b",
+   "path_pattern": "/analitics/cities/?tab=competitors",
+   "base_path": "/analitics/cities/",
+   "query_keys": [
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 14,
+    "rows": 81,
+    "forms": 1,
+    "links": 108
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-912"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-cityretaildeficit--q-city--709be043",
+   "path_pattern": "/analitics/cityretaildeficit/?city=25",
+   "base_path": "/analitics/cityretaildeficit/",
+   "query_keys": [
+    "city"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 14,
+    "rows": 82,
+    "forms": 1,
+    "links": 101
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-5"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-commoditycirculation--exact--7998b326",
+   "path_pattern": "/analitics/commoditycirculation",
+   "base_path": "/analitics/commoditycirculation",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 24,
+    "rows": 101,
+    "forms": 1,
+    "links": 112
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-1069"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-commoditycirculation--q-category+countryId--24562a69",
+   "path_pattern": "/analitics/commoditycirculation/?category=1&countryId=100000000",
+   "base_path": "/analitics/commoditycirculation/",
+   "query_keys": [
+    "category",
+    "countryId"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 18,
+    "rows": 87,
+    "forms": 1,
+    "links": 111
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-1271"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-construction--exact--bb1c7a7f",
+   "path_pattern": "/analitics/construction",
+   "base_path": "/analitics/construction",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 14,
+    "rows": 74,
+    "forms": 1,
+    "links": 91
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-583"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-retailmarket--q-city--208f31ca",
+   "path_pattern": "/analitics/retailmarket/?city=25",
+   "base_path": "/analitics/retailmarket/",
+   "query_keys": [
+    "city"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 19,
+    "rows": 124,
+    "forms": 4,
+    "links": 213
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-2443"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-retailprices--c38267d1",
+   "path_pattern": "/analitics/retailprices/",
+   "base_path": "/analitics/retailprices/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 16,
+    "rows": 95,
+    "forms": 2,
+    "links": 155
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-2669"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-supplysummary--exact--68f9c767",
+   "path_pattern": "/analitics/supplysummary",
+   "base_path": "/analitics/supplysummary",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 290,
+    "rows": 365,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-1470"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-tredva--5ad52420",
+   "path_pattern": "/analitics/tredva/",
+   "base_path": "/analitics/tredva/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 14,
+    "rows": 73,
+    "forms": 1,
+    "links": 76
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-423"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.analitics-vendors--b68db868",
+   "path_pattern": "/analitics/vendors/",
+   "base_path": "/analitics/vendors/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "analytics-report",
+   "structure": {
+    "tables": 14,
+    "rows": 104,
+    "forms": 0,
+    "links": 349
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-2952"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.city--q-id--f761a250",
+   "path_pattern": "/city/?id=25",
+   "base_path": "/city/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "city",
+   "structure": {
+    "tables": 32,
+    "rows": 145,
+    "forms": 7,
+    "links": 158
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10831",
+    "src.session.walk.2026-10-03.01#seq-11099"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.city--q-id+sub+tab--cc45ccc6",
+   "path_pattern": "/city/?id=25&sub=population&tab=workers",
+   "base_path": "/city/",
+   "query_keys": [
+    "id",
+    "sub",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "city",
+   "structure": {
+    "tables": 32,
+    "rows": 145,
+    "forms": 7,
+    "links": 158
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10831",
+    "src.session.walk.2026-10-03.01#seq-11099"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.city--q-id+tab--fcfe3536",
+   "path_pattern": "/city/?id=25&tab=retailmarket",
+   "base_path": "/city/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "city",
+   "structure": {
+    "tables": 18,
+    "rows": 99,
+    "forms": 4,
+    "links": 159
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10831",
+    "src.session.walk.2026-10-03.01#seq-11099"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.city--q-id+tab--ac5cc8fe",
+   "path_pattern": "/city/?id=25&tab=units",
+   "base_path": "/city/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "city",
+   "structure": {
+    "tables": 17,
+    "rows": 73,
+    "forms": 1,
+    "links": 128
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10831",
+    "src.session.walk.2026-10-03.01#seq-11099"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.city-chargedebt--q-id--4ac8a43d",
+   "path_pattern": "/city/chargedebt/?id=25",
+   "base_path": "/city/chargedebt/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-redirected-to-error-surface",
+   "http_status": [],
+   "page_kind": "city",
+   "structure": {
+    "tables": 1,
+    "rows": 1,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11941"
+   ],
+   "redirect_target": "/err/popup404/",
+   "redirect_evidence": "src.session.walk.2026-10-03.01#seq-11942"
+  },
+  {
+   "id": "bm.surfaceprobe.city-object--q-id--31bf9f7e",
+   "path_pattern": "/city/object/?id=25",
+   "base_path": "/city/object/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "server-error-page",
+   "structure": {
+    "tables": 0,
+    "rows": 0,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11888"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.city-population--q-id+tab--bcebb7fc",
+   "path_pattern": "/city/population?id=25&tab=workers",
+   "base_path": "/city/population",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "city",
+   "structure": {
+    "tables": 2,
+    "rows": 2,
+    "forms": 0,
+    "links": 2
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11891"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company--q-id--f4cfef88",
+   "path_pattern": "/company/?id=13393",
+   "base_path": "/company/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 38,
+    "rows": 93,
+    "forms": 0,
+    "links": 122
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4841",
+    "src.session.walk.2026-10-03.01#seq-5103"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company--q-id+tab--326f4c29",
+   "path_pattern": "/company/?id=13393&tab=company",
+   "base_path": "/company/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 38,
+    "rows": 93,
+    "forms": 0,
+    "links": 122
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4841",
+    "src.session.walk.2026-10-03.01#seq-5103"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company--q-id+tab--c4c2401b",
+   "path_pattern": "/company/?id=13393&tab=reports",
+   "base_path": "/company/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 15,
+    "rows": 122,
+    "forms": 0,
+    "links": 86
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4841",
+    "src.session.walk.2026-10-03.01#seq-5103"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company--q-id+tab--d564f5fc",
+   "path_pattern": "/company/?id=13393&tab=specialists",
+   "base_path": "/company/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 28,
+    "rows": 80,
+    "forms": 2,
+    "links": 101
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4841",
+    "src.session.walk.2026-10-03.01#seq-5103"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-buildhq--q-id--e33ca82e",
+   "path_pattern": "/company/buildhq?id=13393",
+   "base_path": "/company/buildhq",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 14,
+    "rows": 57,
+    "forms": 0,
+    "links": 76
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-5853"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-cityworkerschart--q-cityId+id--11b578e9",
+   "path_pattern": "/company/cityworkerschart?id=13393&cityId=25",
+   "base_path": "/company/cityworkerschart",
+   "query_keys": [
+    "cityId",
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 0,
+    "rows": 0,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6001"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-companymail--q-id--33dfd03e",
+   "path_pattern": "/company/companymail?id=13393",
+   "base_path": "/company/companymail",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 1,
+    "rows": 66,
+    "forms": 1,
+    "links": 66
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6049"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-financechart--q-id--19e18e73",
+   "path_pattern": "/company/financechart/?id=13393",
+   "base_path": "/company/financechart/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 0,
+    "rows": 0,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6091"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-moneytransfer--q-id--6e0e48c2",
+   "path_pattern": "/company/moneytransfer?id=13393",
+   "base_path": "/company/moneytransfer",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 1,
+    "rows": 2,
+    "forms": 1,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6139"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-notepad--q-id--16d9659f",
+   "path_pattern": "/company/notepad?id=13393",
+   "base_path": "/company/notepad",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 0,
+    "rows": 0,
+    "forms": 1,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6190"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-president--q-id--ec0e382e",
+   "path_pattern": "/company/president/?id=13393",
+   "base_path": "/company/president/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 2,
+    "rows": 25,
+    "forms": 0,
+    "links": 10
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6235"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-reloadproblems--q-id--3ada9c81",
+   "path_pattern": "/company/reloadproblems/?id=13393",
+   "base_path": "/company/reloadproblems/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 1,
+    "rows": 1,
+    "forms": 1,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6322"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-repairwizard--q-id--f01b6bb7",
+   "path_pattern": "/company/repairwizard?id=13393",
+   "base_path": "/company/repairwizard",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 15,
+    "rows": 60,
+    "forms": 1,
+    "links": 90
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6364"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-rewardsummary8--q-id--4749d618",
+   "path_pattern": "/company/rewardsummary8?id=13393",
+   "base_path": "/company/rewardsummary8",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 1,
+    "rows": 10,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6533"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.company-supplywizard--q-id--ef7838e5",
+   "path_pattern": "/company/supplywizard?id=13393",
+   "base_path": "/company/supplywizard",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "company",
+   "structure": {
+    "tables": 16,
+    "rows": 61,
+    "forms": 1,
+    "links": 95
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6638"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-building--q-id--b97189d5",
+   "path_pattern": "/units/building/?id=13548",
+   "base_path": "/units/building/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8800"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-cityconstruction--q-id--aecd5dbe",
+   "path_pattern": "/units/cityconstruction/?id=13548",
+   "base_path": "/units/cityconstruction/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 13,
+    "rows": 56,
+    "forms": 0,
+    "links": 76
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8947"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-construction--q-id--38fdc446",
+   "path_pattern": "/units/construction/?id=13548",
+   "base_path": "/units/construction/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 14,
+    "rows": 57,
+    "forms": 0,
+    "links": 77
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9095"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-customerlist--q-id--9f2e52a3",
+   "path_pattern": "/units/customerlist/?id=13548",
+   "base_path": "/units/customerlist/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 1,
+    "rows": 1,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9242"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-customise-attendancestat--q-id--d1c8a5ec",
+   "path_pattern": "/units/customise/attendancestat/?id=13548",
+   "base_path": "/units/customise/attendancestat/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 0,
+    "rows": 0,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10729"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-customise-settings--q-id--cca1dd28",
+   "path_pattern": "/units/customise/settings/?id=13548",
+   "base_path": "/units/customise/settings/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 1,
+    "rows": 2,
+    "forms": 1,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10687"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-customise-tredvabudget--q-id--08869599",
+   "path_pattern": "/units/customise/tredvabudget/?id=13548",
+   "base_path": "/units/customise/tredvabudget/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 2,
+    "rows": 8,
+    "forms": 1,
+    "links": 4
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10780"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-financechart--q-id--3ea6111b",
+   "path_pattern": "/units/financechart/?id=13548",
+   "base_path": "/units/financechart/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 0,
+    "rows": 0,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9283"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-headquarter--q-id+section--609d228b",
+   "path_pattern": "/units/headquarter/?id=13393&section=assets",
+   "base_path": "/units/headquarter/",
+   "query_keys": [
+    "id",
+    "section"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8216"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-headquarter--q-id+section--8c6c0475",
+   "path_pattern": "/units/headquarter/?id=13393&section=industries",
+   "base_path": "/units/headquarter/",
+   "query_keys": [
+    "id",
+    "section"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8216"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-headquarter--q-id+section--914ef118",
+   "path_pattern": "/units/headquarter/?id=13393&section=units",
+   "base_path": "/units/headquarter/",
+   "query_keys": [
+    "id",
+    "section"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8216"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-headquarter--q-id+tab--1802456b",
+   "path_pattern": "/units/headquarter/?id=13393&tab=reports",
+   "base_path": "/units/headquarter/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8216"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-messages--q-id--b89dfd50",
+   "path_pattern": "/units/messages/?id=13548",
+   "base_path": "/units/messages/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 1,
+    "rows": 0,
+    "forms": 1,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9477"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-produce-calculator--exact--0afdb9c3",
+   "path_pattern": "/units/produce/calculator",
+   "base_path": "/units/produce/calculator",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 39,
+    "rows": 110,
+    "forms": 1,
+    "links": 90
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9519"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-service--q-id+tab--d306510d",
+   "path_pattern": "/units/service/?id=13548&tab=goods",
+   "base_path": "/units/service/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit-service",
+   "structure": {
+    "tables": 14,
+    "rows": 57,
+    "forms": 0,
+    "links": 77
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8069"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-shop--q-id+tab--084b2c20",
+   "path_pattern": "/units/shop/?id=13548&tab=divisions",
+   "base_path": "/units/shop/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit-shop",
+   "structure": {
+    "tables": 27,
+    "rows": 100,
+    "forms": 1,
+    "links": 151
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6822",
+    "src.session.walk.2026-10-03.01#seq-7075"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-shop--q-id+tab--e5556416",
+   "path_pattern": "/units/shop/?id=13548&tab=goods",
+   "base_path": "/units/shop/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit-shop",
+   "structure": {
+    "tables": 21,
+    "rows": 77,
+    "forms": 1,
+    "links": 172
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6822",
+    "src.session.walk.2026-10-03.01#seq-7075"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-shop--q-id+tab--4f7afd5c",
+   "path_pattern": "/units/shop/?id=13548&tab=reports",
+   "base_path": "/units/shop/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit-shop",
+   "structure": {
+    "tables": 17,
+    "rows": 91,
+    "forms": 0,
+    "links": 91
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6822",
+    "src.session.walk.2026-10-03.01#seq-7075"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-shop--q-id+tab--836b3b4c",
+   "path_pattern": "/units/shop/?id=13548&tab=shop",
+   "base_path": "/units/shop/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit-shop",
+   "structure": {
+    "tables": 25,
+    "rows": 83,
+    "forms": 1,
+    "links": 115
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6822",
+    "src.session.walk.2026-10-03.01#seq-7075"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-shop--q-id+tab--8b98b509",
+   "path_pattern": "/units/shop/?id=13548&tab=supply",
+   "base_path": "/units/shop/",
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit-shop",
+   "structure": {
+    "tables": 21,
+    "rows": 77,
+    "forms": 1,
+    "links": 180
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6822",
+    "src.session.walk.2026-10-03.01#seq-7075"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-vendor--q-id--5179ab71",
+   "path_pattern": "/units/vendor/?id=13548",
+   "base_path": "/units/vendor/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "server-error-page",
+   "structure": {
+    "tables": 0,
+    "rows": 0,
+    "forms": 0,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10600"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-vendor-adjustretailsupply--q-id--dbcc4714",
+   "path_pattern": "/units/vendor/adjustretailsupply/?id=13548",
+   "base_path": "/units/vendor/adjustretailsupply/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 2,
+    "rows": 5,
+    "forms": 1,
+    "links": 4
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10603"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-vendor-expandretailprices--q-id--b1f86aaa",
+   "path_pattern": "/units/vendor/expandretailprices?id=13548",
+   "base_path": "/units/vendor/expandretailprices",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "unit",
+   "structure": {
+    "tables": 1,
+    "rows": 1,
+    "forms": 1,
+    "links": 0
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10645"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.units-warehouse--q-id--ad86de3c",
+   "path_pattern": "/units/warehouse/?id=13548",
+   "base_path": "/units/warehouse/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-redirected-to-error-surface",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9330"
+   ],
+   "redirect_target": "/err/404/",
+   "redirect_evidence": "src.session.walk.2026-10-03.01#seq-9331"
+  },
+  {
+   "id": "bm.surfaceprobe.user--q-tab--d582838c",
+   "path_pattern": "/user/?tab=profile",
+   "base_path": "/user/",
+   "query_keys": [
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "player-profile",
+   "structure": {
+    "tables": 19,
+    "rows": 91,
+    "forms": 1,
+    "links": 85
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11982",
+    "src.session.walk.2026-10-03.01#seq-12154"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.user--q-tab--166e4176",
+   "path_pattern": "/user/?tab=quests",
+   "base_path": "/user/",
+   "query_keys": [
+    "tab"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "player-profile",
+   "structure": {
+    "tables": 23,
+    "rows": 69,
+    "forms": 1,
+    "links": 96
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11982",
+    "src.session.walk.2026-10-03.01#seq-12154"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.user-achievements--03586808",
+   "path_pattern": "/user/achievements/",
+   "base_path": "/user/achievements/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "player-achievements",
+   "structure": {
+    "tables": 18,
+    "rows": 65,
+    "forms": 5,
+    "links": 84
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12323"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.user-gameshop--c3f17dd8",
+   "path_pattern": "/user/gameshop/",
+   "base_path": "/user/gameshop/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "player-public-surface",
+   "structure": {
+    "tables": 23,
+    "rows": 85,
+    "forms": 1,
+    "links": 92
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12718"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.user-leaderboard--exact--4d6260dd",
+   "path_pattern": "/user/leaderboard",
+   "base_path": "/user/leaderboard",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "player-public-surface",
+   "structure": {
+    "tables": 15,
+    "rows": 83,
+    "forms": 2,
+    "links": 156
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12483"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.user-messages--q-id--1af58cf3",
+   "path_pattern": "/user/messages/?id=13393",
+   "base_path": "/user/messages/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "player-profile",
+   "structure": {
+    "tables": 6,
+    "rows": 65,
+    "forms": 1,
+    "links": 82
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12914"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.wikihelp--3e3e8930",
+   "path_pattern": "/wikihelp/",
+   "base_path": "/wikihelp/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "wiki",
+   "structure": {
+    "tables": 16,
+    "rows": 59,
+    "forms": 0,
+    "links": 268
+   },
+   "known_to_canonical_census": true,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-13151"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.world--ff518019",
+   "path_pattern": "/world/",
+   "base_path": "/world/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "world-map",
+   "structure": {
+    "tables": 13,
+    "rows": 56,
+    "forms": 0,
+    "links": 78
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-3919"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.world-country--q-id--6d5c6695",
+   "path_pattern": "/world/country/?id=25",
+   "base_path": "/world/country/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4548"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.world-region--q-id--9d18dd15",
+   "path_pattern": "/world/region/?id=25",
+   "base_path": "/world/region/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed-client-rendered",
+   "http_status": [],
+   "page_kind": "error-404",
+   "structure": {
+    "tables": 14,
+    "rows": 58,
+    "forms": 0,
+    "links": 80
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4694"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.world-tab-cities--56453583",
+   "path_pattern": "/world/tab/cities/",
+   "base_path": "/world/tab/cities/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "world-map",
+   "structure": {
+    "tables": 15,
+    "rows": 79,
+    "forms": 1,
+    "links": 131
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4121"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.world-tab-countries--02f259e1",
+   "path_pattern": "/world/tab/countries/",
+   "base_path": "/world/tab/countries/",
+   "query_keys": [],
+   "probe_kind": "authenticated-read-only-navigation",
+   "outcome": "observed",
+   "http_status": [
+    200
+   ],
+   "page_kind": "world-map",
+   "structure": {
+    "tables": 14,
+    "rows": 63,
+    "forms": 1,
+    "links": 87
+   },
+   "known_to_canonical_census": false,
+   "confidence": "observed",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4344"
+   ]
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-instantsale--q-id--063240a2",
+   "path_pattern": "/units/instantsale/?id=13548",
+   "base_path": "/units/instantsale/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-actions-closeunit--q-id--424efa80",
+   "path_pattern": "/units/actions/closeunit/?id=13548",
+   "base_path": "/units/actions/closeunit/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-division-close--q-id--8766924f",
+   "path_pattern": "/units/division/close/?id=13548",
+   "base_path": "/units/division/close/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-division-downgrade--q-id--6dca56a1",
+   "path_pattern": "/units/division/downgrade/?id=13548",
+   "base_path": "/units/division/downgrade/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-division-create--q-id--36782781",
+   "path_pattern": "/units/division/create/?id=13548",
+   "base_path": "/units/division/create/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-division-rentmove1--q-id+type--e55d6b37",
+   "path_pattern": "/units/division/rentmove1/?id=13548&type=1",
+   "base_path": "/units/division/rentmove1/",
+   "query_keys": [
+    "id",
+    "type"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-rentmove1--q-id--dbe7a905",
+   "path_pattern": "/units/rentmove1/?id=13548",
+   "base_path": "/units/rentmove1/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-create1--250aa22f",
+   "path_pattern": "/units/create1/",
+   "base_path": "/units/create1/",
+   "query_keys": [],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-vendor-delete--q-id+product+vendor--97c3b199",
+   "path_pattern": "/units/vendor/delete/?id=13548&vendor=8561&product=339",
+   "base_path": "/units/vendor/delete/",
+   "query_keys": [
+    "id",
+    "product",
+    "vendor"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-vendor-deleteallproductvendors--q-id+product--c3a37df1",
+   "path_pattern": "/units/vendor/deleteallproductvendors?id=13548&product=339",
+   "base_path": "/units/vendor/deleteallproductvendors",
+   "query_keys": [
+    "id",
+    "product"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-vendor-delallvendors--q-id--0514e05c",
+   "path_pattern": "/units/vendor/delallvendors?id=13548",
+   "base_path": "/units/vendor/delallvendors",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-vendor-clearlimits--q-id--d1837a1f",
+   "path_pattern": "/units/vendor/clearlimits?id=13548",
+   "base_path": "/units/vendor/clearlimits",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-vendor-buygoods--q-id+product+vendor--2228017b",
+   "path_pattern": "/units/vendor/buygoods/?id=13548&vendor=8561&product=339",
+   "base_path": "/units/vendor/buygoods/",
+   "query_keys": [
+    "id",
+    "product",
+    "vendor"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-vendor-magicpurchase--q-id--acb8d663",
+   "path_pattern": "/units/vendor/magicpurchase/?id=13548",
+   "base_path": "/units/vendor/magicpurchase/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-equipment-purchase--q-id--f1823177",
+   "path_pattern": "/units/equipment/purchase?id=13548",
+   "base_path": "/units/equipment/purchase",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-equipment-magicrepair--q-id--a6865af8",
+   "path_pattern": "/units/equipment/magicrepair/?id=13548",
+   "base_path": "/units/equipment/magicrepair/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.units-level--q-id--9429de18",
+   "path_pattern": "/units/level/?id=13548",
+   "base_path": "/units/level/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.company-headquarterlevel--q-id+type--47d05190",
+   "path_pattern": "/company/headquarterlevel?id=13393&type=management",
+   "base_path": "/company/headquarterlevel",
+   "query_keys": [
+    "id",
+    "type"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.city-headquarterlevel--q-id+type--9cfbbda6",
+   "path_pattern": "/city/headquarterlevel?id=25&type=construction",
+   "base_path": "/city/headquarterlevel",
+   "query_keys": [
+    "id",
+    "type"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.user-restart--5af3ce10",
+   "path_pattern": "/user/restart/",
+   "base_path": "/user/restart/",
+   "query_keys": [],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.user-clearmessagehistory--b9ba4121",
+   "path_pattern": "/user/clearmessagehistory/",
+   "base_path": "/user/clearmessagehistory/",
+   "query_keys": [],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.user-avatarrandom--0d1bf29b",
+   "path_pattern": "/user/avatarrandom/",
+   "base_path": "/user/avatarrandom/",
+   "query_keys": [],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.user-popupregister--exact--9327f03b",
+   "path_pattern": "/user/popupregister",
+   "base_path": "/user/popupregister",
+   "query_keys": [],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.user-payment-specialpacks2--70c809e2",
+   "path_pattern": "/user/payment/specialpacks2/",
+   "base_path": "/user/payment/specialpacks2/",
+   "query_keys": [],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  },
+  {
+   "id": "bm.surfaceprobe.withheld.city-donateeducation--q-id--772fb79d",
+   "path_pattern": "/city/donateeducation/?id=25",
+   "base_path": "/city/donateeducation/",
+   "query_keys": [
+    "id"
+   ],
+   "probe_kind": "not-requested",
+   "outcome": "withheld-pending-approval",
+   "http_status": [],
+   "page_kind": "mutating-surface",
+   "structure": {
+    "tables": null,
+    "rows": null,
+    "forms": null,
+    "links": null
+   },
+   "known_to_canonical_census": false,
+   "withheld_reason": "state-changing or destructive surface; AGENTS.md forbids state-changing requests without explicit approval",
+   "confidence": "hypothesis",
+   "evidence": []
+  }
+ ]
+}

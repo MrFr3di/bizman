@@ -28,7 +28,7 @@ class MCPCompletionEvaluationTests(unittest.TestCase):
             )
 
         self.assertEqual(report["evaluation_version"], 1)
-        self.assertEqual(report["knowledge_records"], 590)
+        self.assertEqual(report["knowledge_records"], 632)
         self.assertEqual(
             report["runtime_fixture"],
             {"sessions": 20, "changes": 40},

@@ -1,0 +1,1323 @@
+{
+ "schema_version": "1.0",
+ "records": [
+  {
+   "id": "bm.endpoint.session.analitics-cities--exact--e7b46920",
+   "path_pattern": "/analitics/cities",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-743"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-cities--d5a3ef43",
+   "path_pattern": "/analitics/cities/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "tab"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-912"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-cityretaildeficit--3c2446ef",
+   "path_pattern": "/analitics/cityretaildeficit/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "city"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-5"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-commoditycirculation--exact--7998b326",
+   "path_pattern": "/analitics/commoditycirculation",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-1069"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-commoditycirculation--9afa0455",
+   "path_pattern": "/analitics/commoditycirculation/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "category",
+    "countryId"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-1271"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-construction--exact--bb1c7a7f",
+   "path_pattern": "/analitics/construction",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-583"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-retailmarket--9c4b7264",
+   "path_pattern": "/analitics/retailmarket/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "city"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-2443"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-retailprices--c38267d1",
+   "path_pattern": "/analitics/retailprices/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-2669"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-supplysummary--exact--68f9c767",
+   "path_pattern": "/analitics/supplysummary",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-1470"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-tredva--5ad52420",
+   "path_pattern": "/analitics/tredva/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-423"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.analitics-vendors--b68db868",
+   "path_pattern": "/analitics/vendors/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-2952"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.city--6db61da2",
+   "path_pattern": "/city/",
+   "count": 4,
+   "methods": {
+    "GET": 4
+   },
+   "statuses": {
+    "200": 4
+   },
+   "mime_types": {
+    "text/html": 4
+   },
+   "query_keys": [
+    "id",
+    "sub",
+    "tab"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10831",
+    "src.session.walk.2026-10-03.01#seq-11099",
+    "src.session.walk.2026-10-03.01#seq-11391"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.city-object--19e4468a",
+   "path_pattern": "/city/object/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    10105
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11888"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.city-population--exact--d0d5351d",
+   "path_pattern": "/city/population",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "content_length_bytes": [
+    3622
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11891"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company--136e5e82",
+   "path_pattern": "/company/",
+   "count": 4,
+   "methods": {
+    "GET": 4
+   },
+   "statuses": {
+    "200": 4
+   },
+   "mime_types": {
+    "text/html": 4
+   },
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4841",
+    "src.session.walk.2026-10-03.01#seq-5103",
+    "src.session.walk.2026-10-03.01#seq-5365"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-buildhq--exact--9d1e5cc9",
+   "path_pattern": "/company/buildhq",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    15089
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-5853"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-cityworkerschart--exact--5426aa55",
+   "path_pattern": "/company/cityworkerschart",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "cityId",
+    "id"
+   ],
+   "content_length_bytes": [
+    2799
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6001"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-companymail--exact--117b694b",
+   "path_pattern": "/company/companymail",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    15065
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6049"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-financechart--bcdb0843",
+   "path_pattern": "/company/financechart/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    4120
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6091"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-moneytransfer--exact--132d8910",
+   "path_pattern": "/company/moneytransfer",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    2595
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6139"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-notepad--exact--e7363b78",
+   "path_pattern": "/company/notepad",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    1293
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6190"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-president--b26a0f79",
+   "path_pattern": "/company/president/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    11122
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6235"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-reloadproblems--0484b33c",
+   "path_pattern": "/company/reloadproblems/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    1414
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6322"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-repairwizard--exact--546ee607",
+   "path_pattern": "/company/repairwizard",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    20697
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6364"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-rewardsummary8--exact--0a24d5e0",
+   "path_pattern": "/company/rewardsummary8",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    12379
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6533"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.company-supplywizard--exact--7fa7f21e",
+   "path_pattern": "/company/supplywizard",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    24453
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6638"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.err-404--05f1e57f",
+   "path_pattern": "/err/404/",
+   "count": 8,
+   "methods": {
+    "GET": 8
+   },
+   "statuses": {
+    "404": 8
+   },
+   "mime_types": {
+    "text/html": 8
+   },
+   "query_keys": [],
+   "content_length_bytes": [
+    15909,
+    15910
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "error-surface",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4550",
+    "src.session.walk.2026-10-03.01#seq-4696",
+    "src.session.walk.2026-10-03.01#seq-8218"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.err-popup404--28b0697c",
+   "path_pattern": "/err/popup404/",
+   "count": 2,
+   "methods": {
+    "GET": 2
+   },
+   "statuses": {
+    "404": 2
+   },
+   "mime_types": {
+    "text/html": 2
+   },
+   "query_keys": [],
+   "content_length_bytes": [
+    817
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "error-surface",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9244",
+    "src.session.walk.2026-10-03.01#seq-11943"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-cityconstruction--0891d687",
+   "path_pattern": "/units/cityconstruction/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    15049
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8947"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-construction--00d9aab4",
+   "path_pattern": "/units/construction/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    15185
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9095"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-customise-attendancestat--61a42539",
+   "path_pattern": "/units/customise/attendancestat/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    3209
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10729"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-customise-settings--1174c3f8",
+   "path_pattern": "/units/customise/settings/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    1595
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10687"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-customise-tredvabudget--8e4c84eb",
+   "path_pattern": "/units/customise/tredvabudget/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    4588
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10780"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-financechart--a6c3861d",
+   "path_pattern": "/units/financechart/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    4007
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9283"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-messages--ff6bf09d",
+   "path_pattern": "/units/messages/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    1289
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9477"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-produce-calculator--exact--0afdb9c3",
+   "path_pattern": "/units/produce/calculator",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-9519"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-service--81da63e2",
+   "path_pattern": "/units/service/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "content_length_bytes": [
+    15186
+   ],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-8069"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-shop--dcfe6396",
+   "path_pattern": "/units/shop/",
+   "count": 5,
+   "methods": {
+    "GET": 5
+   },
+   "statuses": {
+    "200": 5
+   },
+   "mime_types": {
+    "text/html": 5
+   },
+   "query_keys": [
+    "id",
+    "tab"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-6822",
+    "src.session.walk.2026-10-03.01#seq-7075",
+    "src.session.walk.2026-10-03.01#seq-7370"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-vendor--76f53a2c",
+   "path_pattern": "/units/vendor/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    5799
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10600"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-vendor-adjustretailsupply--afd0cfdf",
+   "path_pattern": "/units/vendor/adjustretailsupply/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    2673
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10603"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.units-vendor-expandretailprices--exact--f650681a",
+   "path_pattern": "/units/vendor/expandretailprices",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    1596
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-10645"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.user--bd57d1be",
+   "path_pattern": "/user/",
+   "count": 2,
+   "methods": {
+    "GET": 2
+   },
+   "statuses": {
+    "200": 2
+   },
+   "mime_types": {
+    "text/html": 2
+   },
+   "query_keys": [
+    "tab"
+   ],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-11982",
+    "src.session.walk.2026-10-03.01#seq-12154"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.user-achievements--03586808",
+   "path_pattern": "/user/achievements/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [
+    22055
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12323"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.user-gameshop--c3f17dd8",
+   "path_pattern": "/user/gameshop/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12718"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.user-leaderboard--exact--4d6260dd",
+   "path_pattern": "/user/leaderboard",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12483"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.user-messages--cc15c722",
+   "path_pattern": "/user/messages/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [
+    "id"
+   ],
+   "content_length_bytes": [
+    15032
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-12914"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.wikihelp--3e3e8930",
+   "path_pattern": "/wikihelp/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": true,
+   "classification": "known-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-13151"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.world--ff518019",
+   "path_pattern": "/world/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [
+    18345
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-3919"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.world-maps-map8-json--exact--e95208ef",
+   "path_pattern": "/world/maps/map8.json",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "application/json": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [
+    1523453
+   ],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4086"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.world-tab-cities--56453583",
+   "path_pattern": "/world/tab/cities/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4121"
+   ]
+  },
+  {
+   "id": "bm.endpoint.session.world-tab-countries--02f259e1",
+   "path_pattern": "/world/tab/countries/",
+   "count": 1,
+   "methods": {
+    "GET": 1
+   },
+   "statuses": {
+    "200": 1
+   },
+   "mime_types": {
+    "text/html": 1
+   },
+   "query_keys": [],
+   "content_length_bytes": [],
+   "observed_in_canonical_census": false,
+   "classification": "new-endpoint",
+   "confidence": "observed",
+   "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-4344"
+   ]
+  }
+ ]
+}

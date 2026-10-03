@@ -278,8 +278,13 @@ def _validate_source_identity(root: Path, result: ValidationResult) -> None:
     source_dir = root / "knowledge/sources"
     if not source_dir.exists():
         return
+
     manifests: dict[str, dict[str, Any]] = {}
     canonical_ids: set[str] = set()
+    aliases: set[str] = set()
+    promoted_ids: set[str] = set()
+    webcopy_ids: set[str] = set()
+
     source_schema = root / "schemas/source.schema.json"
     for path in sorted(source_dir.glob("*.har.json")):
         _validate_instance_against_schema(path, source_schema, result)
@@ -300,64 +305,147 @@ def _validate_source_identity(root: Path, result: ValidationResult) -> None:
             manifests[filename] = obj
 
     captures_path = source_dir / "captures.json"
-    if not captures_path.exists():
-        return
-    captures = _load_json(captures_path, result)
-    if not isinstance(captures, dict) or not isinstance(captures.get("captures"), list):
-        return
-
-    aliases: set[str] = set()
-    for capture in captures["captures"]:
-        if not isinstance(capture, dict):
-            continue
-        filename = capture.get("file_name")
-        source_id = capture.get("source_id")
-        manifest = manifests.get(filename) if isinstance(filename, str) else None
-        if manifest is None:
-            result.errors.append(
-                f"{captures_path}: no source manifest for {filename!r}"
-            )
-            continue
-        if source_id != manifest.get("id"):
-            result.errors.append(
-                f"{captures_path}: {filename} source_id {source_id!r} "
-                f"!= {manifest.get('id')!r}"
-            )
-        legacy = capture.get("legacy_source_ids", [])
-        if not isinstance(legacy, list) or not all(
-            isinstance(value, str) for value in legacy
-        ):
-            result.errors.append(
-                f"{captures_path}: {filename} legacy_source_ids must be strings"
-            )
-            continue
-        for alias in legacy:
-            if alias in aliases or alias in canonical_ids:
-                result.errors.append(f"{captures_path}: duplicate source alias {alias}")
-            aliases.add(alias)
+    if captures_path.exists():
+        captures = _load_json(captures_path, result)
+        if isinstance(captures, dict) and isinstance(captures.get("captures"), list):
+            for capture in captures["captures"]:
+                if not isinstance(capture, dict):
+                    continue
+                filename = capture.get("file_name")
+                source_id = capture.get("source_id")
+                manifest = (
+                    manifests.get(filename)
+                    if isinstance(filename, str)
+                    else None
+                )
+                if manifest is None:
+                    result.errors.append(
+                        f"{captures_path}: no source manifest for {filename!r}"
+                    )
+                    continue
+                if source_id != manifest.get("id"):
+                    result.errors.append(
+                        f"{captures_path}: {filename} source_id {source_id!r} "
+                        f"!= {manifest.get('id')!r}"
+                    )
+                legacy = capture.get("legacy_source_ids", [])
+                if not isinstance(legacy, list) or not all(
+                    isinstance(value, str) for value in legacy
+                ):
+                    result.errors.append(
+                        f"{captures_path}: {filename} legacy_source_ids "
+                        "must be strings"
+                    )
+                    continue
+                for alias in legacy:
+                    if alias in aliases or alias in canonical_ids:
+                        result.errors.append(
+                            f"{captures_path}: duplicate source alias {alias}"
+                        )
+                    aliases.add(alias)
 
     promoted_path = source_dir / "promoted-sessions.json"
-    if not promoted_path.exists():
-        return
-    promoted = _load_json(promoted_path, result)
-    if not isinstance(promoted, dict) or not isinstance(promoted.get("sources"), list):
-        return
-    promoted_ids: set[str] = set()
-    for item in promoted["sources"]:
-        if not isinstance(item, dict):
+    if promoted_path.exists():
+        promoted = _load_json(promoted_path, result)
+        if isinstance(promoted, dict) and isinstance(
+            promoted.get("sources"), list
+        ):
+            for item in promoted["sources"]:
+                if not isinstance(item, dict):
+                    continue
+                source_id = item.get("source_id")
+                if not isinstance(source_id, str) or not source_id:
+                    continue
+                if (
+                    source_id in promoted_ids
+                    or source_id in canonical_ids
+                    or source_id in aliases
+                ):
+                    result.errors.append(
+                        f"{promoted_path}: duplicate provenance source id "
+                        f"{source_id}"
+                    )
+                promoted_ids.add(source_id)
+
+    expected_webcopy_fields = {
+        "id",
+        "kind",
+        "host",
+        "captured_from",
+        "captured_to",
+        "origin_index",
+        "origin_index_sha256",
+        "entry_count",
+        "raw_source_committed",
+        "privacy",
+        "policy",
+        "note",
+    }
+    for path in sorted(source_dir.glob("webcopy-*.json")):
+        obj = _load_json(path, result)
+        if not isinstance(obj, dict):
             continue
-        source_id = item.get("source_id")
-        if not isinstance(source_id, str) or not source_id:
+        if set(obj) != expected_webcopy_fields:
+            result.errors.append(
+                f"{path}: webcopy manifest has unexpected fields"
+            )
+            continue
+        source_id = obj.get("id")
+        if not isinstance(source_id, str) or not source_id.startswith("src."):
+            result.errors.append(f"{path}: invalid webcopy source id")
             continue
         if (
-            source_id in promoted_ids
+            source_id in webcopy_ids
             or source_id in canonical_ids
+            or source_id in promoted_ids
             or source_id in aliases
         ):
             result.errors.append(
-                f"{promoted_path}: duplicate provenance source id {source_id}"
+                f"{path}: duplicate provenance source id {source_id}"
             )
-        promoted_ids.add(source_id)
+        webcopy_ids.add(source_id)
+        if obj.get("kind") != "webcopy_snapshot":
+            result.errors.append(f"{path}: invalid webcopy source kind")
+        if obj.get("raw_source_committed") is not False:
+            result.errors.append(
+                f"{path}: webcopy raw_source_committed must be false"
+            )
+        digest = obj.get("origin_index_sha256")
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or digest != digest.casefold()
+            or any(
+                character not in "0123456789abcdef"
+                for character in digest
+            )
+        ):
+            result.errors.append(
+                f"{path}: invalid webcopy origin_index_sha256"
+            )
+        entry_count = obj.get("entry_count")
+        if (
+            isinstance(entry_count, bool)
+            or not isinstance(entry_count, int)
+            or entry_count <= 0
+        ):
+            result.errors.append(
+                f"{path}: webcopy entry_count must be positive integer"
+            )
+        for field_name in (
+            "host",
+            "captured_from",
+            "captured_to",
+            "origin_index",
+            "privacy",
+            "policy",
+            "note",
+        ):
+            value = obj.get(field_name)
+            if not isinstance(value, str) or not value:
+                result.errors.append(
+                    f"{path}: webcopy {field_name} must be non-empty text"
+                )
 
 
 def _scan_for_forbidden_files(root: Path, result: ValidationResult) -> None:

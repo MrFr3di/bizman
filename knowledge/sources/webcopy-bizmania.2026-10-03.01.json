@@ -1,0 +1,14 @@
+{
+ "id": "src.webcopy.bizmania.2026-10-03.01",
+ "kind": "webcopy_snapshot",
+ "host": "bizmania.ru",
+ "captured_from": "2026-10-03T16:32:00+03:00",
+ "captured_to": "2026-10-03T16:57:00+03:00",
+ "origin_index": "webcopy-origin.txt",
+ "origin_index_sha256": "f47fe0330ded4e4802f905f53498db448e734f943e52a90a4a6560e31d6d74da",
+ "entry_count": 3130,
+ "raw_source_committed": false,
+ "privacy": "public first-party game documentation pages only; raw snapshot stays external/private; no cookies, session state or personal data selected",
+ "note": "Per-record evidence uses 'src.webcopy.bizmania.2026-10-03.01#entry-N' where N is the 0-based ordinal of the URI in webcopy-origin.txt. Core provenance resolves the source-level ordinal and origin-index identity; individual derived records retain uri and html_sha256 for page-level integrity.",
+ "policy": "Offline first-party documentation snapshot stays external; the committed origin-index SHA-256 binds entry ordinals, and derived records retain URI/html SHA-256 without publishing raw pages."
+}

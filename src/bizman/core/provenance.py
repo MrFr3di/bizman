@@ -75,9 +75,17 @@ class EvidenceTrace:
             raise ValueError("evidence_ref has unsupported provenance syntax")
         if evidence_match.group("source") != self.source_id:
             raise ValueError("evidence_ref source does not match source_id")
-        if self.source_kind not in {"har_capture", "promoted_session"}:
+        if self.source_kind not in {
+            "har_capture",
+            "promoted_session",
+            "webcopy_snapshot",
+        }:
             raise ValueError("unsupported evidence source_kind")
-        expected_locator = "entry" if self.source_kind == "har_capture" else "sequence"
+        expected_locator = (
+            "sequence"
+            if self.source_kind == "promoted_session"
+            else "entry"
+        )
         if self.locator_kind != expected_locator:
             raise ValueError("locator_kind does not match source_kind")
         expected_ref_locator = "entry" if self.locator_kind == "entry" else "seq"
@@ -102,9 +110,11 @@ class EvidenceTrace:
         _require_rfc3339(self.observed_from, name="observed_from")
         if self.observed_to is not None:
             _require_rfc3339(self.observed_to, name="observed_to")
-        if self.source_kind == "har_capture":
+        if self.source_kind in {"har_capture", "webcopy_snapshot"}:
             if _HAR_SOURCE_ID_RE.fullmatch(self.source_id) is None:
-                raise ValueError("HAR trace requires canonical source_id")
+                raise ValueError(
+                    "entry-based trace requires canonical source_id"
+                )
         elif _PROMOTED_SOURCE_ID_RE.fullmatch(self.source_id) is None:
             raise ValueError("promoted session trace requires canonical source_id")
         if not isinstance(self.privacy, str) or not self.privacy:
@@ -113,14 +123,18 @@ class EvidenceTrace:
             raise ValueError("provenance_policy must be non-empty")
         if self.raw_source_committed is not False:
             raise ValueError("trace sources must not claim raw bytes are committed")
-        if self.source_kind == "har_capture":
+        if self.source_kind in {"har_capture", "webcopy_snapshot"}:
             if (
                 not isinstance(self.source_sha256, str)
                 or _SHA256_RE.fullmatch(self.source_sha256) is None
             ):
-                raise ValueError("HAR trace requires source_sha256")
+                raise ValueError(
+                    "entry-based trace requires source_sha256"
+                )
             if self.runtime_session_id is not None:
-                raise ValueError("HAR trace cannot carry runtime_session_id")
+                raise ValueError(
+                    "entry-based trace cannot carry runtime_session_id"
+                )
         else:
             if self.source_sha256 is not None:
                 raise ValueError("promoted session trace cannot invent source_sha256")
@@ -324,6 +338,89 @@ def _har_sources(root: Path) -> dict[str, _TraceSource]:
     return sources
 
 
+def _webcopy_sources(root: Path) -> dict[str, _TraceSource]:
+    source_root = (root / "knowledge" / "sources").resolve(strict=False)
+    try:
+        paths = sorted(source_root.glob("webcopy-*.json"))
+    except OSError as exc:
+        raise AssetError("webcopy provenance manifests are unavailable") from exc
+
+    sources: dict[str, _TraceSource] = {}
+    for path in paths:
+        label = f"knowledge/sources/{path.name}"
+        value = _mapping(_load_json(path, root=root), source=label)
+        expected_fields = {
+            "id",
+            "kind",
+            "host",
+            "captured_from",
+            "captured_to",
+            "origin_index",
+            "origin_index_sha256",
+            "entry_count",
+            "raw_source_committed",
+            "privacy",
+            "policy",
+            "note",
+        }
+        if set(value) != expected_fields:
+            raise DataIntegrityError(
+                "webcopy source manifest has unexpected fields"
+            )
+        source_id = _text(value.get("id"), source=label, field="id")
+        if _HAR_SOURCE_ID_RE.fullmatch(source_id) is None:
+            raise DataIntegrityError("webcopy source id is invalid")
+        if value.get("kind") != "webcopy_snapshot":
+            raise DataIntegrityError("webcopy source kind is invalid")
+        if source_id in sources:
+            raise DataIntegrityError(
+                "webcopy source manifests contain duplicate source id"
+            )
+        if value.get("raw_source_committed") is not False:
+            raise DataIntegrityError(
+                "webcopy source must not claim raw snapshot is committed"
+            )
+        source_sha256 = _text(
+            value.get("origin_index_sha256"),
+            source=label,
+            field="origin_index_sha256",
+        )
+        if _SHA256_RE.fullmatch(source_sha256) is None:
+            raise DataIntegrityError(
+                "webcopy origin index has invalid SHA-256"
+            )
+        record_count = _positive_int(
+            value.get("entry_count"),
+            source=label,
+            field="entry_count",
+        )
+        observed_from = _instant(
+            value.get("captured_from"),
+            source=label,
+            field="captured_from",
+        )
+        observed_to = _instant(
+            value.get("captured_to"),
+            source=label,
+            field="captured_to",
+        )
+        privacy = _text(value.get("privacy"), source=label, field="privacy")
+        policy = _text(value.get("policy"), source=label, field="policy")
+        sources[source_id] = _TraceSource(
+            source_id=source_id,
+            source_kind="webcopy_snapshot",
+            record_count=record_count,
+            raw_source_committed=False,
+            source_sha256=source_sha256,
+            runtime_session_id=None,
+            observed_from=observed_from,
+            observed_to=observed_to,
+            privacy=privacy,
+            provenance_policy=policy,
+        )
+    return sources
+
+
 def _promoted_sources(root: Path) -> dict[str, _TraceSource]:
     path = root / "knowledge" / "sources" / "promoted-sessions.json"
     document = _mapping(
@@ -401,10 +498,21 @@ def _source_catalog(context: CoreContext) -> dict[str, _TraceSource]:
     root = context.assets.root
     har_sources = _har_sources(root)
     promoted_sources = _promoted_sources(root)
-    collisions = set(har_sources).intersection(promoted_sources)
-    if collisions:
-        raise DataIntegrityError("provenance source registries contain duplicate source ids")
-    return {**har_sources, **promoted_sources}
+    webcopy_sources = _webcopy_sources(root)
+    all_ids = [
+        *har_sources,
+        *promoted_sources,
+        *webcopy_sources,
+    ]
+    if len(set(all_ids)) != len(all_ids):
+        raise DataIntegrityError(
+            "provenance source registries contain duplicate source ids"
+        )
+    return {
+        **har_sources,
+        **promoted_sources,
+        **webcopy_sources,
+    }
 
 
 def trace_evidence(
@@ -423,7 +531,11 @@ def trace_evidence(
     if source is None:
         return EvidenceTraceResult(trace=None)
 
-    expected_locator = "entry" if source.source_kind == "har_capture" else "seq"
+    expected_locator = (
+        "seq"
+        if source.source_kind == "promoted_session"
+        else "entry"
+    )
     if locator != expected_locator or ordinal >= source.record_count:
         return EvidenceTraceResult(trace=None)
 

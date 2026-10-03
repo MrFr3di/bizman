@@ -74,7 +74,7 @@ class ReadModelBenchmarkContractTests(unittest.TestCase):
             {"curated_only", "small_runtime", "large_runtime"},
         )
         for rebuild in result["rebuild"].values():
-            self.assertEqual(rebuild["item_count"], 590)
+            self.assertEqual(rebuild["item_count"], 632)
             self.assertGreater(rebuild["database_bytes"], 0)
             self.assertRegex(rebuild["generation"], r"^[0-9a-f]{64}$")
 
