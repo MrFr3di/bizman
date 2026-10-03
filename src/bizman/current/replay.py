@@ -102,6 +102,70 @@ _V2_COLUMNS = {
     ),
 }
 
+_V3_PROJECTION_META_COLUMNS = (
+    "singleton",
+    "projection_name",
+    "projection_version",
+    "analysis_profile_sha256",
+    "unit_economics_contract",
+    "catalog_resolver_sha256",
+    "input_fingerprint",
+    "state_fingerprint",
+    "status",
+    "stale_reason",
+    "session_count",
+    "last_session_id",
+    "last_sequence",
+)
+_V3_TABLES = frozenset(
+    {
+        "projection_meta",
+        "replayed_session",
+        "company",
+        "unit",
+        "observed_product",
+        "unit_product",
+        "product_surface_state",
+    }
+)
+_V3_COLUMNS = {
+    "projection_meta": _V3_PROJECTION_META_COLUMNS,
+    "replayed_session": _REPLAYED_SESSION_COLUMNS,
+    "company": _V2_COLUMNS["company"],
+    "unit": _V2_COLUMNS["unit"],
+    "observed_product": (
+        "product_numeric_id",
+        "catalog_key",
+        "resolution",
+    ),
+    "unit_product": (
+        "unit_id",
+        "product_numeric_id",
+        "revenue",
+        "profit",
+        "stock_qty",
+        "stock_quality",
+        "our_price",
+        "city_quality",
+        "city_price",
+        "sales_volume",
+        "supply_qty",
+        "supply_cost",
+        "source_session_id",
+        "source_sequence",
+        "observed_at",
+    ),
+    "product_surface_state": (
+        "unit_id",
+        "surface",
+        "status",
+        "stale_reason",
+        "source_session_id",
+        "source_sequence",
+        "observed_at",
+    ),
+}
+
 
 def _instant(value: str) -> datetime:
     try:
@@ -462,6 +526,9 @@ def _is_rebuildable_older_state(path: Path) -> bool:
             elif user_version == 2:
                 expected_tables = _V2_TABLES
                 expected_columns = _V2_COLUMNS
+            elif user_version == 3:
+                expected_tables = _V3_TABLES
+                expected_columns = _V3_COLUMNS
             else:
                 return False
             tables = {
