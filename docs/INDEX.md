@@ -15,7 +15,7 @@
 - `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные HAR.
 - `knowledge/sources/promoted-sessions.json` — machine-readable provenance identity исторических promoted collector sessions.
 - `knowledge/sources/webcopy-bizmania.2026-10-03.01.json` — манифест внешнего офлайн-снапшота публичных страниц; `docs/research/webcopy-2026-10-03.md` — методика, провенанс и границы извлечения.
-- `bizman.core.trace_evidence` / MCP `evidence.trace` — bounded provenance resolution без доступа к raw HAR/JSONL; webcopy-источник даёт source-level провенанс (path + uri + sha256).
+- `bizman.core.trace_evidence` / MCP `evidence.trace` — bounded provenance resolution без доступа к raw HAR/JSONL; webcopy-источник резолвится по `entry-N` до source-level identity и SHA-256 origin index; записи сохраняют `source.uri`/`html_sha256`.
 - `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов; P3 read-only MCP завершён, текущий этап — P4 Replayable Current State.
 
 ## Current State
@@ -32,7 +32,7 @@
 
 - `src/bizman/readmodel/` — детерминированная проекция curated knowledge и runtime intelligence.
 - `BizManData/index/agent-index.sqlite3` — внешний rebuildable SQLite read model; не является source of truth.
-- P2-A/P2-B индексируют 590 curated records; P2-C добавляет verified `session_summary` и profile-scoped `change_index`.
+- Текущая curated-проекция индексирует 632 records: исторический P2 baseline плюс 42 новых endpoint identities и документированное product enrichment без создания дубликатов товаров; P2-C добавляет verified `session_summary` и profile-scoped `change_index`.
 - P2-D предоставляет bounded path-free read API через `bizman.core`: knowledge resolve/search/get, session list/get и profile-scoped change list/get.
 - `docs/benchmarks/p2e-readmodel-baseline-2026-09-28.md` — durable P2-E baseline: v1/v2/v3 retrieval quality, cold/warm latency, rebuild scaling, result budgets and query-plan decisions.
 - `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md` — durable P3-E baseline: retrieval parity, action provenance, call budgets, bounded schemas/results, sanitized errors and installed stdio proof.
