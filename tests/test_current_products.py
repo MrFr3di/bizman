@@ -596,18 +596,8 @@ class GoodsEventRecognitionTests(unittest.TestCase):
 
         self.assertEqual(snapshot.products, ())
         self.assertEqual(snapshot.unit_products, ())
+        self.assertEqual(snapshot.orphan_unit_products, ())
         self.assertEqual(snapshot.surfaces, ())
-        self.assertEqual(len(snapshot.orphan_unit_products), 1)
-        orphan = snapshot.orphan_unit_products[0]
-        self.assertEqual(orphan.unit_id, UNIT_ID)
-        self.assertEqual(orphan.product_numeric_id, PRODUCT_1)
-        self.assertEqual(orphan.surface, SURFACE)
-        self.assertEqual(orphan.source_session_id, SESSION_A)
-        self.assertEqual(orphan.source_sequence, 0)
-        self.assertEqual(orphan.observed_at, "2026-09-30T10:00:30Z")
-        self.assertEqual(orphan.artifact_sha256, ref.split(":", 1)[1])
-        self.assertEqual(orphan.artifact_schema, SCHEMA)
-        self.assertEqual(orphan.reason, "unit_not_in_verified_roster")
         self.assertEqual(snapshot.metadata.status, "ready")
 
 
@@ -812,6 +802,17 @@ class GoodsReplayTests(unittest.TestCase):
         )
         self.assertEqual(snapshot.unit_products, ())
         self.assertEqual(snapshot.surfaces, ())
+        self.assertEqual(len(snapshot.orphan_unit_products), 1)
+        orphan = snapshot.orphan_unit_products[0]
+        self.assertEqual(orphan.unit_id, UNIT_ID)
+        self.assertEqual(orphan.product_numeric_id, PRODUCT_1)
+        self.assertEqual(orphan.surface, SURFACE)
+        self.assertEqual(orphan.source_session_id, SESSION_A)
+        self.assertEqual(orphan.source_sequence, 0)
+        self.assertEqual(orphan.observed_at, "2026-09-30T10:00:30Z")
+        self.assertEqual(orphan.artifact_sha256, ref.split(":", 1)[1])
+        self.assertEqual(orphan.artifact_schema, SCHEMA)
+        self.assertEqual(orphan.reason, "unit_not_in_verified_roster")
         self.assertEqual(snapshot.metadata.status, "ready")
 
     def test_malformed_artifact_fails_replay_as_integrity_error(self):
