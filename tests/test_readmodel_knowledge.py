@@ -150,6 +150,11 @@ class KnowledgeProjectionTests(unittest.TestCase):
             "src.webcopy.bizmania.2026-10-03.01#entry-1005",
             product.evidence_refs,
         )
+        self.assertIn("Фармацевтика", product.body)
+        self.assertIn(
+            "src.har.bizmania-faq.2026-09-06.01#entry-442",
+            product.evidence_refs,
+        )
 
     def test_projection_rejects_malformed_capture_provenance_at_boundary(self):
         mutations = (
