@@ -9,5 +9,6 @@
  "entry_count": 3130,
  "raw_source_committed": false,
  "privacy": "public first-party game documentation pages only; raw snapshot stays external/private; no cookies, session state or personal data selected",
- "note": "Per-record evidence uses 'src.webcopy.bizmania.2026-10-03.01#entry-N' where N is the 0-based ordinal of the URI in webcopy-origin.txt. The source kind is not resolvable by bizman.core.trace_evidence (HAR/promoted-session only); records carry uri and html_sha256 for source-level provenance."
+ "note": "Per-record evidence uses 'src.webcopy.bizmania.2026-10-03.01#entry-N' where N is the 0-based ordinal of the URI in webcopy-origin.txt. Core provenance resolves the source-level ordinal and origin-index identity; individual derived records retain uri and html_sha256 for page-level integrity.",
+ "policy": "Offline first-party documentation snapshot stays external; the committed origin-index SHA-256 binds entry ordinals, and derived records retain URI/html SHA-256 without publishing raw pages."
 }
