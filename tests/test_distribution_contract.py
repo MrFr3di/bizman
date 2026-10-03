@@ -55,11 +55,13 @@ class DistributionContractTests(unittest.TestCase):
             {
                 "bizman": "bizman.cli.main:main",
                 "bizman-mcp": "bizman.mcp.__main__:main",
+                "bizman-telegram": "bizman.telegram.__main__:main",
             },
         )
         self.assertEqual(
             project["dependencies"],
             [
+                "aiogram>=3.15,<4",
                 "jsonschema[format]>=4.26,<5",
                 "mcp>=2.2,<3",
                 "pydantic>=2.12,<3",
@@ -91,6 +93,7 @@ class DistributionContractTests(unittest.TestCase):
         self.assertEqual(lock["version"], 1)
         self.assertEqual(lock["requires-python"], ">=3.11")
         packages = {item["name"]: item for item in lock["package"]}
+        self.assertEqual(packages["aiogram"]["version"], "3.31.0")
         self.assertEqual(packages["jsonschema"]["version"], "4.26.0")
         self.assertEqual(packages["mcp"]["version"], "2.2.0")
         self.assertIn("pydantic", packages)
@@ -164,6 +167,9 @@ class DistributionContractTests(unittest.TestCase):
             mcp_console = venv / (
                 "Scripts/bizman-mcp.exe" if os.name == "nt" else "bin/bizman-mcp"
             )
+            telegram_console = venv / (
+                "Scripts/bizman-telegram.exe" if os.name == "nt" else "bin/bizman-telegram"
+            )
             subprocess.run(
                 [uv, "pip", "install", "--python", str(python), str(wheel)],
                 cwd=root,
@@ -183,7 +189,7 @@ class DistributionContractTests(unittest.TestCase):
                     (
                         "import pathlib, bizman, bizman.foundation, bizman.sessions, "
                         "bizman.collector, bizman.changes, bizman.current, "
-                        "bizman.readmodel, bizman.core, bizman.mcp; "
+                        "bizman.readmodel, bizman.core, bizman.mcp, bizman.telegram; "
                         "print(pathlib.Path(bizman.__file__).resolve())"
                     ),
                 ],
@@ -218,6 +224,17 @@ class DistributionContractTests(unittest.TestCase):
             )
             self.assertIn("--repo-root", mcp_help.stdout)
             self.assertIn("--data-dir", mcp_help.stdout)
+
+            telegram_help = subprocess.run(
+                [str(telegram_console), "--help"],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("--repo-root", telegram_help.stdout)
+            self.assertIn("--data-dir", telegram_help.stdout)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ description = "Deterministic evidence and state platform for BizMania"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "aiogram>=3.15,<4",
     "jsonschema[format]>=4.26,<5",
     "mcp>=2.2,<3",
     "pydantic>=2.12,<3",
@@ -14,6 +15,7 @@ dependencies = [
 [project.scripts]
 bizman = "bizman.cli.main:main"
 bizman-mcp = "bizman.mcp.__main__:main"
+bizman-telegram = "bizman.telegram.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13"]
@@ -140,7 +142,7 @@ forbidden_modules = [
 name = "Core does not depend on adapters"
 type = "forbidden"
 source_modules = ["bizman.core"]
-forbidden_modules = ["bizman.cli", "bizman.mcp"]
+forbidden_modules = ["bizman.cli", "bizman.mcp", "bizman.telegram"]
 
 [[tool.importlinter.contracts]]
 name = "CLI directly consumes Core only"
@@ -168,5 +170,21 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.cli",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Telegram directly consumes Core only"
+type = "forbidden"
+source_modules = ["bizman.telegram"]
+forbidden_modules = [
+    "bizman.foundation",
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.cli",
+    "bizman.mcp",
 ]
 allow_indirect_imports = true

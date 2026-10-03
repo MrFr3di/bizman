@@ -127,7 +127,7 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
             },
             "Core does not depend on adapters": {
                 "source_modules": ["bizman.core"],
-                "forbidden_modules": ["bizman.cli", "bizman.mcp"],
+                "forbidden_modules": ["bizman.cli", "bizman.mcp", "bizman.telegram"],
             },
             "CLI directly consumes Core only": {
                 "source_modules": ["bizman.cli"],
@@ -152,6 +152,20 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.readmodel",
                     "bizman.current",
                     "bizman.cli",
+                ],
+                "allow_indirect_imports": True,
+            },
+            "Telegram directly consumes Core only": {
+                "source_modules": ["bizman.telegram"],
+                "forbidden_modules": [
+                    "bizman.foundation",
+                    "bizman.sessions",
+                    "bizman.collector",
+                    "bizman.changes",
+                    "bizman.readmodel",
+                    "bizman.current",
+                    "bizman.cli",
+                    "bizman.mcp",
                 ],
                 "allow_indirect_imports": True,
             },
@@ -207,6 +221,24 @@ class PackageDependencyArchitectureTests(unittest.TestCase):
                     "bizman.readmodel",
                     "bizman.current",
                     "bizman.cli",
+                },
+            ),
+            [],
+        )
+
+    def test_telegram_has_no_direct_lower_layer_or_cli_imports(self):
+        self.assertEqual(
+            _direct_internal_import_violations(
+                "telegram",
+                {
+                    "bizman.foundation",
+                    "bizman.sessions",
+                    "bizman.collector",
+                    "bizman.changes",
+                    "bizman.readmodel",
+                    "bizman.current",
+                    "bizman.cli",
+                    "bizman.mcp",
                 },
             ),
             [],

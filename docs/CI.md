@@ -39,7 +39,8 @@ The package architecture gate enforces these dependency directions:
 - `current` may consume deterministic foundation/session/change semantics but not collector/readmodel/Core/adapters;
 - `core` does not depend on CLI or MCP adapters;
 - CLI directly consumes Core rather than lower implementation packages, including `readmodel`;
-- MCP directly consumes Core and cannot import foundation/sessions/collector/changes/readmodel/CLI implementation layers.
+- MCP directly consumes Core and cannot import foundation/sessions/collector/changes/readmodel/CLI implementation layers;
+- Telegram directly consumes Core and cannot import foundation/sessions/collector/changes/readmodel/current/CLI/MCP implementation layers.
 
 A source scan also prevents the installable `src/bizman` package from importing the legacy `tools.*` namespace.
 
@@ -74,7 +75,8 @@ The full test suite covers, among other invariants:
 - P4-B bounded/sanitized company-roster response evidence through passive `Network.getResponseBody`;
 - deterministic companies/units projection with latest-positive-observation semantics and UNKNOWN != deletion;
 - company/unit provenance, foreign keys, state-fingerprint tamper detection, parser-drift stale semantics and crash-safe P4-A schema-v1 → P4-B schema-v2 replacement;
-- path-free Core Current State rebuild and stable error translation.
+- path-free Core Current State rebuild and stable error translation;
+- Telegram adapter commands over Core with sanitized errors, bounded plain-text replies, strict chat-allowlist authorization and fail-closed CLI startup.
 
 ### Python coverage and SonarQube Cloud
 
@@ -104,7 +106,8 @@ The proof requires:
 - repository `config/`, `schemas` and `knowledge` assets are not silently duplicated into the wheel;
 - public `bizman` packages, including `bizman.current` and `bizman.mcp`, import from the installed wheel rather than the checkout;
 - the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`;
-- the installed `bizman-mcp --help` entry point is present and the protocol contract is exercised separately by the MCP tests/evaluator.
+- the installed `bizman-mcp --help` entry point is present and the protocol contract is exercised separately by the MCP tests/evaluator;
+- the installed `bizman-telegram --help` entry point is present; its runtime loop is never exercised in tests.
 
 Repository assets remain explicit external configuration through `RepositoryAssets`; packaging does not turn them into hidden package data.
 

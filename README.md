@@ -18,6 +18,7 @@ Completed foundations include:
 - deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
 - bounded path-free `bizman.core` read API for knowledge, provenance, sessions and profile-scoped changes;
 - read-only `bizman-mcp` stdio adapter with 10 bounded Core-backed tools;
+- read-only `bizman-telegram` long-polling adapter with 11 bounded Core-backed commands;
 - deterministic `bizman.current` replay foundation over immutable evidence;
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
@@ -135,6 +136,20 @@ The collector should run against a dedicated Chrome profile exposing a local Dev
 
 Legacy commands `tools/collect_live.py`, `tools/detect_changes.py` and `tools/validate_repo.py` remain available as compatibility delegates during the compatibility window. New integrations should use the installed `bizman` CLI or `bizman.core` rather than importing `tools.*`.
 
+## Telegram adapter
+
+`bizman-telegram` runs the same Core read surface as the MCP adapter behind a personal Telegram bot over long polling. It is read-only, replies in plain text and enforces strict authorization:
+
+```bash
+BIZMAN_TELEGRAM_BOT_TOKEN=<token> \
+BIZMAN_TELEGRAM_CHAT_IDS=<chat_id>[,<chat_id>...] \
+uv run bizman-telegram \
+  --repo-root "$PWD" \
+  --data-dir "$HOME/BizManData"
+```
+
+Both environment variables are required; startup fails closed (exit 2) without them. The bot answers only allowlisted chat ids, silently ignores everyone else, and exposes 11 bounded commands: `/help`, `/status`, `/sessions`, `/session`, `/compare`, `/anomalies`, `/changes`, `/change`, `/k`, `/kb`, `/trace`. Each command performs at most one Core read use case and never exposes filesystem paths, tokens or raw evidence bytes. The first page of every list is shown; opaque Core cursors are not surfaced.
+
 Operational sessions/events/CAS, browser profiles, detector SQLite state, Current State SQLite and Promotion Bundles stay under the external `BizManData` root and are never package assets or intended Git content.
 
 ## Application Core boundary
@@ -150,7 +165,7 @@ Operational sessions/events/CAS, browser profiles, detector SQLite state, Curren
 - profile-scoped change list/get;
 - deterministic Current State rebuild from immutable finalized evidence.
 
-CLI and MCP adapters consume Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation. Current State similarly derives its fixed database path internally as `BizManData/state/current.sqlite3`; callers do not provide a database path or arbitrary analysis-profile hash.
+CLI and MCP adapters consume Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation. Current State similarly derives its fixed database path internally as `BizManData/state/current.sqlite3`; callers do not provide a database path or arbitrary analysis-profile hash. The `bizman.telegram` adapter follows the same rule and consumes only Core.
 
 The completed P3 MCP adapter is read-only, local-stdio only and exposes exactly 10 bounded tools. It does not expose arbitrary paths/SQL, raw HAR/session bytes, HTTP/OAuth, resources, Tasks or write automation. P4-A adds Current State only as an internal/Core capability; no new MCP or CLI Current State command is introduced yet. Analytics and writes remain later stages.
 
