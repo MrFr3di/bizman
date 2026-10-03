@@ -466,7 +466,11 @@ class CompanyUnitStoreTests(unittest.TestCase):
             observed_at="2026-09-29T10:00:30Z",
         )
         return build_current_snapshot(
-            CurrentProjectionSpec(analysis_profile_sha256=SHA_C),
+            CurrentProjectionSpec(
+                analysis_profile_sha256=SHA_C,
+                unit_economics_contract="unit-economics-contract-fixture",
+                catalog_resolver_sha256=SHA_B,
+            ),
             (session,),
             companies=(company,),
             units=(unit,),

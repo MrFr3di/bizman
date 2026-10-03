@@ -20,19 +20,84 @@ from bizman.current.model import (
     CompanyState,
     CurrentProjectionSpec,
     CurrentStateSnapshot,
+    ObservedProduct,
+    ProductSurfaceState,
     ReplaySession,
+    UnitProductState,
     UnitState,
     build_current_snapshot,
 )
+from bizman.current.products import (
+    SURFACE,
+    CatalogResolver,
+    UnitEconomicsArtifactError,
+    UnitEconomicsParserIncompatible,
+    is_unit_goods_event,
+    project_unit_economics_event,
+)
 from bizman.current.state import (
     APPLICATION_ID,
-    USER_VERSION,
     CurrentStateIntegrityError,
     CurrentStateOperationError,
     CurrentStateStore,
 )
 from bizman.foundation.redaction import RedactionPolicy
+from bizman.foundation.unit_economics import unit_economics_semantic_fingerprint
 from bizman.sessions.evidence import EvidenceIdentity, EvidenceReader
+
+
+_PROJECTION_META_COLUMNS = (
+    "singleton",
+    "projection_name",
+    "projection_version",
+    "analysis_profile_sha256",
+    "input_fingerprint",
+    "state_fingerprint",
+    "status",
+    "stale_reason",
+    "session_count",
+    "last_session_id",
+    "last_sequence",
+)
+_REPLAYED_SESSION_COLUMNS = (
+    "session_id",
+    "manifest_sha256",
+    "evidence_sha256",
+    "started_at",
+    "ended_at",
+    "status",
+    "event_count",
+    "last_sequence",
+)
+_V1_TABLES = frozenset({"projection_meta", "replayed_session"})
+_V1_COLUMNS = {
+    "projection_meta": _PROJECTION_META_COLUMNS,
+    "replayed_session": _REPLAYED_SESSION_COLUMNS,
+}
+_V2_TABLES = frozenset(
+    {"projection_meta", "replayed_session", "company", "unit"}
+)
+_V2_COLUMNS = {
+    "projection_meta": _PROJECTION_META_COLUMNS,
+    "replayed_session": _REPLAYED_SESSION_COLUMNS,
+    "company": (
+        "company_id",
+        "name",
+        "source_session_id",
+        "source_sequence",
+        "observed_at",
+    ),
+    "unit": (
+        "unit_id",
+        "company_id",
+        "display_name",
+        "city_name",
+        "level",
+        "source_session_id",
+        "source_sequence",
+        "observed_at",
+    ),
+}
 
 
 def _instant(value: str) -> datetime:
@@ -92,12 +157,86 @@ def _roster_projection_or_stale(
         ) from exc
 
 
+def _apply_goods_event(
+    reader: EvidenceReader,
+    event: Mapping[str, object],
+    *,
+    observations: dict[tuple[str, int], UnitProductState],
+    surfaces: dict[str, ProductSurfaceState],
+    observed_ids: set[int],
+) -> None:
+    if not is_unit_goods_event(event):
+        return
+    try:
+        projection = project_unit_economics_event(reader, event)
+    except UnitEconomicsParserIncompatible as exc:
+        if (
+            exc.unit_id is None
+            or exc.session_id is None
+            or exc.sequence is None
+            or exc.observed_at is None
+        ):
+            raise CurrentStateIntegrityError(
+                "unit economics incompatibility lacks surface context"
+            ) from exc
+        surfaces[exc.unit_id] = ProductSurfaceState(
+            unit_id=exc.unit_id,
+            surface=SURFACE,
+            status="stale",
+            stale_reason=exc.reason,
+            source_session_id=exc.session_id,
+            source_sequence=exc.sequence,
+            observed_at=exc.observed_at,
+        )
+        return
+    except UnitEconomicsArtifactError as exc:
+        raise CurrentStateIntegrityError(
+            "unit economics evidence artifact violates Current State contract"
+        ) from exc
+    if projection is None:
+        return
+
+    for row in projection.page.rows:
+        observed_ids.add(row.product_numeric_id)
+        observations[(projection.unit_id, row.product_numeric_id)] = (
+            UnitProductState(
+                unit_id=projection.unit_id,
+                product_numeric_id=row.product_numeric_id,
+                revenue=row.revenue,
+                profit=row.profit,
+                stock_qty=row.stock_qty,
+                stock_quality=row.stock_quality,
+                our_price=row.our_price,
+                city_quality=row.city_quality,
+                city_price=row.city_price,
+                sales_volume=row.sales_volume,
+                supply_qty=row.supply_qty,
+                supply_cost=row.supply_cost,
+                source_session_id=projection.session_id,
+                source_sequence=projection.sequence,
+                observed_at=projection.observed_at,
+            )
+        )
+    surfaces[projection.unit_id] = ProductSurfaceState(
+        unit_id=projection.unit_id,
+        surface=SURFACE,
+        status="ready",
+        stale_reason=None,
+        source_session_id=projection.session_id,
+        source_sequence=projection.sequence,
+        observed_at=projection.observed_at,
+    )
+
+
 def _replay_session(
     reader: EvidenceReader,
     identity: EvidenceIdentity,
     *,
     companies: dict[str, CompanyState],
     units: dict[str, UnitState],
+    observations: dict[tuple[str, int], UnitProductState],
+    surfaces: dict[str, ProductSurfaceState],
+    observed_ids: set[int],
 ) -> tuple[ReplaySession, bool]:
     event_count = 0
     last_sequence: int | None = None
@@ -116,6 +255,14 @@ def _replay_session(
             companies[projection.company.company_id] = projection.company
             for unit in projection.units:
                 units[unit.unit_id] = unit
+
+        _apply_goods_event(
+            reader,
+            event,
+            observations=observations,
+            surfaces=surfaces,
+            observed_ids=observed_ids,
+        )
 
         event_count += 1
         last_sequence = sequence
@@ -152,14 +299,20 @@ def build_replay_snapshot(
         raise TypeError("redaction must be RedactionPolicy")
 
     profile_compilation = compile_default_analysis_profile(root, redaction)
+    catalog = CatalogResolver.load(root)
     spec = CurrentProjectionSpec(
         analysis_profile_sha256=profile_compilation.profile.sha256,
+        unit_economics_contract=unit_economics_semantic_fingerprint(),
+        catalog_resolver_sha256=catalog.semantic_fingerprint(),
         projection_name=projection_name,
         projection_version=projection_version,
     )
     reader = EvidenceReader(root, data)
     companies: dict[str, CompanyState] = {}
     units: dict[str, UnitState] = {}
+    observations: dict[tuple[str, int], UnitProductState] = {}
+    surfaces: dict[str, ProductSurfaceState] = {}
+    observed_ids: set[int] = set()
     sessions: list[ReplaySession] = []
     parser_incompatible = False
 
@@ -169,9 +322,47 @@ def build_replay_snapshot(
             identity,
             companies=companies,
             units=units,
+            observations=observations,
+            surfaces=surfaces,
+            observed_ids=observed_ids,
         )
         sessions.append(replay)
         parser_incompatible = parser_incompatible or incompatible
+
+    products = tuple(
+        ObservedProduct(
+            product_numeric_id=numeric_id,
+            catalog_key=catalog_key,
+            resolution=resolution,
+        )
+        for numeric_id in sorted(observed_ids)
+        for catalog_key, resolution in (catalog.resolve(numeric_id),)
+    )
+    # Orphan evidence (a unit absent from the verified P4-B roster) still
+    # contributes observable product identity, but cannot become an FK-backed
+    # unit association or surface row. It is skipped deterministically, never
+    # joined by label and never treated as a deletion.
+    unit_ids = set(units)
+    unit_products = tuple(
+        sorted(
+            (
+                value
+                for value in observations.values()
+                if value.unit_id in unit_ids
+            ),
+            key=lambda item: (item.unit_id, item.product_numeric_id),
+        )
+    )
+    projected_surfaces = tuple(
+        sorted(
+            (
+                value
+                for value in surfaces.values()
+                if value.unit_id in unit_ids
+            ),
+            key=lambda item: (item.unit_id, item.surface),
+        )
+    )
 
     return build_current_snapshot(
         spec,
@@ -180,6 +371,9 @@ def build_replay_snapshot(
             sorted(companies.values(), key=lambda item: item.company_id)
         ),
         units=tuple(sorted(units.values(), key=lambda item: item.unit_id)),
+        products=products,
+        unit_products=unit_products,
+        surfaces=projected_surfaces,
         status="stale" if parser_incompatible else "ready",
         stale_reason=(
             "company_units_parser_v1_incompatible"
@@ -210,6 +404,16 @@ def _is_rebuildable_older_state(path: Path) -> bool:
                 return False
             application_id = int(application_id_raw)
             user_version = int(user_version_raw)
+            if application_id != APPLICATION_ID:
+                return False
+            if user_version == 1:
+                expected_tables = _V1_TABLES
+                expected_columns = _V1_COLUMNS
+            elif user_version == 2:
+                expected_tables = _V2_TABLES
+                expected_columns = _V2_COLUMNS
+            else:
+                return False
             tables = {
                 str(name)
                 for (name,) in connection.execute(
@@ -217,61 +421,34 @@ def _is_rebuildable_older_state(path: Path) -> bool:
                     "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
                 )
             }
+            if tables != expected_tables:
+                return False
             strict = {
                 str(name): int(is_strict)
                 for name, is_strict in connection.execute(
                     "SELECT name, strict FROM pragma_table_list "
-                    "WHERE name IN ('projection_meta', 'replayed_session')"
+                    "WHERE name IN ("
+                    + ", ".join("?" for _ in sorted(expected_tables))
+                    + ")",
+                    tuple(sorted(expected_tables)),
                 )
             }
-            projection_columns = tuple(
-                str(name)
-                for (name,) in connection.execute(
-                    "SELECT name FROM pragma_table_info('projection_meta')"
+            if strict != {table: 1 for table in expected_tables}:
+                return False
+            for table in sorted(expected_tables):
+                columns = tuple(
+                    str(name)
+                    for (name,) in connection.execute(
+                        f"SELECT name FROM pragma_table_info('{table}')"
+                    )
                 )
-            )
-            replay_columns = tuple(
-                str(name)
-                for (name,) in connection.execute(
-                    "SELECT name FROM pragma_table_info('replayed_session')"
-                )
-            )
+                if columns != expected_columns[table]:
+                    return False
         finally:
             connection.close()
     except sqlite3.Error:
         return False
-
-    return (
-        application_id == APPLICATION_ID
-        and user_version == USER_VERSION - 1
-        and tables == {"projection_meta", "replayed_session"}
-        and strict == {"projection_meta": 1, "replayed_session": 1}
-        and projection_columns
-        == (
-            "singleton",
-            "projection_name",
-            "projection_version",
-            "analysis_profile_sha256",
-            "input_fingerprint",
-            "state_fingerprint",
-            "status",
-            "stale_reason",
-            "session_count",
-            "last_session_id",
-            "last_sequence",
-        )
-        and replay_columns
-        == (
-            "session_id",
-            "manifest_sha256",
-            "evidence_sha256",
-            "started_at",
-            "ended_at",
-            "status",
-            "event_count",
-            "last_sequence",
-        )
-    )
+    return True
 
 
 def _fsync_directory(path: Path) -> None:
@@ -313,7 +490,7 @@ def _replace_rebuildable_older_state(
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{path.name}.p4b-",
+            prefix=f".{path.name}.p4c-",
             suffix=".sqlite3",
             dir=path.parent,
         )
@@ -327,6 +504,7 @@ def _replace_rebuildable_older_state(
     try:
         with CurrentStateStore.open_rw(temporary) as store:
             store.replace_snapshot(snapshot)
+            store.verify_storage_integrity()
             staged = store.snapshot()
         if staged != snapshot:
             raise CurrentStateIntegrityError(
@@ -334,7 +512,9 @@ def _replace_rebuildable_older_state(
             )
 
         try:
-            with temporary.open("rb") as handle:
+            # Windows requires a writable handle for fsync; the staged database
+            # is fully closed and writable at this point.
+            with temporary.open("rb+") as handle:
                 os.fsync(handle.fileno())
 
             os.replace(temporary, path)
