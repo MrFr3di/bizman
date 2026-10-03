@@ -519,7 +519,7 @@ class TelegramCommandTests(unittest.TestCase):
     def test_current_reports_projection_health(self) -> None:
         reply = self.run_command("/current")
         self.assertIn("Current State: ready", reply)
-        self.assertIn("projection: bizman.current v3", reply)
+        self.assertIn("projection: bizman.current v4", reply)
         self.assertIn("sessions replayed: 1", reply)
         self.assertIn(CURRENT_SESSION, reply)
         self.assertNotIn("stale reason:", reply)
