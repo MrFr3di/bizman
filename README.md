@@ -18,7 +18,7 @@ Completed foundations include:
 - deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
 - bounded path-free `bizman.core` read API for knowledge, provenance, sessions and profile-scoped changes;
 - read-only `bizman-mcp` stdio adapter with 14 bounded Core-backed tools;
-- read-only `bizman-telegram` long-polling adapter with 11 bounded Core-backed commands;
+- read-only `bizman-telegram` long-polling adapter with 16 bounded Core-backed commands;
 - deterministic `bizman.current` replay foundation over immutable evidence;
 - unified `bizman` CLI;
 - locked `uv` environment, Python 3.14 full validation and Python 3.11 compatibility validation.
@@ -148,7 +148,7 @@ uv run bizman-telegram \
   --data-dir "$HOME/BizManData"
 ```
 
-Both environment variables are required; startup fails closed (exit 2) without them. The bot answers only allowlisted chat ids, silently ignores everyone else, and exposes 11 bounded commands: `/help`, `/status`, `/sessions`, `/session`, `/compare`, `/anomalies`, `/changes`, `/change`, `/k`, `/kb`, `/trace`. Each command performs at most one Core read use case and never exposes filesystem paths, tokens or raw evidence bytes. The first page of every list is shown; opaque Core cursors are not surfaced.
+Both environment variables are required; startup fails closed (exit 2) without them. The bot answers only allowlisted chat ids, silently ignores everyone else, and exposes 16 bounded commands: `/help`, `/status`, `/sessions`, `/session`, `/compare`, `/anomalies`, `/changes`, `/change`, `/k`, `/kb`, `/trace`, `/current`, `/units`, `/unit`, `/products`, `/plan`. Each command performs at most one Core read use case and never exposes filesystem paths, tokens or raw evidence bytes. The first page of every list is shown; opaque Core cursors are not surfaced. The Current State commands report explicit UNKNOWN and stale/unknown-surface markers instead of guessing.
 
 Operational sessions/events/CAS, browser profiles, detector SQLite state, Current State SQLite and Promotion Bundles stay under the external `BizManData` root and are never package assets or intended Git content.
 

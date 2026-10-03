@@ -144,6 +144,11 @@ class RouterBuildTests(unittest.TestCase):
                     "k",
                     "kb",
                     "trace",
+                    "current",
+                    "units",
+                    "unit",
+                    "products",
+                    "plan",
                 )
             ),
         )
