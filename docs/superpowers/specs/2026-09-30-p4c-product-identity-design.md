@@ -1,6 +1,6 @@
 # P4-C — Verified Product Identity and Unit-Product Current State
 
-**Status:** revised design for review  
+**Status:** revised design for review; amended 2026-10-03 (C0 PASS, §19)  
 **Date:** 2026-09-30  
 **Depends on:** P4-B / PR #39 / merge `5e02b3c378cb6637ef5bb2b2caf7e64375786155`  
 **Tracking:** issue #40
@@ -45,7 +45,7 @@ URLs are parsed once into structured components before policy decisions. Matchin
 
 P4-C does not persist sanitized generic HTML. A purpose-built parser consumes the response body transiently and emits a small typed product-evidence document. Only specifically proven element/attribute locations may contribute fields.
 
-DOM `id`/`name` values, arbitrary `data-*` attributes, hidden form inputs and document globals are untrusted unless C0 explicitly proves one exact field is the authoritative product identifier and the design is amended. This avoids treating DOM-clobberable names or unrelated hidden state as identity.
+DOM `id`/`name` values, arbitrary `data-*` attributes, hidden form inputs and document globals remain untrusted. The single proven exception is the field frozen by the 2026-10-03 amendment (§19): the two agreeing row-bound `product=N` hrefs in the first two `td` cells of a `table#goods` data row. The `tr id` suffix and hidden `product[N]` input are cross-checks only, never sources, and no `data-*` attribute carries a product id. This avoids treating DOM-clobberable names or unrelated hidden state as identity.
 
 Scripts, styles, templates, SVG/foreign content, comments and executable/active content never contribute evidence. Visible labels are context only and never identity.
 
@@ -87,6 +87,8 @@ C0 produces `docs/research/p4c-product-evidence.md` containing only safe field-l
 If no stable product identifier can be safely and deterministically extracted, P4-C stops before schema v3. The allowed deliverable is a documented evidence gap and, if useful, an explicitly non-authoritative research parser. Name matching, ordinal matching and inferred IDs are not fallback strategies.
 
 ## 5. Product evidence v1 contract
+
+_**Superseded in part (2026-10-03, §19):** the production contract is `UnitEconomicsV1` with `schema` exactly `bizman.unit-economics.v1`; this section remains the historical pre-C0 constraint record._
 
 The exact extraction location is frozen only after C0. The normalized artifact shape is nevertheless bounded now:
 
@@ -328,7 +330,7 @@ Rejected for P4-C. It broadens the privacy surface, preserves more untrusted str
 
 ### C. Capture arbitrary hidden form values
 
-Rejected unless C0 proves one exact field is the authoritative ID and the design is explicitly amended. Hidden state can contain unrelated operational or secret values.
+Rejected for identity. C0 proved the authoritative ID is the row-bound `product=N` href frozen in §19; arbitrary hidden form values (including the `product[N]` cross-check) are never identity sources or persisted state. Hidden state can contain unrelated operational or secret values.
 
 ### D. Build schema v3 first and fill identity later
 
@@ -368,3 +370,62 @@ If C0 fails, the correct outcome is a documented evidence gap. P4-C must not man
 - SQLite VACUUM INTO semantics: https://www.sqlite.org/lang_vacuum.html
 - Python sqlite3 transaction control: https://docs.python.org/3/library/sqlite3.html
 - W3C PROV overview (conceptual provenance reference only): https://www.w3.org/TR/prov-overview/
+
+## 19. Amendment — 2026-10-03: C0 PASS, frozen extraction location and UnitEconomicsV1
+
+C0 is complete. The evidence decision record `docs/research/p4c-product-evidence.md` records **PASS** dated 2026-10-03: the frozen row-bound `product=N` selector satisfies all six PASS conditions. Sections 1–18 remain the historical design record; this amendment supersedes the provisional `ProductEvidenceV1` name and row shape of §5 and the provisional pipeline naming in §6, and unblocks the §10/§11 gates.
+
+### 19.1 Frozen extraction location
+
+**observed** in `src.c0.20261003.a1`, `.a2`, `.b1` and in the HAR corpus; **verified** by the research inspector and 21 synthetic structural experiments.
+
+- exactly one visible `table#goods`; two header rows made of `td.tblh` cells; data rows are `tr#pr{N}`;
+- the first two `td` cells of a data row each contain exactly one `<a>` whose relative href is exactly `/units/shop/?id=<unit-id>&tab=goods&product=<N>`; both hrefs in a row must carry the same unit id and the same numeric product id;
+- the remaining five links per row are JavaScript actions (slider/dialog/buy) and are not identity; no `data-*` attribute carries a product id;
+- cross-checks only, never sources of truth: the `tr id="pr{N}"` suffix and the hidden `input name="product[N]"` value equal the extracted `N`.
+
+Both agreeing hrefs must produce the same value or the row fails closed. This is the only location allowed to contribute `product_numeric_id`.
+
+### 19.2 UnitEconomicsV1 contract
+
+The typed evidence contract previously named `ProductEvidenceV1` is renamed **UnitEconomicsV1**. The I-JSON canonical-serialization profile of §3.4 continues to govern the bytes; the artifact shape is:
+
+- `schema`: exactly `bizman.unit-economics.v1`;
+- `unit_id`: positive integer (approved request identity);
+- `coverage`: closed enum (values enabled only per the §9 coverage semantics);
+- `rows`: each row contains exactly `product_numeric_id`, `revenue`, `profit`, `stock_qty`, `stock_quality`, `our_price`, `city_quality`, `city_price`, `supply_qty`, `supply_cost`, `sales_volume`.
+
+No observed labels are retained. There is no supply-quality field (only a bar exists). The product-card surface (`tab=goods&product=N`) is a separate future contract and is never read as an empty goods snapshot. `tab=supply` remains a different surface without inherited trust. The hard limits and atomic-row acceptance of §5 continue to apply to the renamed contract.
+
+### 19.3 Verified 0-based `td` field map (data row)
+
+Source: `src.c0.20261003.a1`/`.a2`/`.b1` and the HAR corpus (see the evidence gate `docs/research/p4c-product-evidence.md`).
+
+| `td` | Captured structural content | UnitEconomicsV1 field |
+| --- | --- | --- |
+| 0 | image link + hidden `product[0]` (cross-check only) | — |
+| 1 | product-name link (second identity link) | — |
+| 2 | bars with `title` attributes Продажи / Спрос / Снабжение; no numeric text | — |
+| 3 | «Выручка, прибыль»: two monetary values plus an inner span titled `Рентабельность: N%` | `revenue` / `profit` |
+| 4 | percentages (thin column) | — |
+| 5 | «На складе / кол-во» | `stock_qty` |
+| 6 | «На складе / кач-во» (`N.N (N.N)`) | `stock_quality` |
+| 7 | «На складе / себест.» (`N p. (N p.)`) | — |
+| 9 | «Цена»: `<input name="price[N]">` plus hidden `price_currency` | `our_price` |
+| 10 | «Среднее в городе / кач-во» | `city_quality` |
+| 11 | «Среднее в городе / цена» | `city_price` |
+| 12 | «Объем продаж» | `sales_volume` |
+| 13 | thin action column | — |
+| 14 | «Снабжение»: `<input name="purchaseQuantity[N]">`, hidden `vendorPrice[N]`, supplier-select link | `supply_qty`, `supply_cost` |
+| 15 | thin action column | — |
+
+Numbers use space thousands separators and `.` decimal separators (e.g. `N.N`) in the captured DOM. For td3 the two monetary values map to `revenue` and `profit`; the exact value-to-field order is pinned by the implementation plan. Indices not listed were not mapped and may not contribute fields. No product label or price value is reproduced in this repository. The form controls listed here are economic field locations only; they are not identity sources.
+
+### 19.4 Deferred surfaces
+
+- supply-quality: only a bar exists (title `Снабжение`), no numeric field is authorized;
+- the product-card surface: a separate future contract; `bizmania.ru.har` entry 5307 is a classified example (see the evidence gate).
+
+### 19.5 Gates
+
+With C0 PASS, the §10 schema v3 and §11 v2→v3 rebuild/swap work may proceed under this amendment; those gates are not bypassed. Server-side row reorder, completeness/pagination and deletion remain UNKNOWN; omission is never deletion. The evidence gate record carries the full matrix and the anomaly classification.
