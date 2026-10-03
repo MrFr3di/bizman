@@ -38,6 +38,8 @@ class CorePublicApiTests(unittest.TestCase):
         self.assertEqual(
             tuple(core.__all__),
             (
+                "AgentIndexRebuildRequest",
+                "AgentIndexRebuildResult",
                 "AssetError",
                 "AssetId",
                 "BizManError",
@@ -112,6 +114,7 @@ class CorePublicApiTests(unittest.TestCase):
                 "list_session_anomalies",
                 "list_sessions",
                 "plan_current",
+                "rebuild_agent_index",
                 "rebuild_current_state",
                 "resolve_knowledge",
                 "search_knowledge",
