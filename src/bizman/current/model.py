@@ -9,7 +9,7 @@ from bizman.foundation.fingerprint import canonical_sha256
 
 
 PROJECTION_NAME = "bizman.current"
-PROJECTION_VERSION = 3
+PROJECTION_VERSION = 4
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _UUID7_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
@@ -279,6 +279,33 @@ class UnitProductState:
 
 
 @dataclass(frozen=True, slots=True, order=True)
+class OrphanUnitProductObservation:
+    """Parsed goods evidence whose unit is absent from the verified unit roster."""
+
+    unit_id: str
+    product_numeric_id: int
+    surface: str
+    source_session_id: str
+    source_sequence: int
+    observed_at: str
+    artifact_sha256: str
+    artifact_schema: str
+    reason: str
+
+    def __post_init__(self) -> None:
+        _require_entity_id(self.unit_id, name="unit_id")
+        _positive_int64(self.product_numeric_id, name="product_numeric_id")
+        _require_text(self.surface, name="surface")
+        _require_uuid7(self.source_session_id, name="source_session_id")
+        _non_negative_int(self.source_sequence, name="source_sequence")
+        observed, _ = _canonical_instant(self.observed_at, name="observed_at")
+        object.__setattr__(self, "observed_at", observed)
+        _require_sha256(self.artifact_sha256, name="artifact_sha256")
+        _require_text(self.artifact_schema, name="artifact_schema")
+        _require_text(self.reason, name="reason")
+
+
+@dataclass(frozen=True, slots=True, order=True)
 class ProductSurfaceState:
     unit_id: str
     surface: str
@@ -408,18 +435,21 @@ def _validate_snapshot_domain(
     unit_values: tuple[UnitState, ...],
     product_values: tuple[ObservedProduct, ...],
     unit_product_values: tuple[UnitProductState, ...],
+    orphan_values: tuple[OrphanUnitProductObservation, ...],
     surface_values: tuple[ProductSurfaceState, ...],
 ) -> tuple[
     tuple[CompanyState, ...],
     tuple[UnitState, ...],
     tuple[ObservedProduct, ...],
     tuple[UnitProductState, ...],
+    tuple[OrphanUnitProductObservation, ...],
     tuple[ProductSurfaceState, ...],
 ]:
     companies = tuple(company_values)
     units = tuple(unit_values)
     products = tuple(product_values)
     unit_products = tuple(unit_product_values)
+    orphans = tuple(orphan_values)
     surfaces = tuple(surface_values)
     if not all(isinstance(item, CompanyState) for item in companies):
         raise TypeError("companies must contain only CompanyState values")
@@ -429,6 +459,12 @@ def _validate_snapshot_domain(
         raise TypeError("products must contain only ObservedProduct values")
     if not all(isinstance(item, UnitProductState) for item in unit_products):
         raise TypeError("unit_products must contain only UnitProductState values")
+    if not all(
+        isinstance(item, OrphanUnitProductObservation) for item in orphans
+    ):
+        raise TypeError(
+            "orphan_unit_products must contain only OrphanUnitProductObservation values"
+        )
     if not all(isinstance(item, ProductSurfaceState) for item in surfaces):
         raise TypeError("surfaces must contain only ProductSurfaceState values")
 
@@ -443,6 +479,11 @@ def _validate_snapshot_domain(
         != len(unit_products)
     ):
         raise ValueError("Current State contains duplicate unit-product values")
+    if (
+        len({(item.unit_id, item.product_numeric_id) for item in orphans})
+        != len(orphans)
+    ):
+        raise ValueError("Current State contains duplicate orphan unit-product values")
     if len({(item.unit_id, item.surface) for item in surfaces}) != len(surfaces):
         raise ValueError("Current State contains duplicate surface values")
 
@@ -462,6 +503,15 @@ def _validate_snapshot_domain(
     ):
         raise ValueError(
             "unit_products must be ordered by unit_id/product_numeric_id"
+        )
+    if orphans != tuple(
+        sorted(
+            orphans,
+            key=lambda item: (item.unit_id, item.product_numeric_id),
+        )
+    ):
+        raise ValueError(
+            "orphan_unit_products must be ordered by unit_id/product_numeric_id"
         )
     if surfaces != tuple(
         sorted(surfaces, key=lambda item: (item.unit_id, item.surface))
@@ -497,6 +547,24 @@ def _validate_snapshot_domain(
             raise ValueError(
                 "unit-product references an observed product absent from Current State"
             )
+    for orphan in orphans:
+        session = session_by_id.get(orphan.source_session_id)
+        if session is None:
+            raise ValueError(
+                "orphan unit-product provenance references an unreplayed session"
+            )
+        if orphan.source_sequence >= session.event_count:
+            raise ValueError(
+                "orphan unit-product provenance sequence exceeds replayed session"
+            )
+        if orphan.unit_id in unit_ids:
+            raise ValueError(
+                "orphan unit-product references a unit present in Current State"
+            )
+        if orphan.product_numeric_id not in product_ids:
+            raise ValueError(
+                "orphan unit-product references an observed product absent from Current State"
+            )
     for surface in surfaces:
         if surface.unit_id not in unit_ids:
             raise ValueError("surface references a unit absent from Current State")
@@ -513,7 +581,7 @@ def _validate_snapshot_domain(
                 "surface provenance sequence exceeds replayed session"
             )
 
-    return companies, units, products, unit_products, surfaces
+    return companies, units, products, unit_products, orphans, surfaces
 
 
 def _validate_snapshot_fingerprints(
@@ -523,6 +591,7 @@ def _validate_snapshot_fingerprints(
     units: tuple[UnitState, ...],
     products: tuple[ObservedProduct, ...],
     unit_products: tuple[UnitProductState, ...],
+    orphan_unit_products: tuple[OrphanUnitProductObservation, ...],
     surfaces: tuple[ProductSurfaceState, ...],
 ) -> None:
     expected_input = current_input_fingerprint(
@@ -550,6 +619,7 @@ def _validate_snapshot_fingerprints(
         units=units,
         products=products,
         unit_products=unit_products,
+        orphan_unit_products=orphan_unit_products,
         surfaces=surfaces,
     )
     if metadata.state_fingerprint != expected_state:
@@ -564,19 +634,21 @@ class CurrentStateSnapshot:
     units: tuple[UnitState, ...] = ()
     products: tuple[ObservedProduct, ...] = ()
     unit_products: tuple[UnitProductState, ...] = ()
+    orphan_unit_products: tuple[OrphanUnitProductObservation, ...] = ()
     surfaces: tuple[ProductSurfaceState, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.metadata, CurrentStateMetadata):
             raise TypeError("metadata must be CurrentStateMetadata")
         sessions = _validate_snapshot_ledger(self.metadata, self.sessions)
-        companies, units, products, unit_products, surfaces = (
+        companies, units, products, unit_products, orphans, surfaces = (
             _validate_snapshot_domain(
                 sessions,
                 self.companies,
                 self.units,
                 self.products,
                 self.unit_products,
+                self.orphan_unit_products,
                 self.surfaces,
             )
         )
@@ -587,6 +659,7 @@ class CurrentStateSnapshot:
             units,
             products,
             unit_products,
+            orphans,
             surfaces,
         )
         object.__setattr__(self, "sessions", sessions)
@@ -594,6 +667,7 @@ class CurrentStateSnapshot:
         object.__setattr__(self, "units", units)
         object.__setattr__(self, "products", products)
         object.__setattr__(self, "unit_products", unit_products)
+        object.__setattr__(self, "orphan_unit_products", orphans)
         object.__setattr__(self, "surfaces", surfaces)
 
 
@@ -686,6 +760,22 @@ def _unit_product_semantics(value: UnitProductState) -> dict[str, object]:
     }
 
 
+def _orphan_unit_product_semantics(
+    value: OrphanUnitProductObservation,
+) -> dict[str, object]:
+    return {
+        "unit_id": value.unit_id,
+        "product_numeric_id": value.product_numeric_id,
+        "surface": value.surface,
+        "source_session_id": value.source_session_id,
+        "source_sequence": value.source_sequence,
+        "observed_at": value.observed_at,
+        "artifact_sha256": value.artifact_sha256,
+        "artifact_schema": value.artifact_schema,
+        "reason": value.reason,
+    }
+
+
 def _surface_semantics(value: ProductSurfaceState) -> dict[str, object]:
     return {
         "unit_id": value.unit_id,
@@ -711,6 +801,7 @@ def current_state_fingerprint(
     units: tuple[UnitState, ...] = (),
     products: tuple[ObservedProduct, ...] = (),
     unit_products: tuple[UnitProductState, ...] = (),
+    orphan_unit_products: tuple[OrphanUnitProductObservation, ...] = (),
     surfaces: tuple[ProductSurfaceState, ...] = (),
 ) -> str:
     return canonical_sha256(
@@ -728,6 +819,10 @@ def current_state_fingerprint(
             "unit_products": [
                 _unit_product_semantics(item) for item in unit_products
             ],
+            "orphan_unit_products": [
+                _orphan_unit_product_semantics(item)
+                for item in orphan_unit_products
+            ],
             "surfaces": [_surface_semantics(item) for item in surfaces],
         }
     )
@@ -741,6 +836,7 @@ def build_current_snapshot(
     units: tuple[UnitState, ...] = (),
     products: tuple[ObservedProduct, ...] = (),
     unit_products: tuple[UnitProductState, ...] = (),
+    orphan_unit_products: tuple[OrphanUnitProductObservation, ...] = (),
     surfaces: tuple[ProductSurfaceState, ...] = (),
     status: str = "ready",
     stale_reason: str | None = None,
@@ -763,6 +859,7 @@ def build_current_snapshot(
         units=tuple(units),
         products=tuple(products),
         unit_products=tuple(unit_products),
+        orphan_unit_products=tuple(orphan_unit_products),
         surfaces=tuple(surfaces),
     )
     last = values[-1] if values else None
@@ -787,6 +884,7 @@ def build_current_snapshot(
         units=tuple(units),
         products=tuple(products),
         unit_products=tuple(unit_products),
+        orphan_unit_products=tuple(orphan_unit_products),
         surfaces=tuple(surfaces),
     )
 
@@ -799,6 +897,7 @@ __all__ = [
     "CurrentStateMetadata",
     "CurrentStateSnapshot",
     "ObservedProduct",
+    "OrphanUnitProductObservation",
     "ProductSurfaceState",
     "ReplaySession",
     "UnitProductState",

@@ -78,6 +78,8 @@ The full test suite covers, among other invariants:
 - P4-B bounded/sanitized company-roster response evidence through passive `Network.getResponseBody`;
 - deterministic companies/units projection with latest-positive-observation semantics and UNKNOWN != deletion;
 - company/unit provenance, foreign keys, state-fingerprint tamper detection, parser-drift stale semantics and crash-safe P4-A schema-v1 → P4-B schema-v2 replacement;
+- P4-C typed shop/goods response capture, canonical unit-economics artifacts, catalog-semantic fingerprinting, unit-product provenance and explicit per-unit `ready/unknown/stale` goods coverage;
+- exact v1/v2/v3 → v4 Current State staged replacement, explicit orphan goods provenance, product-row tamper/integrity checks and deterministic product delete/replay equivalence;
 - path-free Core Current State rebuild and stable error translation;
 - Telegram adapter commands over Core with sanitized errors, bounded plain-text replies, strict chat-allowlist authorization and fail-closed CLI startup.
 
@@ -157,9 +159,9 @@ The durable reference result is `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md`
 
 ### 3. `collector-e2e` — gating
 
-After both correctness lanes pass, a real Chrome for Testing end-to-end CDP run executes against a local fixture server. The fixture exercises first-party HTTP/WebSocket capture plus a real DOM form submit and verifies the resulting immutable action-to-HTTP correlation.
+After both correctness lanes pass, a real Chrome for Testing end-to-end CDP run executes against a local fixture server. The fixture exercises first-party HTTP/WebSocket capture, a real DOM form submit, the P4-B company roster response path and the P4-C typed shop/goods response path.
 
-The E2E fixture deliberately uses only loopback services and synthetic secrets. Its form contains both a safe field and a synthetic secret field; the verifier requires the DOM action metadata to retain only the safe field name, the persisted URL-encoded request body to retain only the safe value, and every synthetic secret value to be absent from normalized events and all persisted CAS artifacts. It does not connect to BizMania, export browser state, or perform game writes.
+The E2E fixture deliberately uses only loopback services and synthetic secrets. Its form contains both a safe field and a synthetic secret field; the verifier requires the DOM action metadata to retain only the safe field name and the persisted URL-encoded request body to retain only the safe value. The goods page uses the frozen C0 row-bound `product=N` structure with two products and secret label/attribute/hidden-input canaries; the verifier requires only canonical `UnitEconomicsV1` values to reach CAS, then checks unit-product provenance, explicit `ready/unknown` goods coverage and delete/replay fingerprint equality. Every synthetic secret value must be absent from normalized events and all persisted CAS artifacts. The loopback fixture may use plain HTTP solely because the collector admits insecure goods capture only for loopback origins; remote BizMania capture remains HTTPS-only. The E2E does not connect to BizMania, export browser state, or perform game writes.
 
 The collector is terminated by SIGINT after the bounded E2E observation window, so `cancelled` is an accepted and schema-valid terminal session status for this test. The verifier still requires contiguous event sequencing and complete evidence for the expected fixture traffic before accepting the run.
 

@@ -23,7 +23,7 @@
 - `BizManData/state/current.sqlite3` — external rebuildable Current State database; never source of truth and never committed.
 - P4-A establishes projection/profile identity, replay ledger, `input_fingerprint`, `state_fingerprint`, ready/stale state and atomic rebuild semantics.
 - `bizman.core.rebuild_current_state` — path-free Core rebuild use case; callers do not provide a DB path or arbitrary profile hash.
-- Delete/replay equivalence is a tested contract. P4-B companies/units projection is complete; P4-C's C0 product-identity evidence gate passed 2026-10-03 (`docs/research/p4c-product-evidence.md`), and the next slice is Current State schema v3 unit economics (runbook: `docs/research/p4c-c0-runbook.md`).
+- Delete/replay equivalence is a tested contract. P4-B companies/units projection is complete; P4-C's C0 product-identity evidence gate passed 2026-10-03 (`docs/research/p4c-product-evidence.md`). Unit economics shipped in schema v3; C3 hardening advances the rebuildable projection/store to v4 to preserve explicit orphan goods provenance, alongside per-unit `shop.goods` `ready/unknown/stale` coverage and real Chrome goods capture/replay proof.
 - `bizman.core` exposes bounded path-free Current State reads: `current_status`, `list_current_companies`, `list_current_units`, `list_current_products`. List cursors are operation-scoped to the request filter and bound to `state_fingerprint`.
 - CLI surface: `bizman current rebuild|status|companies|units|products`; MCP surface: read-only `current.status`, `current.companies`, `current.units`, `current.products`.
 

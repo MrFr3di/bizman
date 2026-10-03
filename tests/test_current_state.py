@@ -331,6 +331,7 @@ class CurrentStateStoreTests(unittest.TestCase):
                         "unit",
                         "observed_product",
                         "unit_product",
+                        "orphan_unit_product",
                         "product_surface_state",
                     }
                 }
@@ -343,6 +344,7 @@ class CurrentStateStoreTests(unittest.TestCase):
                         "unit": 1,
                         "observed_product": 1,
                         "unit_product": 1,
+                        "orphan_unit_product": 1,
                         "product_surface_state": 1,
                     },
                 )

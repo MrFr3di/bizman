@@ -406,7 +406,7 @@ A.state_fingerprint == B.state_fingerprint
 
 P4-A intentionally contains no company/unit/product/inventory/price/production state tables and adds no CLI/MCP Current State surface.
 
-### P4-B — companies / units projection (current)
+### P4-B — companies / units projection (complete)
 
 P4-B is the first end-to-end domain projection. The existing passive collector does not persist generic response bodies, so the slice first adds a deliberately narrow evidence capability for authoritative company roster pages rather than inferring current state from request intent or historical curated pages.
 
@@ -450,14 +450,51 @@ A == B
 A.state_fingerprint == B.state_fingerprint
 ```
 
-Remaining domain priority after P4-B:
+### P4-C — verified product identity and unit economics (current completion)
 
-1. products;
-2. inventory/stock;
-3. supply links/orders;
-4. retail/prices;
-5. production;
-6. finance only when evidence is sufficiently trustworthy.
+C0 passed on 2026-10-03. The authorized product identity is the numeric
+`product=N` carried by two agreeing row-bound links in `table#goods` on
+`GET /units/shop/?id=<unit>&tab=goods`. Display names and row order never
+become identity.
+
+Implemented:
+
+- capture is allowlisted to the exact successful shop/goods read surface and
+  produces canonical `bizman.unit-economics.v1` bytes rather than raw HTML;
+- unit-economics rows contain bounded typed numeric values and stable product
+  identity; unrelated labels, attributes, script text and arbitrary hidden
+  fields are not persisted;
+- replay projects `ObservedProduct` plus `UnitProductState` keyed by
+  `(unit_id, product_numeric_id)`, with source session/sequence/time;
+- curated numeric-id resolution is separate, nullable and fingerprinted by its
+  normalization-relevant semantics;
+- Current State unit-economics entered at projection/schema v3; C3 hardening
+  advances projection/schema/user version to 4 with an additional STRICT
+  `orphan_unit_product` table so successful typed evidence for an unverified
+  unit remains attributable without becoming an FK-backed unit association;
+- every verified unit has explicit `shop.goods` coverage:
+  `ready`, `unknown` or `stale`; missing goods evidence is UNKNOWN and is
+  never interpreted as an empty roster or deletion;
+- exact v1/v2/v3 databases are rebuilt through a verified sibling v4 database
+  and atomically replaced; foreign/newer/unknown schemas remain fail-closed;
+- Core/CLI/MCP expose bounded read-only current-product reads; no write
+  semantics are introduced.
+
+C3 acceptance/hardening is the active slice. The real Chrome fixture exercises
+the same typed goods capture/parser path with two stable product IDs and seeded
+privacy canaries, then proves unit/product provenance and delete/replay
+fingerprint equivalence. Orphan goods evidence for a unit that never appears in
+the verified company roster is persisted separately with unit/product identity,
+source session/sequence/time, typed-artifact SHA/schema and an explicit orphan
+reason; it never becomes an FK-backed authoritative unit-product association.
+
+Remaining domain priority after P4-C:
+
+1. inventory/stock;
+2. supply links/orders;
+3. retail/prices;
+4. production;
+5. finance only when evidence is sufficiently trustworthy.
 
 A projection must refuse or explicitly mark itself stale when D1 reports an incompatible/unknown structural change affecting parser assumptions. P4-A provides the explicit stale-state storage contract; automatic D1 binding remains a later P4 slice.
 

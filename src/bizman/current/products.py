@@ -35,6 +35,7 @@ _CATALOG_DIRECTORY = Path("knowledge") / "domain" / "products"
 _CATALOG_INDEX_NAME = "index.json"
 _CATALOG_KEY_RE = re.compile(r"^bm\.product\.[a-z0-9][a-z0-9._-]*$", re.ASCII)
 _POSITIVE_DECIMAL_RE = re.compile(r"^[1-9][0-9]*$", re.ASCII)
+_ARTIFACT_REF_RE = re.compile(r"^sha256:([0-9a-f]{64})$", re.ASCII)
 _MAX_SIGNED_INT64 = (1 << 63) - 1
 
 
@@ -78,6 +79,8 @@ class UnitEconomicsProjection:
     session_id: str
     sequence: int
     observed_at: str
+    artifact_sha256: str
+    artifact_schema: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -295,17 +298,26 @@ def _event_provenance(
     return session_id, sequence, observed_at
 
 
-def _load_artifact(reader: EvidenceReader, ref: object) -> bytes:
+def _load_artifact(
+    reader: EvidenceReader,
+    ref: object,
+) -> tuple[bytes, str]:
     if not isinstance(ref, str):
         raise UnitEconomicsArtifactError(
             "unit economics response_body_ref must be a verified CAS reference"
         )
+    match = _ARTIFACT_REF_RE.fullmatch(ref)
+    if match is None:
+        raise UnitEconomicsArtifactError(
+            "unit economics response_body_ref must be a canonical SHA-256 CAS reference"
+        )
     try:
-        return reader.read_verified_artifact(ref)
+        raw = reader.read_verified_artifact(ref)
     except EvidenceError as exc:
         raise UnitEconomicsArtifactError(
             "unit economics artifact reference is not verifiable"
         ) from exc
+    return raw, match.group(1)
 
 
 def _is_recognized_incompatible_contract(raw: bytes) -> bool:
@@ -337,7 +349,10 @@ def project_unit_economics_event(
     if unit_id is None or not is_unit_goods_event(event):
         return None
     session_id, sequence, observed_at = _event_provenance(event)
-    raw = _load_artifact(reader, event.get("response_body_ref"))
+    raw, artifact_sha256 = _load_artifact(
+        reader,
+        event.get("response_body_ref"),
+    )
     try:
         page = parse_unit_economics_payload(raw)
     except UnitEconomicsContractError as exc:
@@ -362,6 +377,8 @@ def project_unit_economics_event(
         session_id=session_id,
         sequence=sequence,
         observed_at=observed_at,
+        artifact_sha256=artifact_sha256,
+        artifact_schema=SCHEMA,
     )
 
 

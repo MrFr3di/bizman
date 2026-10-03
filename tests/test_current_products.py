@@ -20,6 +20,7 @@ from bizman.current import (
     CurrentStateOperationError,
     CurrentStateStore,
     ObservedProduct,
+    OrphanUnitProductObservation,
     ProductSurfaceState,
     ReplaySession,
     UnitProductState,
@@ -62,13 +63,14 @@ COMPANY_ID = "13393"
 PRODUCT_1 = 880001
 PRODUCT_2 = 880002
 PRODUCT_3 = 880003
-V3_TABLES = {
+V4_TABLES = {
     "projection_meta",
     "replayed_session",
     "company",
     "unit",
     "observed_product",
     "unit_product",
+    "orphan_unit_product",
     "product_surface_state",
 }
 _ROSTER_TEXT = (
@@ -391,6 +393,96 @@ def _write_v2_database(path: Path) -> None:
         connection.close()
 
 
+def _write_v3_database(path: Path) -> None:
+    """Write the exact table/column/STRICT shape recognized as old schema v3."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path)
+    try:
+        connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
+        connection.execute("PRAGMA user_version = 3")
+        connection.executescript(
+            """
+            CREATE TABLE projection_meta (
+                singleton INTEGER,
+                projection_name TEXT,
+                projection_version INTEGER,
+                analysis_profile_sha256 TEXT,
+                unit_economics_contract TEXT,
+                catalog_resolver_sha256 TEXT,
+                input_fingerprint TEXT,
+                state_fingerprint TEXT,
+                status TEXT,
+                stale_reason TEXT,
+                session_count INTEGER,
+                last_session_id TEXT,
+                last_sequence INTEGER
+            ) STRICT;
+            CREATE TABLE replayed_session (
+                session_id TEXT,
+                manifest_sha256 TEXT,
+                evidence_sha256 TEXT,
+                started_at TEXT,
+                ended_at TEXT,
+                status TEXT,
+                event_count INTEGER,
+                last_sequence INTEGER
+            ) STRICT;
+            CREATE TABLE company (
+                company_id TEXT,
+                name TEXT,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            CREATE TABLE unit (
+                unit_id TEXT,
+                company_id TEXT,
+                display_name TEXT,
+                city_name TEXT,
+                level INTEGER,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            CREATE TABLE observed_product (
+                product_numeric_id INTEGER,
+                catalog_key TEXT,
+                resolution TEXT
+            ) STRICT;
+            CREATE TABLE unit_product (
+                unit_id TEXT,
+                product_numeric_id INTEGER,
+                revenue INTEGER,
+                profit INTEGER,
+                stock_qty INTEGER,
+                stock_quality REAL,
+                our_price INTEGER,
+                city_quality REAL,
+                city_price INTEGER,
+                sales_volume INTEGER,
+                supply_qty INTEGER,
+                supply_cost INTEGER,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            CREATE TABLE product_surface_state (
+                unit_id TEXT,
+                surface TEXT,
+                status TEXT,
+                stale_reason TEXT,
+                source_session_id TEXT,
+                source_sequence INTEGER,
+                observed_at TEXT
+            ) STRICT;
+            """
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
 def _user_version(path: Path) -> int:
     connection = sqlite3.connect(path)
     try:
@@ -504,6 +596,7 @@ class GoodsEventRecognitionTests(unittest.TestCase):
 
         self.assertEqual(snapshot.products, ())
         self.assertEqual(snapshot.unit_products, ())
+        self.assertEqual(snapshot.orphan_unit_products, ())
         self.assertEqual(snapshot.surfaces, ())
         self.assertEqual(snapshot.metadata.status, "ready")
 
@@ -591,12 +684,15 @@ class GoodsReplayTests(unittest.TestCase):
         self.assertEqual(by_product[PRODUCT_2].revenue, 2222)
         self.assertEqual(by_product[PRODUCT_2].source_session_id, SESSION_A)
 
-        self.assertEqual(len(snapshot.surfaces), 1)
-        surface = snapshot.surfaces[0]
-        self.assertEqual((surface.unit_id, surface.surface), (UNIT_ID, SURFACE))
+        self.assertEqual(len(snapshot.surfaces), 2)
+        surfaces = {
+            (item.unit_id, item.surface): item for item in snapshot.surfaces
+        }
+        surface = surfaces[(UNIT_ID, SURFACE)]
         self.assertEqual(surface.status, "ready")
         self.assertEqual(surface.source_session_id, SESSION_B)
         self.assertIsNone(surface.stale_reason)
+        self.assertEqual(surfaces[(UNIT_ID_2, SURFACE)].status, "unknown")
 
         self.assertEqual(
             [item.product_numeric_id for item in snapshot.products],
@@ -692,7 +788,12 @@ class GoodsReplayTests(unittest.TestCase):
                     )
                 ],
             )
-            snapshot = build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
+            snapshot = rebuild_current_state(REPO_ROOT, data_dir, _redaction())
+            state_path = data_dir / "state" / "current.sqlite3"
+            with CurrentStateStore.open_read_only_if_exists(state_path) as store:
+                assert store is not None
+                persisted = store.snapshot()
+            self.assertEqual(persisted, snapshot)
 
         self.assertEqual(snapshot.units, ())
         self.assertEqual(
@@ -701,7 +802,55 @@ class GoodsReplayTests(unittest.TestCase):
         )
         self.assertEqual(snapshot.unit_products, ())
         self.assertEqual(snapshot.surfaces, ())
+        self.assertEqual(len(snapshot.orphan_unit_products), 1)
+        orphan = snapshot.orphan_unit_products[0]
+        self.assertEqual(orphan.unit_id, UNIT_ID)
+        self.assertEqual(orphan.product_numeric_id, PRODUCT_1)
+        self.assertEqual(orphan.surface, SURFACE)
+        self.assertEqual(orphan.source_session_id, SESSION_A)
+        self.assertEqual(orphan.source_sequence, 0)
+        self.assertEqual(orphan.observed_at, "2026-09-30T10:00:30Z")
+        self.assertEqual(orphan.artifact_sha256, ref.split(":", 1)[1])
+        self.assertEqual(orphan.artifact_schema, SCHEMA)
+        self.assertEqual(orphan.reason, "unit_not_in_verified_roster")
         self.assertEqual(snapshot.metadata.status, "ready")
+
+    def test_orphan_row_tamper_fails_closed_on_store_open(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            ref = _put_artifact(
+                data_dir,
+                _goods_artifact(UNIT_ID, [_typed_row(PRODUCT_1)]),
+            )
+            _write_session(
+                data_dir,
+                session_id=SESSION_A,
+                started_at="2026-09-30T10:00:00Z",
+                ended_at="2026-09-30T10:01:00Z",
+                events=[
+                    _goods_event(
+                        SESSION_A,
+                        0,
+                        EVENT_A0,
+                        ref,
+                        observed_at="2026-09-30T10:00:30Z",
+                    )
+                ],
+            )
+            rebuild_current_state(REPO_ROOT, data_dir, _redaction())
+            state_path = data_dir / "state" / "current.sqlite3"
+            connection = sqlite3.connect(state_path)
+            try:
+                connection.execute(
+                    "UPDATE orphan_unit_product SET reason = ?",
+                    ("tampered-orphan-reason",),
+                )
+                connection.commit()
+            finally:
+                connection.close()
+
+            with self.assertRaises(CurrentStateIntegrityError):
+                CurrentStateStore.open_read_only_if_exists(state_path)
 
     def test_malformed_artifact_fails_replay_as_integrity_error(self):
         malformed = (
@@ -738,7 +887,7 @@ class GoodsReplayTests(unittest.TestCase):
                 with self.assertRaises(CurrentStateIntegrityError):
                     build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
 
-    def test_unknown_surface_is_absence_never_inferred(self):
+    def test_missing_goods_evidence_materializes_explicit_unknown_surface(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
             roster_ref = _put_artifact(data_dir, _roster_artifact())
@@ -760,18 +909,23 @@ class GoodsReplayTests(unittest.TestCase):
             snapshot = build_replay_snapshot(REPO_ROOT, data_dir, _redaction())
 
         self.assertEqual(len(snapshot.units), 2)
-        self.assertEqual(snapshot.surfaces, ())
         self.assertEqual(snapshot.unit_products, ())
-        explicit = ProductSurfaceState(
-            unit_id=UNIT_ID,
-            surface=SURFACE,
-            status="unknown",
-            stale_reason=None,
-            source_session_id=None,
-            source_sequence=None,
-            observed_at=None,
+        self.assertEqual(len(snapshot.surfaces), 2)
+        self.assertEqual(
+            {
+                (item.unit_id, item.surface, item.status)
+                for item in snapshot.surfaces
+            },
+            {
+                (UNIT_ID, SURFACE, "unknown"),
+                (UNIT_ID_2, SURFACE, "unknown"),
+            },
         )
-        self.assertEqual(explicit.status, "unknown")
+        for surface in snapshot.surfaces:
+            self.assertIsNone(surface.stale_reason)
+            self.assertIsNone(surface.source_session_id)
+            self.assertIsNone(surface.source_sequence)
+            self.assertIsNone(surface.observed_at)
 
     def test_delete_and_replay_produce_identical_product_snapshot(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -818,7 +972,16 @@ class GoodsReplayTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(len(first.unit_products), 2)
         self.assertEqual(len(first.products), 2)
-        self.assertEqual(len(first.surfaces), 1)
+        self.assertEqual(len(first.surfaces), 2)
+        self.assertEqual(
+            {
+                (item.unit_id, item.status) for item in first.surfaces
+            },
+            {
+                (UNIT_ID, "ready"),
+                (UNIT_ID_2, "unknown"),
+            },
+        )
 
     def test_privacy_canary_never_reaches_artifact_or_database(self):
         canary_label = "SYNTHETIC_LABEL_CANARY_99"
@@ -932,6 +1095,45 @@ class ProductFingerprintTests(unittest.TestCase):
         self.assertNotEqual(
             without_rows.metadata.state_fingerprint,
             with_rows.metadata.state_fingerprint,
+        )
+
+    def test_orphan_row_participates_in_state_fingerprint_not_input(self):
+        sessions = (_session_record(),)
+        product = ObservedProduct(
+            product_numeric_id=PRODUCT_1,
+            catalog_key=None,
+            resolution="unresolved",
+        )
+        orphan = OrphanUnitProductObservation(
+            unit_id=UNIT_ID,
+            product_numeric_id=PRODUCT_1,
+            surface=SURFACE,
+            source_session_id=SESSION_A,
+            source_sequence=0,
+            observed_at="2026-09-30T10:00:30Z",
+            artifact_sha256=SHA_A,
+            artifact_schema=SCHEMA,
+            reason="unit_not_in_verified_roster",
+        )
+        without_orphan = build_current_snapshot(
+            _spec(),
+            sessions,
+            products=(product,),
+        )
+        with_orphan = build_current_snapshot(
+            _spec(),
+            sessions,
+            products=(product,),
+            orphan_unit_products=(orphan,),
+        )
+
+        self.assertEqual(
+            without_orphan.metadata.input_fingerprint,
+            with_orphan.metadata.input_fingerprint,
+        )
+        self.assertNotEqual(
+            without_orphan.metadata.state_fingerprint,
+            with_orphan.metadata.state_fingerprint,
         )
 
     def test_unknown_surface_row_participates_in_state_fingerprint(self):
@@ -1095,8 +1297,8 @@ class CatalogResolverTests(unittest.TestCase):
                 CatalogResolver.load(root)
 
 
-class CurrentStateV3MigrationTests(unittest.TestCase):
-    def test_v2_database_is_upgraded_to_v3_with_staged_swap(self):
+class CurrentStateV4MigrationTests(unittest.TestCase):
+    def test_v2_database_is_upgraded_to_v4_with_staged_swap(self):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp) / "BizManData"
             state_path = data_dir / "state" / "current.sqlite3"
@@ -1112,10 +1314,30 @@ class CurrentStateV3MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
 
             self.assertEqual(version, USER_VERSION)
-            self.assertEqual(_table_names(state_path), V3_TABLES)
+            self.assertEqual(_table_names(state_path), V4_TABLES)
             self.assertEqual(rebuilt, persisted)
             self.assertEqual(rebuilt.companies, ())
             self.assertEqual(rebuilt.products, ())
+
+    def test_v3_database_is_upgraded_to_v4_with_staged_swap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "BizManData"
+            state_path = data_dir / "state" / "current.sqlite3"
+            _write_v3_database(state_path)
+
+            rebuilt = rebuild_current_state(REPO_ROOT, data_dir, _redaction())
+
+            with CurrentStateStore.open_read_only_if_exists(state_path) as store:
+                assert store is not None
+                persisted = store.snapshot()
+                version = store._connection.execute(
+                    "PRAGMA user_version"
+                ).fetchone()[0]
+
+            self.assertEqual(version, USER_VERSION)
+            self.assertEqual(_table_names(state_path), V4_TABLES)
+            self.assertEqual(rebuilt, persisted)
+            self.assertEqual(rebuilt.orphan_unit_products, ())
 
     def test_v2_fault_injected_swap_preserves_the_old_database(self):
         with tempfile.TemporaryDirectory() as tmp:
