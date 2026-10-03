@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 import json
+import ipaddress
 from pathlib import Path
 import re
 from typing import Any
@@ -212,19 +213,38 @@ def _positive_decimal(value: object) -> str | None:
     return value
 
 
+def _is_loopback_host(host: str | None) -> bool:
+    if host is None:
+        return False
+    if host.casefold() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 def _goods_route_unit_id(url: str) -> str | None:
-    """Return the unit id only for the exact frozen shop-goods read surface."""
+    """Return the unit id only for the frozen shop-goods read surface.
+
+    Production game captures remain HTTPS with no explicit port. Plain HTTP is
+    admitted only for loopback origins so the real-Chrome CI fixture can
+    exercise the exact parser/capture path without weakening remote capture.
+    """
 
     try:
         parsed = urlparse(url)
         port = parsed.port
     except ValueError:
         return None
+    secure_origin = parsed.scheme == "https" and port is None
+    loopback_fixture_origin = (
+        parsed.scheme == "http" and _is_loopback_host(parsed.hostname)
+    )
     if (
-        parsed.scheme != "https"
+        not (secure_origin or loopback_fixture_origin)
         or parsed.username is not None
         or parsed.password is not None
-        or port is not None
         or parsed.fragment
         or parsed.path != _GOODS_PATH
         or "%" in parsed.query
