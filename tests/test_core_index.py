@@ -48,7 +48,7 @@ class AgentIndexRebuildTests(unittest.TestCase):
         result = rebuild_agent_index(self.context, AgentIndexRebuildRequest())
         self.assertRegex(result.generation, r"^[0-9a-f]{64}$")
         self.assertEqual(result.schema_version, "2")
-        self.assertEqual(result.item_count, 590)
+        self.assertEqual(result.item_count, 632)
         self.assertEqual(result.session_count, 0)
         self.assertEqual(result.change_count, 0)
         self.assertEqual(result.completed_at, "2026-09-30T12:00:00Z")
@@ -94,7 +94,7 @@ class AgentIndexRebuildTests(unittest.TestCase):
             exit_code = index_rebuild_command.run(self.context, namespace)
         self.assertEqual(exit_code, 0)
         payload = json.loads(buffer.getvalue())
-        self.assertEqual(payload["item_count"], 590)
+        self.assertEqual(payload["item_count"], 632)
         self.assertEqual(payload["session_count"], 0)
         self.assertEqual(payload["change_count"], 0)
 
