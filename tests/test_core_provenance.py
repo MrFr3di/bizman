@@ -213,6 +213,63 @@ class CoreEvidenceTraceTests(unittest.TestCase):
             with self.assertRaisesRegex(DataIntegrityError, "UUIDv7"):
                 trace_evidence(context, EvidenceTraceRequest(LIVE_REF))
 
+    def test_invalid_webcopy_digest_fails_repository_and_runtime_validation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _copy_repository_assets(Path(tmp) / "repo")
+            manifest_path = (
+                root
+                / "knowledge"
+                / "sources"
+                / "webcopy-bizmania.2026-10-03.01.json"
+            )
+            document = json.loads(manifest_path.read_text(encoding="utf-8"))
+            document["origin_index_sha256"] = "not-a-digest"
+            manifest_path.write_text(
+                json.dumps(document, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            context = _context(root, Path(tmp) / "BizManData")
+
+            validation = validate_repository(context)
+            self.assertFalse(validation.ok)
+            self.assertTrue(
+                any(
+                    "invalid webcopy origin_index_sha256" in error
+                    for error in validation.errors
+                )
+            )
+            with self.assertRaisesRegex(
+                DataIntegrityError,
+                "invalid SHA-256",
+            ):
+                trace_evidence(context, EvidenceTraceRequest(WEBCOPY_REF))
+
+    def test_webcopy_source_id_collision_fails_repository_validation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _copy_repository_assets(Path(tmp) / "repo")
+            manifest_path = (
+                root
+                / "knowledge"
+                / "sources"
+                / "webcopy-bizmania.2026-10-03.01.json"
+            )
+            document = json.loads(manifest_path.read_text(encoding="utf-8"))
+            document["id"] = "src.har.bizmania.2026-09-06.01"
+            manifest_path.write_text(
+                json.dumps(document, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            context = _context(root, Path(tmp) / "BizManData")
+
+            validation = validate_repository(context)
+            self.assertFalse(validation.ok)
+            self.assertTrue(
+                any(
+                    "duplicate provenance source id" in error
+                    for error in validation.errors
+                )
+            )
+
     def test_provenance_dtos_are_frozen_slotted_and_path_free(self):
         for dto in (EvidenceTraceRequest, EvidenceTrace):
             self.assertIn("__slots__", dto.__dict__)
