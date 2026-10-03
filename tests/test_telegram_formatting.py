@@ -6,10 +6,18 @@ from bizman.telegram import formatting as fmt
 from bizman.core import (
     ChangePage,
     ChangeRecord,
+    CurrentProductPage,
+    CurrentProductRecord,
+    CurrentStatusResult,
+    CurrentUnitPage,
+    CurrentUnitRecord,
     EvidenceTrace,
     KnowledgeHit,
     KnowledgeItem,
     KnowledgeSearchResult,
+    PlanResult,
+    PlanRow,
+    PlanSurfaceExclusion,
     SessionAnomalyPage,
     SessionAnomalyRecord,
     SessionComparison,
@@ -228,6 +236,177 @@ class KnowledgeFormattingTests(unittest.TestCase):
         text = fmt.format_knowledge_item(item)
         self.assertIn("Aliases: none", text)
         self.assertIn("Evidence refs: none", text)
+
+
+class CurrentFormattingTests(unittest.TestCase):
+    SESSION = "01991c7d-a400-7000-8000-000000000021"
+
+    def _status(self, **overrides):
+        values = {
+            "projection_name": "bizman.current",
+            "projection_version": 3,
+            "analysis_profile_sha256": "a" * 64,
+            "input_fingerprint": "b" * 64,
+            "state_fingerprint": "c" * 64,
+            "status": "ready",
+            "stale_reason": None,
+            "session_count": 1,
+            "last_session_id": self.SESSION,
+            "last_sequence": 9,
+        }
+        values.update(overrides)
+        return CurrentStatusResult(**values)
+
+    def _unit_record(self) -> CurrentUnitRecord:
+        return CurrentUnitRecord(
+            unit_id="33670",
+            company_id="13393",
+            display_name="Detached shop",
+            city_name="Ankara",
+            level=1,
+            source_session_id=self.SESSION,
+            source_sequence=0,
+            observed_at="2026-10-03T10:00:00Z",
+        )
+
+    def _product_record(self) -> CurrentProductRecord:
+        return CurrentProductRecord(
+            unit_id="33670",
+            product_numeric_id=101,
+            revenue=100,
+            profit=5,
+            stock_qty=2,
+            stock_quality=0.5,
+            our_price=30,
+            city_quality=0.5,
+            city_price=35,
+            sales_volume=2,
+            supply_qty=1,
+            supply_cost=10,
+            source_session_id=self.SESSION,
+            source_sequence=0,
+            observed_at="2026-10-03T10:00:00Z",
+        )
+
+    def _plan_row(self, **overrides) -> PlanRow:
+        values = {
+            "unit_id": "33670",
+            "product_numeric_id": 101,
+            "sales_volume": 2,
+            "stock_qty": 5,
+            "supply_qty": 1,
+            "target_stock": 6,
+            "order_qty": 0,
+            "our_price": 30,
+            "city_price": 35,
+            "city_quality": 0.5,
+            "stock_quality": 0.5,
+            "supply_cost": 10,
+            "reference_price": 35.0,
+            "recommended_price": 36.75,
+            "flags": ("below_city", "potential"),
+            "evidence_refs": (f"{self.SESSION}#seq-0",),
+            "observed_at": "2026-10-03T10:00:00Z",
+            "surface_status": "ready",
+        }
+        values.update(overrides)
+        return PlanRow(**values)
+
+    def test_status_ready_and_stale(self) -> None:
+        ready = fmt.format_current_status(self._status())
+        self.assertIn("Current State: ready", ready)
+        self.assertIn("projection: bizman.current v3", ready)
+        self.assertIn("state fingerprint: cccccccccccc…", ready)
+        self.assertIn("sessions replayed: 1", ready)
+        self.assertIn(self.SESSION, ready)
+        self.assertIn("last sequence 9", ready)
+        self.assertNotIn("stale reason", ready)
+
+        stale = fmt.format_current_status(
+            self._status(
+                status="stale",
+                stale_reason="r" * 300,
+                session_count=0,
+                last_session_id=None,
+                last_sequence=None,
+            )
+        )
+        self.assertIn("Current State: stale", stale)
+        self.assertIn("stale reason: " + "r" * 160 + "…", stale)
+        self.assertLessEqual(len(stale), 1000)
+
+    def test_units_list_empty_and_bounded_hint(self) -> None:
+        self.assertEqual(
+            fmt.format_units(CurrentUnitPage(items=())),
+            "No Current State units recorded.",
+        )
+        text = fmt.format_units(
+            CurrentUnitPage(items=(self._unit_record(),), next_cursor="c")
+        )
+        self.assertIn("Current State units (first 10):", text)
+        self.assertIn("1) 33670 — Detached shop (Ankara, company 13393, level 1)", text)
+        self.assertIn(f"evidence {self.SESSION}#seq-0", text)
+        self.assertIn("first page only", text)
+
+    def test_products_list_empty_and_unit_labelled(self) -> None:
+        self.assertEqual(
+            fmt.format_products(CurrentProductPage(items=())),
+            "No Current State unit products recorded.",
+        )
+        self.assertEqual(
+            fmt.format_products(CurrentProductPage(items=()), unit_id="33670"),
+            "Unit 33670: no observed products.",
+        )
+        text = fmt.format_products(
+            CurrentProductPage(items=(self._product_record(),)),
+            unit_id="33670",
+        )
+        self.assertIn("Unit 33670 products (first 10):", text)
+        self.assertIn("unit 33670 product 101", text)
+        self.assertIn("stock 2 | sales 2", text)
+        self.assertIn("our 30 / city 35", text)
+        self.assertIn("quality 0.5/0.5", text)
+        self.assertIn("supply 1 @ 10", text)
+
+    def test_plan_marks_unknown_stale_and_bounds_reason(self) -> None:
+        unknown = self._plan_row(
+            unit_id="33671",
+            product_numeric_id=102,
+            reference_price=None,
+            recommended_price=None,
+            flags=("below_city", "unknown"),
+        )
+        stale = PlanSurfaceExclusion(
+            unit_id="33672",
+            surface="shop.goods",
+            status="stale",
+            stale_reason="s" * 300,
+        )
+        result = PlanResult(
+            weeks=3,
+            rows=(unknown,),
+            generated_from_state_fingerprint="d" * 64,
+            source_refs=("wiki:Тема (bizmaniaFAQ.ru.har#entry-5608)",),
+            excluded_surfaces=(stale,),
+        )
+        text = fmt.format_plan(result)
+        self.assertIn("Plan (weeks 3) from state dddddddddddd…:", text)
+        self.assertIn("recommended UNKNOWN | reference UNKNOWN", text)
+        self.assertIn("flags [below_city, unknown]", text)
+        self.assertIn("Not recommended (goods surface not ready):", text)
+        self.assertIn("unit 33672 (shop.goods): stale — " + "s" * 160 + "…", text)
+        self.assertIn("bizmaniaFAQ.ru.har#entry-5608", text)
+
+    def test_plan_empty(self) -> None:
+        result = PlanResult(
+            weeks=3,
+            rows=(),
+            generated_from_state_fingerprint="e" * 64,
+            source_refs=("wiki:topic (bizmaniaFAQ.ru.har#entry-5608)",),
+        )
+        text = fmt.format_plan(result)
+        self.assertIn("No recommendation rows on a ready goods surface.", text)
+        self.assertNotIn("Not recommended", text)
 
 
 class TraceFormattingTests(unittest.TestCase):

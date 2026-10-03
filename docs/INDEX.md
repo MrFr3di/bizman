@@ -36,7 +36,7 @@
 - `docs/benchmarks/p2e-readmodel-baseline-2026-09-28.md` — durable P2-E baseline: v1/v2/v3 retrieval quality, cold/warm latency, rebuild scaling, result budgets and query-plan decisions.
 - `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md` — durable P3-E baseline: retrieval parity, action provenance, call budgets, bounded schemas/results, sanitized errors and installed stdio proof.
 - `src/bizman/mcp/` — завершённый read-only stdio adapter из 14 Core-backed tools.
-- `src/bizman/telegram/` — read-only Telegram adapter (long polling, 11 команд) над тем же Core; токен и allowlist chat-id только через env.
+- `src/bizman/telegram/` — read-only Telegram adapter (long polling, 16 команд) над тем же Core; токен и allowlist chat-id только через env.
 - Обычные agent/read/MCP запросы должны идти через Core, а не читать repository JSON/JSONL, detector SQLite или Agent Index напрямую.
 
 ## HTTP / протокол

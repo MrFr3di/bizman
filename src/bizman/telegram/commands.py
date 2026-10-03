@@ -19,23 +19,31 @@ from bizman.core import (
     ConfigurationError,
     ContractMismatchError,
     CoreContext,
+    CurrentProductListRequest,
+    CurrentStatusRequest,
+    CurrentUnitListRequest,
     DataIntegrityError,
     EvidenceTraceRequest,
     KnowledgeGetRequest,
     KnowledgeResolveRequest,
     KnowledgeSearchRequest,
     OperationError,
+    PlanRequest,
     SessionAnomalyListRequest,
     SessionCompareRequest,
     SessionGetRequest,
     SessionListRequest,
     compare_sessions,
+    current_status,
     get_change,
     get_knowledge,
     get_session,
     list_changes,
+    list_current_products,
+    list_current_units,
     list_session_anomalies,
     list_sessions,
+    plan_current,
     resolve_knowledge,
     search_knowledge,
     trace_evidence,
@@ -53,6 +61,7 @@ _SESSION_ID_RE = re.compile(
 _PROFILE_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _EVIDENCE_REF_RE = re.compile(r"^[a-z0-9][a-z0-9.-]*#(?:entry|seq)-(?:0|[1-9][0-9]*)$")
 _REF_RE = re.compile(r"^[A-Za-z0-9_.-]{1,256}$")
+_UNIT_ID_RE = re.compile(r"^[1-9][0-9]*$")
 
 COMMAND_NAMES: frozenset[str] = frozenset(
     (
@@ -67,6 +76,11 @@ COMMAND_NAMES: frozenset[str] = frozenset(
         "k",
         "kb",
         "trace",
+        "current",
+        "units",
+        "unit",
+        "products",
+        "plan",
     )
 )
 
@@ -97,7 +111,8 @@ _ERROR_REPLIES: tuple[tuple[type[BaseException], str], ...] = (
     ),
     (
         ConfigurationError,
-        "Agent Index is unavailable; rebuild it before using BizMan commands.",
+        "BizMan read data is unavailable; rebuild the Agent Index or "
+        "Current State before using BizMan commands.",
     ),
     (
         ContractMismatchError,
@@ -127,6 +142,11 @@ _HELP_TEXT = "\n".join(
         "/k <query> — search BizMan knowledge",
         "/kb <ref> — fetch one knowledge item by canonical ref",
         "/trace <evidence_ref> — bounded evidence provenance trace",
+        "/current — Current State projection health",
+        "/units — Current State units",
+        "/unit <id> — one unit and its observed products",
+        "/products — observed unit-product economics",
+        "/plan — deterministic order/price plan for ready goods surfaces",
         "All data comes from verified BizMan evidence; unknown facts are reported as unknown.",
     )
 )
@@ -160,6 +180,12 @@ def _require_evidence_ref(value: str) -> str:
 def _require_ref(value: str) -> str:
     if _REF_RE.fullmatch(value) is None:
         raise _UsageError("<ref> must be a canonical BizMan knowledge ref")
+    return value
+
+
+def _require_unit_id(value: str) -> str:
+    if _UNIT_ID_RE.fullmatch(value) is None:
+        raise _UsageError("<id> must be a canonical positive decimal unit id")
     return value
 
 
@@ -294,6 +320,56 @@ def _trace(context: CoreContext, rest: str) -> str:
     return fmt.format_trace(result.trace)
 
 
+def _current(context: CoreContext, rest: str) -> str:
+    if rest:
+        raise _UsageError("/current takes no arguments")
+    return fmt.format_current_status(
+        current_status(context, CurrentStatusRequest()),
+    )
+
+
+def _units(context: CoreContext, rest: str) -> str:
+    if rest:
+        raise _UsageError("/units takes no arguments")
+    return fmt.format_units(
+        list_current_units(
+            context,
+            CurrentUnitListRequest(limit=_LIST_LIMIT),
+        ),
+    )
+
+
+def _unit(context: CoreContext, rest: str) -> str:
+    parts = rest.split()
+    if len(parts) != 1:
+        raise _UsageError("/unit <id>")
+    unit_id = _require_unit_id(parts[0])
+    page = list_current_products(
+        context,
+        CurrentProductListRequest(limit=_LIST_LIMIT, unit_id=unit_id),
+    )
+    return fmt.format_products(page, unit_id=unit_id)
+
+
+def _products(context: CoreContext, rest: str) -> str:
+    if rest:
+        raise _UsageError("/products takes no arguments")
+    return fmt.format_products(
+        list_current_products(
+            context,
+            CurrentProductListRequest(limit=_LIST_LIMIT),
+        ),
+    )
+
+
+def _plan(context: CoreContext, rest: str) -> str:
+    if rest:
+        raise _UsageError("/plan takes no arguments")
+    return fmt.format_plan(
+        plan_current(context, PlanRequest(limit=_LIST_LIMIT)),
+    )
+
+
 _COMMANDS: dict[str, object] = {
     "help": _help,
     "status": _status,
@@ -306,6 +382,11 @@ _COMMANDS: dict[str, object] = {
     "k": _knowledge_search,
     "kb": _knowledge_get,
     "trace": _trace,
+    "current": _current,
+    "units": _units,
+    "unit": _unit,
+    "products": _products,
+    "plan": _plan,
 }
 
 

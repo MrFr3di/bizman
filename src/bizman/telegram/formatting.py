@@ -10,10 +10,15 @@ from __future__ import annotations
 from bizman.core import (
     ChangePage,
     ChangeRecord,
+    CurrentProductPage,
+    CurrentStatusResult,
+    CurrentUnitPage,
     EvidenceTrace,
     KnowledgeHit,
     KnowledgeItem,
     KnowledgeSearchResult,
+    PlanResult,
+    PlanRow,
     SessionAnomalyPage,
     SessionComparison,
     SessionGetResult,
@@ -230,18 +235,150 @@ def format_hit(hit: KnowledgeHit) -> str:
     )
 
 
+def _fingerprint_label(value: str) -> str:
+    return value if len(value) != 64 else value[:12] + "…"
+
+
+def _quality_label(value: float) -> str:
+    text = f"{value:.2f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _price_label(value: float | None) -> str:
+    return "UNKNOWN" if value is None else _quality_label(value)
+
+
+def format_current_status(result: CurrentStatusResult) -> str:
+    lines = [
+        f"Current State: {result.status}",
+        f"projection: {result.projection_name} v{result.projection_version}",
+        f"state fingerprint: {_fingerprint_label(result.state_fingerprint)}",
+        f"input fingerprint: {_fingerprint_label(result.input_fingerprint)}",
+        f"sessions replayed: {result.session_count}",
+    ]
+    if result.last_session_id is not None:
+        last = result.last_session_id
+        if result.last_sequence is not None:
+            last += f" (last sequence {result.last_sequence})"
+        lines.append(f"last session: {last}")
+    if result.stale_reason is not None:
+        lines.append(
+            "stale reason: "
+            + _bounded_text(result.stale_reason, limit=_MAX_LABEL_CHARS)
+        )
+    return "\n".join(lines)
+
+
+def format_units(page: CurrentUnitPage) -> str:
+    if not page.items:
+        return "No Current State units recorded."
+    lines = ["Current State units (first 10):"]
+    for index, record in enumerate(page.items, start=1):
+        lines.append(
+            f"{index}) {record.unit_id} — {record.display_name} "
+            f"({record.city_name}, company {record.company_id}, "
+            f"level {record.level})"
+        )
+        lines.append(
+            f"   observed {record.observed_at} | evidence "
+            f"{record.source_session_id}#seq-{record.source_sequence}"
+        )
+    if page.next_cursor is not None:
+        lines.append("… more units exist; the Telegram adapter shows the first page only.")
+    return "\n".join(lines)
+
+
+def format_products(page: CurrentProductPage, *, unit_id: str | None = None) -> str:
+    if not page.items:
+        if unit_id is not None:
+            return f"Unit {unit_id}: no observed products."
+        return "No Current State unit products recorded."
+    heading = (
+        f"Unit {unit_id} products (first {_LIST_LIMIT}):"
+        if unit_id is not None
+        else "Current State unit products (first 10):"
+    )
+    lines = [heading]
+    for index, record in enumerate(page.items, start=1):
+        lines.append(
+            f"{index}) unit {record.unit_id} product {record.product_numeric_id} "
+            f"| stock {record.stock_qty} | sales {record.sales_volume} "
+            f"| our {record.our_price} / city {record.city_price} "
+            f"| quality {_quality_label(record.stock_quality)}/"
+            f"{_quality_label(record.city_quality)} "
+            f"| supply {record.supply_qty} @ {record.supply_cost}"
+        )
+        lines.append(
+            f"   observed {record.observed_at} | evidence "
+            f"{record.source_session_id}#seq-{record.source_sequence}"
+        )
+    if page.next_cursor is not None:
+        lines.append(
+            "… more unit products exist; the Telegram adapter shows the "
+            "first page only."
+        )
+    return "\n".join(lines)
+
+
+def _plan_row_lines(row: PlanRow, *, index: int) -> list[str]:
+    return [
+        f"{index}) unit {row.unit_id} product {row.product_numeric_id} "
+        f"| order {row.order_qty} "
+        f"| recommended {_price_label(row.recommended_price)} "
+        f"| reference {_price_label(row.reference_price)} "
+        f"| flags [{', '.join(row.flags) or 'none'}]",
+        f"   sales {row.sales_volume} | stock {row.stock_qty} + supply "
+        f"{row.supply_qty} -> target {row.target_stock} "
+        f"| our {row.our_price} / city {row.city_price} "
+        f"| supply cost {row.supply_cost}",
+        f"   observed {row.observed_at} | evidence "
+        f"{', '.join(row.evidence_refs)}",
+    ]
+
+
+def format_plan(result: PlanResult) -> str:
+    lines = [
+        f"Plan (weeks {result.weeks}) from state "
+        f"{_fingerprint_label(result.generated_from_state_fingerprint)}:"
+    ]
+    if result.rows:
+        lines.append(f"Recommendation rows ({len(result.rows)}):")
+        for index, row in enumerate(result.rows, start=1):
+            lines.extend(_plan_row_lines(row, index=index))
+    else:
+        lines.append("No recommendation rows on a ready goods surface.")
+    if result.excluded_surfaces:
+        lines.append("Not recommended (goods surface not ready):")
+        for exclusion in result.excluded_surfaces:
+            reason = ""
+            if exclusion.stale_reason is not None:
+                reason = " — " + _bounded_text(
+                    exclusion.stale_reason, limit=_MAX_LABEL_CHARS
+                )
+            lines.append(
+                f"- unit {exclusion.unit_id} ({exclusion.surface}): "
+                f"{exclusion.status}{reason}"
+            )
+    lines.append("Sources: " + ", ".join(result.source_refs))
+    return "\n".join(lines)
+
+
 __all__ = [
     "MAX_MESSAGE_CHARS",
     "format_anomalies",
     "format_change",
     "format_changes",
     "format_comparison",
+    "format_current_status",
     "format_hit",
     "format_knowledge_item",
+    "format_plan",
+    "format_products",
     "format_search",
     "format_session",
     "format_sessions",
     "format_status",
     "format_trace",
+    "format_units",
     "trim",
 ]

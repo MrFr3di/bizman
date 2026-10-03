@@ -34,6 +34,13 @@ from bizman.core.errors import (
     DataIntegrityError,
     OperationError,
 )
+from bizman.core.planner import (
+    PlanRequest,
+    PlanResult,
+    PlanRow,
+    PlanSurfaceExclusion,
+    plan_current,
+)
 from bizman.core.provenance import (
     EvidenceTrace,
     EvidenceTraceRequest,
@@ -121,6 +128,10 @@ __all__ = [
     "KnowledgeSearchRequest",
     "KnowledgeSearchResult",
     "OperationError",
+    "PlanRequest",
+    "PlanResult",
+    "PlanRow",
+    "PlanSurfaceExclusion",
     "RepositoryAssets",
     "SessionAnomalyListRequest",
     "SessionAnomalyPage",
@@ -149,6 +160,7 @@ __all__ = [
     "list_current_units",
     "list_session_anomalies",
     "list_sessions",
+    "plan_current",
     "rebuild_current_state",
     "resolve_knowledge",
     "search_knowledge",
