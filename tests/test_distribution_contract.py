@@ -56,6 +56,7 @@ class DistributionContractTests(unittest.TestCase):
                 "bizman": "bizman.cli.main:main",
                 "bizman-mcp": "bizman.mcp.__main__:main",
                 "bizman-telegram": "bizman.telegram.__main__:main",
+                "bizman-ingest": "bizman.ingest.__main__:main",
             },
         )
         self.assertEqual(
@@ -177,6 +178,9 @@ class DistributionContractTests(unittest.TestCase):
             telegram_console = venv / (
                 "Scripts/bizman-telegram.exe" if os.name == "nt" else "bin/bizman-telegram"
             )
+            ingest_console = venv / (
+                "Scripts/bizman-ingest.exe" if os.name == "nt" else "bin/bizman-ingest"
+            )
             subprocess.run(
                 [uv, "pip", "install", "--python", str(python), str(wheel)],
                 cwd=root,
@@ -196,7 +200,8 @@ class DistributionContractTests(unittest.TestCase):
                     (
                         "import pathlib, bizman, bizman.foundation, bizman.sessions, "
                         "bizman.collector, bizman.changes, bizman.current, "
-                        "bizman.readmodel, bizman.core, bizman.mcp, bizman.telegram; "
+                        "bizman.readmodel, bizman.core, bizman.mcp, bizman.telegram, "
+                        "bizman.market, bizman.experiments, bizman.ingest; "
                         "print(pathlib.Path(bizman.__file__).resolve())"
                     ),
                 ],
@@ -242,6 +247,17 @@ class DistributionContractTests(unittest.TestCase):
             )
             self.assertIn("--repo-root", telegram_help.stdout)
             self.assertIn("--data-dir", telegram_help.stdout)
+
+            ingest_help = subprocess.run(
+                [str(ingest_console), "--help"],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("--har", ingest_help.stdout)
+            self.assertIn("--out", ingest_help.stdout)
 
 
 if __name__ == "__main__":

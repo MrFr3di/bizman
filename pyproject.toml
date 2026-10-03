@@ -18,6 +18,7 @@ telegram = ["aiogram>=3.15,<4"]
 bizman = "bizman.cli.main:main"
 bizman-mcp = "bizman.mcp.__main__:main"
 bizman-telegram = "bizman.telegram.__main__:main"
+bizman-ingest = "bizman.ingest.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13"]
@@ -73,6 +74,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -87,6 +91,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -101,6 +108,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -114,6 +124,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -126,6 +139,9 @@ forbidden_modules = [
     "bizman.cli",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -138,6 +154,9 @@ forbidden_modules = [
     "bizman.core",
     "bizman.cli",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 
 [[tool.importlinter.contracts]]
@@ -158,6 +177,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 allow_indirect_imports = true
 [[tool.importlinter.contracts]]
@@ -172,6 +194,9 @@ forbidden_modules = [
     "bizman.readmodel",
     "bizman.current",
     "bizman.cli",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 allow_indirect_imports = true
 
@@ -188,5 +213,62 @@ forbidden_modules = [
     "bizman.current",
     "bizman.cli",
     "bizman.mcp",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.ingest",
 ]
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Market depends only on deterministic lower layers"
+type = "forbidden"
+source_modules = ["bizman.market"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.experiments",
+    "bizman.ingest",
+    "bizman.mcp",
+    "bizman.telegram",
+]
+
+[[tool.importlinter.contracts]]
+name = "Experiments depend only on deterministic lower layers"
+type = "forbidden"
+source_modules = ["bizman.experiments"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.market",
+    "bizman.ingest",
+    "bizman.mcp",
+    "bizman.telegram",
+]
+
+[[tool.importlinter.contracts]]
+name = "Ingest depends only on foundation"
+type = "forbidden"
+source_modules = ["bizman.ingest"]
+forbidden_modules = [
+    "bizman.sessions",
+    "bizman.collector",
+    "bizman.changes",
+    "bizman.core",
+    "bizman.cli",
+    "bizman.readmodel",
+    "bizman.current",
+    "bizman.market",
+    "bizman.experiments",
+    "bizman.mcp",
+    "bizman.telegram",
+]

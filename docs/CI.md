@@ -37,6 +37,9 @@ The package architecture gate enforces these dependency directions:
 - `changes` does not depend on collector/read-model/application layers;
 - `readmodel` may consume deterministic lower layers but not collector/Core/CLI;
 - `current` may consume deterministic foundation/session/change semantics but not collector/readmodel/Core/adapters;
+- `market` depends only on foundation and cannot import sessions/collector/changes/readmodel/current/experiments/ingest/Core/CLI/adapters;
+- `experiments` depends only on foundation and cannot import sessions/collector/changes/readmodel/current/market/ingest/Core/CLI/adapters;
+- `ingest` depends only on foundation and cannot import sessions/collector/changes/readmodel/current/market/experiments/Core/CLI/adapters;
 - `core` does not depend on CLI or MCP adapters;
 - CLI directly consumes Core rather than lower implementation packages, including `readmodel`;
 - MCP directly consumes Core and cannot import foundation/sessions/collector/changes/readmodel/CLI implementation layers;
@@ -108,6 +111,7 @@ The proof requires:
 - the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`;
 - the installed `bizman-mcp --help` entry point is present and the protocol contract is exercised separately by the MCP tests/evaluator;
 - the installed `bizman-telegram --help` entry point is present; its runtime loop is never exercised in tests;
+- the installed `bizman-ingest --help` entry point is present and exposes `--har` and `--out`;
 - the plain wheel install stays aiogram-free by default: `import bizman.telegram` and `bizman-telegram --help` work without the `telegram` extra, and starting the polling loop fails closed with exit code 2 until `bizman[telegram]` is installed.
 
 Repository assets remain explicit external configuration through `RepositoryAssets`; packaging does not turn them into hidden package data.
