@@ -190,6 +190,25 @@ class GoodsSurfaceCaptureTests(unittest.TestCase):
                 normalizer.response_body_capture_candidate("r1", target_id="t1")
             )
 
+    def test_goods_candidate_accepts_http_only_for_loopback_fixture(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            normalizer = NetworkNormalizer(
+                session_id=SESSION_ID,
+                first_party=FirstPartyPolicy(("127.0.0.1",)),
+                redaction=RedactionPolicy.default(),
+                artifacts=ArtifactStore(Path(tmp)),
+            )
+            self._prime(
+                normalizer,
+                "r-loopback",
+                "http://127.0.0.1:8765/units/shop/?id=33670&tab=goods",
+            )
+            self.assertTrue(
+                normalizer.response_body_capture_candidate(
+                    "r-loopback", target_id="t1"
+                )
+            )
+
     def test_goods_candidate_rejects_extra_keys_and_foreign_surfaces(self):
         rejected = (
             "https://bizmania.ru/units/shop/?id=33670&tab=goods&product=42",
