@@ -21,6 +21,7 @@ from bizman.current.model import (
     CurrentProjectionSpec,
     CurrentStateSnapshot,
     ObservedProduct,
+    OrphanUnitProductObservation,
     ProductSurfaceState,
     ReplaySession,
     UnitProductState,
@@ -77,6 +78,8 @@ _V1_COLUMNS = {
 _V2_TABLES = frozenset(
     {"projection_meta", "replayed_session", "company", "unit"}
 )
+_ORPHAN_REASON = "unit_not_in_verified_roster"
+
 _V2_COLUMNS = {
     "projection_meta": _PROJECTION_META_COLUMNS,
     "replayed_session": _REPLAYED_SESSION_COLUMNS,
@@ -164,6 +167,10 @@ def _apply_goods_event(
     observations: dict[tuple[str, int], UnitProductState],
     surfaces: dict[str, ProductSurfaceState],
     observed_ids: set[int],
+    orphan_candidates: dict[
+        tuple[str, int],
+        OrphanUnitProductObservation,
+    ],
 ) -> None:
     if not is_unit_goods_event(event):
         return
@@ -217,6 +224,19 @@ def _apply_goods_event(
                 observed_at=projection.observed_at,
             )
         )
+        orphan_candidates[(projection.unit_id, row.product_numeric_id)] = (
+            OrphanUnitProductObservation(
+                unit_id=projection.unit_id,
+                product_numeric_id=row.product_numeric_id,
+                surface=SURFACE,
+                source_session_id=projection.session_id,
+                source_sequence=projection.sequence,
+                observed_at=projection.observed_at,
+                artifact_sha256=projection.artifact_sha256,
+                artifact_schema=projection.artifact_schema,
+                reason=_ORPHAN_REASON,
+            )
+        )
     surfaces[projection.unit_id] = ProductSurfaceState(
         unit_id=projection.unit_id,
         surface=SURFACE,
@@ -237,6 +257,10 @@ def _replay_session(
     observations: dict[tuple[str, int], UnitProductState],
     surfaces: dict[str, ProductSurfaceState],
     observed_ids: set[int],
+    orphan_candidates: dict[
+        tuple[str, int],
+        OrphanUnitProductObservation,
+    ],
 ) -> tuple[ReplaySession, bool]:
     event_count = 0
     last_sequence: int | None = None
@@ -262,6 +286,7 @@ def _replay_session(
             observations=observations,
             surfaces=surfaces,
             observed_ids=observed_ids,
+            orphan_candidates=orphan_candidates,
         )
 
         event_count += 1
@@ -313,6 +338,10 @@ def build_replay_snapshot(
     observations: dict[tuple[str, int], UnitProductState] = {}
     surfaces: dict[str, ProductSurfaceState] = {}
     observed_ids: set[int] = set()
+    orphan_candidates: dict[
+        tuple[str, int],
+        OrphanUnitProductObservation,
+    ] = {}
     sessions: list[ReplaySession] = []
     parser_incompatible = False
 
@@ -325,6 +354,7 @@ def build_replay_snapshot(
             observations=observations,
             surfaces=surfaces,
             observed_ids=observed_ids,
+            orphan_candidates=orphan_candidates,
         )
         sessions.append(replay)
         parser_incompatible = parser_incompatible or incompatible
@@ -338,10 +368,9 @@ def build_replay_snapshot(
         for numeric_id in sorted(observed_ids)
         for catalog_key, resolution in (catalog.resolve(numeric_id),)
     )
-    # Orphan evidence (a unit absent from the verified P4-B roster) still
-    # contributes observable product identity, but cannot become an FK-backed
-    # unit association or surface row. It is skipped deterministically, never
-    # joined by label and never treated as a deletion.
+    # Orphan evidence never becomes an FK-backed unit association, but it
+    # remains explicit and attributable so replay does not discard a successful
+    # typed observation merely because the P4-B roster never verified its unit.
     unit_ids = set(units)
     unit_products = tuple(
         sorted(
@@ -349,6 +378,16 @@ def build_replay_snapshot(
                 value
                 for value in observations.values()
                 if value.unit_id in unit_ids
+            ),
+            key=lambda item: (item.unit_id, item.product_numeric_id),
+        )
+    )
+    orphan_unit_products = tuple(
+        sorted(
+            (
+                value
+                for value in orphan_candidates.values()
+                if value.unit_id not in unit_ids
             ),
             key=lambda item: (item.unit_id, item.product_numeric_id),
         )
@@ -383,6 +422,7 @@ def build_replay_snapshot(
         units=tuple(sorted(units.values(), key=lambda item: item.unit_id)),
         products=products,
         unit_products=unit_products,
+        orphan_unit_products=orphan_unit_products,
         surfaces=projected_surfaces,
         status="stale" if parser_incompatible else "ready",
         stale_reason=(
