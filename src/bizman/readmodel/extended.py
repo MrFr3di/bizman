@@ -237,6 +237,269 @@ def _observation_ref(
     raise ValueError(f"{source}: observation requires capture/entry or session/seq")
 
 
+def _session_endpoint_records(root: Path) -> list[KnowledgeRecord]:
+    dataset_root = root / "knowledge" / "http" / "session-endpoints"
+    index_path = dataset_root / "index.json"
+    if not index_path.is_file():
+        return []
+
+    index = _mapping(_load_json(index_path), source=index_path.as_posix())
+    if index.get("schema_version") != "1.0":
+        raise ValueError(f"{index_path}: unsupported schema_version")
+    source_session = _text(
+        index.get("source_session"),
+        source=index_path.as_posix(),
+        field="source_session",
+    )
+    source_id = _text(
+        index.get("source_id"),
+        source=index_path.as_posix(),
+        field="source_id",
+    )
+    total = _non_negative_int(
+        index.get("total_records"),
+        source=index_path.as_posix(),
+        field="total_records",
+    )
+    raw_parts = index.get("parts")
+    if not isinstance(raw_parts, list):
+        raise ValueError(f"{index_path}: parts must be an array")
+
+    records: list[KnowledgeRecord] = []
+    seen_paths: set[str] = set()
+    expected_offset = 0
+    seen_part_paths: set[Path] = set()
+    for part_index, raw_part in enumerate(raw_parts):
+        part_source = f"{index_path.as_posix()}#part-{part_index}"
+        part = _mapping(raw_part, source=part_source)
+        offset = _non_negative_int(
+            part.get("offset"),
+            source=part_source,
+            field="offset",
+        )
+        count = _non_negative_int(
+            part.get("records"),
+            source=part_source,
+            field="records",
+        )
+        if offset != expected_offset:
+            raise ValueError(
+                f"{part_source}: offset {offset} != expected {expected_offset}"
+            )
+        part_path = _safe_child(
+            dataset_root,
+            part.get("file"),
+            source=part_source,
+            field="part file",
+        )
+        if part_path in seen_part_paths:
+            raise ValueError(
+                f"{part_source}: duplicate session-endpoint part {part_path.name!r}"
+            )
+        seen_part_paths.add(part_path)
+
+        document = _mapping(_load_json(part_path), source=part_path.as_posix())
+        if document.get("schema_version") != "1.0":
+            raise ValueError(f"{part_path}: unsupported schema_version")
+        items = document.get("records")
+        if not isinstance(items, list) or len(items) != count:
+            raise ValueError(
+                f"{part_path}: records must match declared count {count}"
+            )
+
+        for item_index, raw_item in enumerate(items):
+            item_source = f"{part_path.as_posix()}#record-{item_index}"
+            item = _mapping(raw_item, source=item_source)
+            if item.get("confidence") != "observed":
+                raise ValueError(
+                    f"{item_source}: session endpoint confidence must be observed"
+                )
+            if item.get("source_session") != source_session:
+                raise ValueError(
+                    f"{item_source}: source_session disagrees with manifest"
+                )
+            path_pattern = _text(
+                item.get("path_pattern"),
+                source=item_source,
+                field="path_pattern",
+            )
+            if path_pattern in seen_paths:
+                raise ValueError(
+                    f"{item_source}: duplicate session endpoint path_pattern"
+                )
+            seen_paths.add(path_pattern)
+
+            count_value = _non_negative_int(
+                item.get("count"),
+                source=item_source,
+                field="count",
+            )
+            if count_value == 0:
+                raise ValueError(
+                    f"{item_source}: session endpoint count must be positive"
+                )
+            methods_raw = item.get("methods")
+            if not isinstance(methods_raw, Mapping) or not methods_raw:
+                raise ValueError(
+                    f"{item_source}: methods must be a non-empty object"
+                )
+            method_total = 0
+            methods: list[str] = []
+            for raw_method, raw_count in methods_raw.items():
+                method = _text(
+                    raw_method,
+                    source=item_source,
+                    field="method",
+                ).upper()
+                method_count = _non_negative_int(
+                    raw_count,
+                    source=item_source,
+                    field=f"methods.{raw_method}",
+                )
+                method_total += method_count
+                methods.append(method)
+            if method_total != count_value:
+                raise ValueError(
+                    f"{item_source}: method counts disagree with count"
+                )
+
+            query_keys = tuple(
+                sorted(
+                    _string_list(
+                        item.get("query_keys", []),
+                        source=item_source,
+                        field="query_keys",
+                    )
+                )
+            )
+            mime_types_raw = item.get("mime_types", {})
+            if not isinstance(mime_types_raw, Mapping):
+                raise ValueError(
+                    f"{item_source}: mime_types must be an object"
+                )
+            mime_types = tuple(
+                sorted(
+                    _text(
+                        mime_type,
+                        source=item_source,
+                        field="mime_type",
+                    )
+                    for mime_type in mime_types_raw
+                )
+            )
+            evidence = _string_list(
+                item.get("evidence"),
+                source=item_source,
+                field="evidence",
+            )
+            if not evidence:
+                raise ValueError(
+                    f"{item_source}: session endpoint requires evidence"
+                )
+            if not all(ref.startswith(f"{source_id}#seq-") for ref in evidence):
+                raise ValueError(
+                    f"{item_source}: evidence source disagrees with manifest"
+                )
+
+            classification = _text(
+                item.get("classification"),
+                source=item_source,
+                field="classification",
+            )
+            observed_in_census = item.get("observed_in_canonical_census")
+            if not isinstance(observed_in_census, bool):
+                raise ValueError(
+                    f"{item_source}: observed_in_canonical_census must be boolean"
+                )
+            expected_classification = (
+                "known-endpoint"
+                if observed_in_census
+                else "new-endpoint"
+            )
+            if classification != expected_classification:
+                raise ValueError(
+                    f"{item_source}: classification disagrees with census flag"
+                )
+
+            ref = _versioned_ref(
+                "endpoint",
+                {"path_pattern": path_pattern},
+            )
+            aliases = (
+                f"endpoint:{path_pattern}",
+                path_pattern,
+                *(f"{method} {path_pattern}" for method in sorted(set(methods))),
+            )
+            body = " ".join(
+                (
+                    path_pattern,
+                    *sorted(set(methods)),
+                    *query_keys,
+                    *mime_types,
+                    classification,
+                )
+            )
+            records.append(
+                KnowledgeRecord(
+                    ref=ref,
+                    kind=RefKind.ENDPOINT,
+                    title=path_pattern,
+                    aliases=aliases,
+                    body=body,
+                    evidence_refs=tuple(evidence),
+                    source_dataset="session_endpoints",
+                )
+            )
+
+        expected_offset += count
+
+    if len(records) != total:
+        raise ValueError(
+            f"{index_path}: declared total_records {total} != {len(records)} records"
+        )
+    return records
+
+
+def _merge_endpoint_records(
+    canonical: list[KnowledgeRecord],
+    session: list[KnowledgeRecord],
+) -> list[KnowledgeRecord]:
+    merged = {record.ref: record for record in canonical}
+    if len(merged) != len(canonical):
+        raise ValueError("canonical endpoint projection contains duplicate refs")
+
+    for candidate in session:
+        existing = merged.get(candidate.ref)
+        if existing is None:
+            merged[candidate.ref] = candidate
+            continue
+        if (
+            existing.kind != RefKind.ENDPOINT
+            or candidate.kind != RefKind.ENDPOINT
+            or existing.title != candidate.title
+        ):
+            raise ValueError(
+                f"endpoint ref collision has incompatible semantics: {candidate.ref}"
+            )
+        body_terms = tuple(
+            dict.fromkeys(
+                (*existing.body.split(), *candidate.body.split())
+            )
+        )
+        merged[candidate.ref] = KnowledgeRecord(
+            ref=existing.ref,
+            kind=RefKind.ENDPOINT,
+            title=existing.title,
+            aliases=tuple((*existing.aliases, *candidate.aliases)),
+            body=" ".join(body_terms),
+            evidence_refs=tuple(
+                (*existing.evidence_refs, *candidate.evidence_refs)
+            ),
+            source_dataset="endpoints",
+        )
+    return list(merged.values())
+
+
 def _endpoint_records(
     root: Path,
     *,
@@ -336,7 +599,10 @@ def _endpoint_records(
         raise ValueError(
             f"{index_path}: declared total_records {total} != {len(records)} records"
         )
-    return records
+    return _merge_endpoint_records(
+        records,
+        _session_endpoint_records(root),
+    )
 
 
 def _operation_records(
