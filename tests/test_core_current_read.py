@@ -231,7 +231,7 @@ class CoreCurrentReadDtoTests(unittest.TestCase):
             last_sequence=None,
         )
         with self.assertRaises((FrozenInstanceError, AttributeError, TypeError)):
-            setattr(status, "status", "stale")
+            status.status = "stale"
         self.assertEqual(tuple(fields(CurrentStatusRequest)), ())
 
     def test_request_and_page_validation_fails_closed(self):
