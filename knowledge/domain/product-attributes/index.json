@@ -27,5 +27,5 @@
   }
  ],
  "confidence": "documented",
- "note": "Documented product attributes and recipes captured from the help pages on 2026-10-03. Kept separate from knowledge/domain/products so the projected product records keep only evidence refs resolvable by bizman.core.trace_evidence; every record carries source.uri and html_sha256 for source-level webcopy provenance."
+ "note": "Documented product attributes and recipes captured from the help pages on 2026-10-03. Kept separate from knowledge/domain/products as source data; Agent Index enriches canonical product records with these terms and traceable webcopy evidence refs. Every record also carries source.uri and html_sha256 for page-level provenance."
 }
