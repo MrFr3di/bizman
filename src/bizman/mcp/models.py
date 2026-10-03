@@ -8,6 +8,13 @@ from bizman.core import (
     ChangeGetResult as CoreChangeGetResult,
     ChangePage as CoreChangePage,
     ChangeRecord as CoreChangeRecord,
+    CurrentCompanyPage as CoreCurrentCompanyPage,
+    CurrentCompanyRecord as CoreCurrentCompanyRecord,
+    CurrentProductPage as CoreCurrentProductPage,
+    CurrentProductRecord as CoreCurrentProductRecord,
+    CurrentStatusResult as CoreCurrentStatusResult,
+    CurrentUnitPage as CoreCurrentUnitPage,
+    CurrentUnitRecord as CoreCurrentUnitRecord,
     EvidenceTraceResult as CoreEvidenceTraceResult,
     KnowledgeGetResult,
     KnowledgeHit,
@@ -215,6 +222,85 @@ class ChangeGetResult(BaseModel):
     change: ChangeItem | None
 
 
+class CurrentStatusResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    projection_name: str
+    projection_version: int
+    analysis_profile_sha256: str
+    input_fingerprint: str
+    state_fingerprint: str
+    status: str
+    stale_reason: str | None = None
+    session_count: int
+    last_session_id: str | None = None
+    last_sequence: int | None = None
+
+
+class CurrentCompanyItem(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    company_id: str
+    name: str
+    source_session_id: str
+    source_sequence: int
+    observed_at: str
+
+
+class CurrentCompanyListResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    items: Annotated[tuple[CurrentCompanyItem, ...], Field(max_length=50)]
+    next_cursor: str | None = None
+
+
+class CurrentUnitItem(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    unit_id: str
+    company_id: str
+    display_name: str
+    city_name: str
+    level: int
+    source_session_id: str
+    source_sequence: int
+    observed_at: str
+
+
+class CurrentUnitListResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    items: Annotated[tuple[CurrentUnitItem, ...], Field(max_length=50)]
+    next_cursor: str | None = None
+
+
+class CurrentProductItem(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    unit_id: str
+    product_numeric_id: int
+    revenue: int
+    profit: int
+    stock_qty: int
+    stock_quality: float
+    our_price: int
+    city_quality: float
+    city_price: int
+    sales_volume: int
+    supply_qty: int
+    supply_cost: int
+    source_session_id: str
+    source_sequence: int
+    observed_at: str
+
+
+class CurrentProductListResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    items: Annotated[tuple[CurrentProductItem, ...], Field(max_length=50)]
+    next_cursor: str | None = None
+
+
 def _hit(value: KnowledgeHit) -> EvidenceHit:
     return EvidenceHit(
         ref=value.ref,
@@ -269,6 +355,33 @@ def _change(value: CoreChangeRecord) -> ChangeItem:
         **{
             field: getattr(value, field)
             for field in ChangeItem.model_fields
+        }
+    )
+
+
+def _current_company(value: CoreCurrentCompanyRecord) -> CurrentCompanyItem:
+    return CurrentCompanyItem(
+        **{
+            field: getattr(value, field)
+            for field in CurrentCompanyItem.model_fields
+        }
+    )
+
+
+def _current_unit(value: CoreCurrentUnitRecord) -> CurrentUnitItem:
+    return CurrentUnitItem(
+        **{
+            field: getattr(value, field)
+            for field in CurrentUnitItem.model_fields
+        }
+    )
+
+
+def _current_product(value: CoreCurrentProductRecord) -> CurrentProductItem:
+    return CurrentProductItem(
+        **{
+            field: getattr(value, field)
+            for field in CurrentProductItem.model_fields
         }
     )
 
@@ -350,10 +463,53 @@ def change_get_result(value: CoreChangeGetResult) -> ChangeGetResult:
     )
 
 
+def current_status_result(value: CoreCurrentStatusResult) -> CurrentStatusResult:
+    return CurrentStatusResult(
+        **{
+            field: getattr(value, field)
+            for field in CurrentStatusResult.model_fields
+        }
+    )
+
+
+def current_company_list_result(
+    value: CoreCurrentCompanyPage,
+) -> CurrentCompanyListResult:
+    return CurrentCompanyListResult(
+        items=tuple(_current_company(item) for item in value.items),
+        next_cursor=value.next_cursor,
+    )
+
+
+def current_unit_list_result(
+    value: CoreCurrentUnitPage,
+) -> CurrentUnitListResult:
+    return CurrentUnitListResult(
+        items=tuple(_current_unit(item) for item in value.items),
+        next_cursor=value.next_cursor,
+    )
+
+
+def current_product_list_result(
+    value: CoreCurrentProductPage,
+) -> CurrentProductListResult:
+    return CurrentProductListResult(
+        items=tuple(_current_product(item) for item in value.items),
+        next_cursor=value.next_cursor,
+    )
+
+
 __all__ = [
     "ChangeGetResult",
     "ChangeItem",
     "ChangeListResult",
+    "CurrentCompanyItem",
+    "CurrentCompanyListResult",
+    "CurrentProductItem",
+    "CurrentProductListResult",
+    "CurrentStatusResult",
+    "CurrentUnitItem",
+    "CurrentUnitListResult",
     "EvidenceGetResult",
     "EvidenceHit",
     "EvidenceItem",
@@ -369,4 +525,8 @@ __all__ = [
     "SessionListResult",
     "SessionSummaryItem",
     "SessionSummaryResult",
+    "current_company_list_result",
+    "current_product_list_result",
+    "current_status_result",
+    "current_unit_list_result",
 ]

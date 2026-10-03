@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-import base64
-import binascii
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
-import hashlib
-import hmac
-import json
 import re
 import sqlite3
 
@@ -19,6 +14,7 @@ from bizman.core.errors import (
     DataIntegrityError,
     OperationError,
 )
+from bizman.core.pagination import decode_cursor, encode_cursor
 from bizman.readmodel.model import KnowledgeRecord as ReadKnowledgeRecord
 from bizman.readmodel.model import RefKind, SearchHit as ReadSearchHit, SearchQuery
 from bizman.readmodel.runtime import (
@@ -35,8 +31,6 @@ from bizman.readmodel.store import (
 
 _MAX_QUERY_LENGTH = 512
 _MAX_LIMIT = 50
-_CURSOR_VERSION = 1
-_CURSOR_PREFIX = "bmcur1."
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _SESSION_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
@@ -108,96 +102,6 @@ def _normalize_kinds(values: object) -> tuple[str, ...]:
         if value not in result:
             result.append(value)
     return tuple(result)
-
-
-def _canonical_json(value: object) -> bytes:
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-
-
-def _encode_cursor(
-    *,
-    kind: str,
-    scope: str,
-    generation: str,
-    key: tuple[str, str],
-) -> str:
-    if _SHA256_RE.fullmatch(generation) is None:
-        raise ValueError("cursor generation must be a lowercase SHA-256")
-    payload = {
-        "generation": generation,
-        "kind": kind,
-        "scope": scope,
-        "key": list(key),
-        "version": _CURSOR_VERSION,
-    }
-    payload_bytes = _canonical_json(payload)
-    envelope = {
-        "payload": payload,
-        "sha256": hashlib.sha256(payload_bytes).hexdigest(),
-    }
-    token = base64.urlsafe_b64encode(_canonical_json(envelope)).decode("ascii").rstrip("=")
-    return _CURSOR_PREFIX + token
-
-
-def _decode_cursor(
-    cursor: str,
-    *,
-    kind: str,
-    scope: str,
-) -> tuple[str, str, str]:
-    _require_text(cursor, name="cursor")
-    if not cursor.startswith(_CURSOR_PREFIX):
-        raise ValueError("cursor has an unsupported format")
-    encoded = cursor[len(_CURSOR_PREFIX) :]
-    if not encoded:
-        raise ValueError("cursor payload is empty")
-    padding = "=" * (-len(encoded) % 4)
-    try:
-        raw = base64.b64decode(
-            (encoded + padding).encode("ascii"),
-            altchars=b"-_",
-            validate=True,
-        )
-        envelope = json.loads(raw.decode("utf-8"))
-    except (UnicodeError, binascii.Error, json.JSONDecodeError) as exc:
-        raise ValueError("cursor is malformed") from exc
-    canonical_encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
-    if not hmac.compare_digest(encoded, canonical_encoded):
-        raise ValueError("cursor encoding is not canonical")
-    if not isinstance(envelope, dict) or set(envelope) != {"payload", "sha256"}:
-        raise ValueError("cursor envelope is invalid")
-    payload = envelope["payload"]
-    checksum = envelope["sha256"]
-    if (
-        not isinstance(payload, dict)
-        or set(payload) != {"generation", "kind", "scope", "key", "version"}
-        or not isinstance(checksum, str)
-        or _SHA256_RE.fullmatch(checksum) is None
-    ):
-        raise ValueError("cursor envelope is invalid")
-    expected = hashlib.sha256(_canonical_json(payload)).hexdigest()
-    if not hmac.compare_digest(checksum, expected):
-        raise ValueError("cursor integrity check failed")
-    if payload["version"] != _CURSOR_VERSION:
-        raise ValueError("cursor version is unsupported")
-    if payload["kind"] != kind or payload["scope"] != scope:
-        raise ValueError("cursor does not belong to this query")
-    generation = payload["generation"]
-    if not isinstance(generation, str) or _SHA256_RE.fullmatch(generation) is None:
-        raise ValueError("cursor generation is invalid")
-    key = payload["key"]
-    if (
-        not isinstance(key, list)
-        or len(key) != 2
-        or not all(isinstance(value, str) and value for value in key)
-    ):
-        raise ValueError("cursor key is invalid")
-    return generation, key[0], key[1]
 
 
 def _kind_values(values: tuple[str, ...]) -> tuple[RefKind, ...]:
@@ -308,7 +212,7 @@ class SessionListRequest:
     def __post_init__(self) -> None:
         _require_limit(self.limit)
         if self.cursor is not None:
-            _, started_at, session_id = _decode_cursor(
+            _, started_at, session_id = decode_cursor(
                 self.cursor,
                 kind="sessions",
                 scope="*",
@@ -409,7 +313,7 @@ class SessionAnomalyListRequest:
     def __post_init__(self) -> None:
         _require_limit(self.limit)
         if self.cursor is not None:
-            _, started_at, session_id = _decode_cursor(
+            _, started_at, session_id = decode_cursor(
                 self.cursor,
                 kind="session-anomalies",
                 scope="*",
@@ -453,7 +357,7 @@ class ChangeListRequest:
         profile = _require_profile(self.analysis_profile_sha256, optional=True)
         scope = profile if profile is not None else "*"
         if self.cursor is not None:
-            _, cursor_profile, change_id = _decode_cursor(
+            _, cursor_profile, change_id = decode_cursor(
                 self.cursor,
                 kind="changes",
                 scope=scope,
@@ -658,7 +562,7 @@ def list_sessions(
     if not isinstance(request, SessionListRequest):
         raise TypeError("request must be SessionListRequest")
     cursor_state = (
-        _decode_cursor(request.cursor, kind="sessions", scope="*")
+        decode_cursor(request.cursor, kind="sessions", scope="*")
         if request.cursor is not None
         else None
     )
@@ -677,7 +581,7 @@ def list_sessions(
     next_cursor = None
     if has_more and items:
         last = items[-1]
-        next_cursor = _encode_cursor(
+        next_cursor = encode_cursor(
             kind="sessions",
             scope="*",
             generation=generation,
@@ -734,7 +638,7 @@ def list_session_anomalies(
     if not isinstance(request, SessionAnomalyListRequest):
         raise TypeError("request must be SessionAnomalyListRequest")
     cursor_state = (
-        _decode_cursor(
+        decode_cursor(
             request.cursor,
             kind="session-anomalies",
             scope="*",
@@ -760,7 +664,7 @@ def list_session_anomalies(
     next_cursor = None
     if has_more and items:
         last = items[-1]
-        next_cursor = _encode_cursor(
+        next_cursor = encode_cursor(
             kind="session-anomalies",
             scope="*",
             generation=generation,
@@ -778,7 +682,7 @@ def list_changes(
     profile = request.analysis_profile_sha256
     scope = profile if profile is not None else "*"
     cursor_state = (
-        _decode_cursor(request.cursor, kind="changes", scope=scope)
+        decode_cursor(request.cursor, kind="changes", scope=scope)
         if request.cursor is not None
         else None
     )
@@ -801,7 +705,7 @@ def list_changes(
     next_cursor = None
     if has_more and items:
         last = items[-1]
-        next_cursor = _encode_cursor(
+        next_cursor = encode_cursor(
             kind="changes",
             scope=scope,
             generation=generation,
