@@ -359,6 +359,84 @@ def _validate_source_identity(root: Path, result: ValidationResult) -> None:
             )
         promoted_ids.add(source_id)
 
+    webcopy_ids: set[str] = set()
+    expected_webcopy_fields = {
+        "id",
+        "kind",
+        "host",
+        "captured_from",
+        "captured_to",
+        "origin_index",
+        "origin_index_sha256",
+        "entry_count",
+        "raw_source_committed",
+        "privacy",
+        "policy",
+        "note",
+    }
+    for path in sorted(source_dir.glob("webcopy-*.json")):
+        obj = _load_json(path, result)
+        if not isinstance(obj, dict):
+            continue
+        if set(obj) != expected_webcopy_fields:
+            result.errors.append(
+                f"{path}: webcopy manifest has unexpected fields"
+            )
+            continue
+        source_id = obj.get("id")
+        if not isinstance(source_id, str) or not source_id.startswith("src."):
+            result.errors.append(f"{path}: invalid webcopy source id")
+            continue
+        if (
+            source_id in webcopy_ids
+            or source_id in canonical_ids
+            or source_id in promoted_ids
+            or source_id in aliases
+        ):
+            result.errors.append(
+                f"{path}: duplicate provenance source id {source_id}"
+            )
+        webcopy_ids.add(source_id)
+        if obj.get("kind") != "webcopy_snapshot":
+            result.errors.append(f"{path}: invalid webcopy source kind")
+        if obj.get("raw_source_committed") is not False:
+            result.errors.append(
+                f"{path}: webcopy raw_source_committed must be false"
+            )
+        digest = obj.get("origin_index_sha256")
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or digest != digest.casefold()
+            or any(character not in "0123456789abcdef" for character in digest)
+        ):
+            result.errors.append(
+                f"{path}: invalid webcopy origin_index_sha256"
+            )
+        entry_count = obj.get("entry_count")
+        if (
+            isinstance(entry_count, bool)
+            or not isinstance(entry_count, int)
+            or entry_count <= 0
+        ):
+            result.errors.append(
+                f"{path}: webcopy entry_count must be positive integer"
+            )
+        for field_name in (
+            "host",
+            "captured_from",
+            "captured_to",
+            "origin_index",
+            "privacy",
+            "policy",
+            "note",
+        ):
+            value = obj.get(field_name)
+            if not isinstance(value, str) or not value:
+                result.errors.append(
+                    f"{path}: webcopy {field_name} must be non-empty text"
+                )
+
 
 def _scan_for_forbidden_files(root: Path, result: ValidationResult) -> None:
     forbidden_suffixes = {
