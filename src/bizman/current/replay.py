@@ -353,12 +353,22 @@ def build_replay_snapshot(
             key=lambda item: (item.unit_id, item.product_numeric_id),
         )
     )
+    # Every verified unit has an explicit shop.goods coverage row. Absence of
+    # goods evidence is UNKNOWN, not an implicit empty/known product roster.
     projected_surfaces = tuple(
         sorted(
             (
-                value
-                for value in surfaces.values()
-                if value.unit_id in unit_ids
+                surfaces.get(unit_id)
+                or ProductSurfaceState(
+                    unit_id=unit_id,
+                    surface=SURFACE,
+                    status="unknown",
+                    stale_reason=None,
+                    source_session_id=None,
+                    source_sequence=None,
+                    observed_at=None,
+                )
+                for unit_id in unit_ids
             ),
             key=lambda item: (item.unit_id, item.surface),
         )
