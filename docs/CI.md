@@ -20,7 +20,7 @@ The `collector-quality-gate` workflow currently performs four jobs.
 The full lane runs:
 
 1. `uv lock --check` and `uv sync --locked --extra telegram`; the `telegram` extra is synced in this lane so the telegram adapter tests and imports run against aiogram instead of being skipped.
-2. Ruff against the installable `src/bizman` package.
+2. Ruff against the whole repository, including `tests/` and `tools/`.
 3. Import Linter contracts for the package dependency directions.
 4. `python -m compileall -q src tools tests`.
 5. Full `unittest` discovery under exact-version-pinned Coverage.py `7.16.1`.
@@ -195,7 +195,7 @@ Install/sync the exact committed environment and run the same primary determinis
 ```bash
 uv lock --check
 uv sync --locked --extra telegram
-uv run ruff check src
+uv run ruff check
 uv run lint-imports
 uv run python -m compileall -q src tools tests
 uv run --locked --extra telegram --with coverage==7.16.1 coverage run -m unittest discover -s tests -v

@@ -40,7 +40,7 @@ Before proposing changes to `knowledge/`, `schemas/`, generated indexes, package
 ```bash
 uv lock --check
 uv sync --locked
-uv run ruff check src
+uv run ruff check
 uv run lint-imports
 uv run python -m compileall -q src tools tests
 uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v

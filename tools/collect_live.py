@@ -11,7 +11,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from bizman.cli.collect import legacy_main
+from bizman.cli.collect import legacy_main  # noqa: E402
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -11,22 +11,25 @@ import sys
 import tempfile
 import time
 import tracemalloc
-from typing import Any, Callable, Iterable
+from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.bizman_detector.baseline import BaselineCompiler
-from tools.bizman_detector.evidence import EvidenceReader
-from tools.bizman_detector.extract import ObservationExtractor
-from tools.bizman_detector.model import PathMatch
-from tools.bizman_detector.normalization import (
+from tools.bizman_detector.baseline import BaselineCompiler  # noqa: E402
+from tools.bizman_detector.evidence import EvidenceReader  # noqa: E402
+from tools.bizman_detector.extract import ObservationExtractor  # noqa: E402
+from tools.bizman_detector.model import PathMatch  # noqa: E402
+from tools.bizman_detector.normalization import (  # noqa: E402
     AmbiguousPathError,
     PathMatcher,
     normalize_origin_relative_path,
 )
-from tools.bizman_foundation.redaction import RedactionPolicy, load_redaction_policy
+from tools.bizman_foundation.redaction import (  # noqa: E402
+    RedactionPolicy,
+    load_redaction_policy,
+)
 
 
 SESSION_ID = "01991c7d-a400-7000-8000-00000000b001"
