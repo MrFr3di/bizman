@@ -18,7 +18,7 @@ import os
 import sys
 
 from bizman.core import CoreContext, RepositoryAssets, SystemUtcClock
-from bizman.telegram.bot import parse_allowed_chat_ids, run_polling_sync
+from bizman.telegram.commands import parse_allowed_chat_ids
 
 _LOG = logging.getLogger("bizman.telegram")
 
@@ -70,8 +70,14 @@ def main(argv: list[str] | None = None) -> int:
         _LOG.error("startup configuration failed: %s", exc)
         return 2
 
+    try:
+        from bizman.telegram import bot
+    except ImportError:
+        _LOG.error("startup requires the telegram extra: install bizman[telegram]")
+        return 2
+
     _LOG.info("BizMan Telegram adapter started; authorized chats: %d", len(allowed_chat_ids))
-    run_polling_sync(context, token.strip(), allowed_chat_ids)
+    bot.run_polling_sync(context, token.strip(), allowed_chat_ids)
     return 0
 
 

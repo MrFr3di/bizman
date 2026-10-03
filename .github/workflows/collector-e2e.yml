@@ -45,12 +45,12 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.12.10"
+          version: "0.12.22"
           enable-cache: true
       - name: Sync locked environment
         run: |
           uv lock --check
-          uv sync --locked
+          uv sync --locked --extra telegram
       - name: Lint Python sources
         run: uv run ruff check src
       - name: Enforce package architecture
@@ -59,8 +59,8 @@ jobs:
         run: uv run python -m compileall -q src tools tests
       - name: Run unit and contract tests with coverage
         run: |
-          uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
-          uv run --locked --with coverage==7.16.1 coverage xml
+          uv run --locked --extra telegram --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
+          uv run --locked --extra telegram --with coverage==7.16.1 coverage xml
       - name: Upload Python coverage report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -247,10 +247,10 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.12.10"
+          version: "0.12.22"
           enable-cache: true
       - name: Sync locked environment
-        run: uv sync --locked
+        run: uv sync --locked --extra telegram
       - name: Compile installable package
         run: uv run python -m compileall -q src
       - name: Run Python floor contract smoke
@@ -277,6 +277,8 @@ jobs:
           PY
           uv run bizman --help
           uv run bizman-mcp --help
+          uv run --extra telegram python -c "import bizman.telegram.bot"
+          uv run --extra telegram bizman-telegram --help
 
   collector-e2e:
     needs: [validate, compatibility]
@@ -295,7 +297,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.12.10"
+          version: "0.12.22"
           enable-cache: true
       - name: Sync locked environment
         run: uv sync --locked
@@ -393,7 +395,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.12.10"
+          version: "0.12.22"
           enable-cache: true
       - name: Sync locked environment
         run: uv sync --locked

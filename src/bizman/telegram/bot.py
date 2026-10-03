@@ -17,43 +17,9 @@ from aiogram.types import Message
 
 from bizman.core import CoreContext
 from bizman.telegram import commands
+from bizman.telegram.commands import COMMAND_NAMES, is_authorized, parse_allowed_chat_ids
 
 _LOG = logging.getLogger("bizman.telegram")
-
-COMMAND_NAMES: frozenset[str] = frozenset(
-    (
-        "help",
-        "status",
-        "sessions",
-        "session",
-        "compare",
-        "anomalies",
-        "changes",
-        "change",
-        "k",
-        "kb",
-        "trace",
-    )
-)
-
-
-def parse_allowed_chat_ids(raw: str | None) -> frozenset[int]:
-    """Parse the strict chat allowlist; missing/invalid configuration fails closed."""
-    if raw is None:
-        raise ValueError("BIZMAN_TELEGRAM_CHAT_IDS is not set")
-    identifiers: set[int] = set()
-    for part in raw.split(","):
-        text = part.strip()
-        if not text:
-            raise ValueError("BIZMAN_TELEGRAM_CHAT_IDS contains an empty entry")
-        identifiers.add(int(text))
-    if not identifiers:
-        raise ValueError("BIZMAN_TELEGRAM_CHAT_IDS must contain at least one chat id")
-    return frozenset(identifiers)
-
-
-def is_authorized(chat_id: int, allowed_chat_ids: frozenset[int]) -> bool:
-    return chat_id in allowed_chat_ids
 
 
 def build_router(
@@ -66,7 +32,7 @@ def build_router(
     async def on_command(message: Message) -> None:
         if not is_authorized(message.chat.id, allowed_chat_ids):
             return
-        reply = commands.execute(context, message.text or "")
+        reply = await asyncio.to_thread(commands.execute, context, message.text or "")
         await message.answer(reply)
 
     return router

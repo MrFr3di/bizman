@@ -61,12 +61,15 @@ class DistributionContractTests(unittest.TestCase):
         self.assertEqual(
             project["dependencies"],
             [
-                "aiogram>=3.15,<4",
                 "jsonschema[format]>=4.26,<5",
                 "mcp>=2.2,<3",
                 "pydantic>=2.12,<3",
                 "websockets>=17.1,<18",
             ],
+        )
+        self.assertEqual(
+            project["optional-dependencies"]["telegram"],
+            ["aiogram>=3.15,<4"],
         )
 
         build = value["build-system"]
@@ -77,7 +80,7 @@ class DistributionContractTests(unittest.TestCase):
             value["dependency-groups"]["dev"],
             ["ruff==0.16.3", "import-linter==2.15"],
         )
-        self.assertEqual(value["tool"]["uv"]["required-version"], "==0.12.10")
+        self.assertEqual(value["tool"]["uv"]["required-version"], "==0.12.22")
         ruff = value["tool"]["ruff"]
         self.assertEqual(ruff["target-version"], "py311")
         self.assertEqual(ruff["lint"]["select"], ["E4", "E7", "E9", "F", "I", "B", "RUF"])
@@ -94,6 +97,10 @@ class DistributionContractTests(unittest.TestCase):
         self.assertEqual(lock["requires-python"], ">=3.11")
         packages = {item["name"]: item for item in lock["package"]}
         self.assertEqual(packages["aiogram"]["version"], "3.31.0")
+        self.assertEqual(
+            packages["bizman"]["optional-dependencies"]["telegram"],
+            [{"name": "aiogram"}],
+        )
         self.assertEqual(packages["jsonschema"]["version"], "4.26.0")
         self.assertEqual(packages["mcp"]["version"], "2.2.0")
         self.assertIn("pydantic", packages)

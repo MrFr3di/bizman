@@ -54,6 +54,42 @@ _PROFILE_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _EVIDENCE_REF_RE = re.compile(r"^[a-z0-9][a-z0-9.-]*#(?:entry|seq)-(?:0|[1-9][0-9]*)$")
 _REF_RE = re.compile(r"^[A-Za-z0-9_.-]{1,256}$")
 
+COMMAND_NAMES: frozenset[str] = frozenset(
+    (
+        "help",
+        "status",
+        "sessions",
+        "session",
+        "compare",
+        "anomalies",
+        "changes",
+        "change",
+        "k",
+        "kb",
+        "trace",
+    )
+)
+
+
+def parse_allowed_chat_ids(raw: str | None) -> frozenset[int]:
+    """Parse the strict chat allowlist; missing/invalid configuration fails closed."""
+    if raw is None:
+        raise ValueError("BIZMAN_TELEGRAM_CHAT_IDS is not set")
+    identifiers: set[int] = set()
+    for part in raw.split(","):
+        text = part.strip()
+        if not text:
+            raise ValueError("BIZMAN_TELEGRAM_CHAT_IDS contains an empty entry")
+        identifiers.add(int(text))
+    if not identifiers:
+        raise ValueError("BIZMAN_TELEGRAM_CHAT_IDS must contain at least one chat id")
+    return frozenset(identifiers)
+
+
+def is_authorized(chat_id: int, allowed_chat_ids: frozenset[int]) -> bool:
+    return chat_id in allowed_chat_ids
+
+
 _ERROR_REPLIES: tuple[tuple[type[BaseException], str], ...] = (
     (
         AssetError,
@@ -307,4 +343,4 @@ def execute(context: CoreContext, message_text: str) -> str:
     return fmt.trim(reply)
 
 
-__all__ = ["execute"]
+__all__ = ["COMMAND_NAMES", "execute", "is_authorized", "parse_allowed_chat_ids"]

@@ -9,7 +9,7 @@ The repository is public. GitHub-hosted CI is used as a pull-request quality gat
 - No routine `push` workflow.
 - No scheduled workflow unless a future monitoring use case justifies it.
 
-The environment is reproducible from `pyproject.toml` plus the committed `uv.lock`. CI uses `uv 0.12.10`; the project requires Python >=3.11, with Python 3.14 as the primary/full lane.
+The environment is reproducible from `pyproject.toml` plus the committed `uv.lock`. CI uses `uv 0.12.22`; the project requires Python >=3.11, with Python 3.14 as the primary/full lane.
 
 ## Quality gate
 
@@ -19,7 +19,7 @@ The `collector-quality-gate` workflow currently performs four jobs.
 
 The full lane runs:
 
-1. `uv lock --check` and `uv sync --locked`.
+1. `uv lock --check` and `uv sync --locked --extra telegram`; the `telegram` extra is synced in this lane so the telegram adapter tests and imports run against aiogram instead of being skipped.
 2. Ruff against the installable `src/bizman` package.
 3. Import Linter contracts for the package dependency directions.
 4. `python -m compileall -q src tools tests`.
@@ -107,7 +107,8 @@ The proof requires:
 - public `bizman` packages, including `bizman.current` and `bizman.mcp`, import from the installed wheel rather than the checkout;
 - the installed `bizman --help` console entry point works and exposes `collect`, `detect` and `validate`;
 - the installed `bizman-mcp --help` entry point is present and the protocol contract is exercised separately by the MCP tests/evaluator;
-- the installed `bizman-telegram --help` entry point is present; its runtime loop is never exercised in tests.
+- the installed `bizman-telegram --help` entry point is present; its runtime loop is never exercised in tests;
+- the plain wheel install stays aiogram-free by default: `import bizman.telegram` and `bizman-telegram --help` work without the `telegram` extra, and starting the polling loop fails closed with exit code 2 until `bizman[telegram]` is installed.
 
 Repository assets remain explicit external configuration through `RepositoryAssets`; packaging does not turn them into hidden package data.
 
@@ -115,7 +116,7 @@ Repository assets remain explicit external configuration through `RepositoryAsse
 
 Python 3.11 is intentionally a lightweight compatibility lane rather than a duplicate of the full Chrome/benchmark workload. It runs:
 
-- locked `uv sync`;
+- locked `uv sync --extra telegram`;
 - compile of the installable `src` package;
 - Core API/use-case contract tests;
 - Current State replay/store/company-unit contract tests;
@@ -123,8 +124,8 @@ Python 3.11 is intentionally a lightweight compatibility lane rather than a dupl
 - MCP API/evaluation contract tests;
 - package-migration semantic contract;
 - unified CLI parity tests;
-- imports of all current public package layers;
-- `bizman --help` and `bizman-mcp --help` smoke.
+- imports of all current public package layers, including `bizman.telegram.bot` with the `telegram` extra;
+- `bizman --help`, `bizman-mcp --help` and `bizman-telegram --help` smoke.
 
 The heavy jobs depend on both `validate` and `compatibility`, so a Python-floor regression fails early and avoids unnecessary Chrome/benchmark execution.
 
@@ -193,12 +194,12 @@ Install/sync the exact committed environment and run the same primary determinis
 
 ```bash
 uv lock --check
-uv sync --locked
+uv sync --locked --extra telegram
 uv run ruff check src
 uv run lint-imports
 uv run python -m compileall -q src tools tests
-uv run --locked --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
-uv run --locked --with coverage==7.16.1 coverage xml
+uv run --locked --extra telegram --with coverage==7.16.1 coverage run -m unittest discover -s tests -v
+uv run --locked --extra telegram --with coverage==7.16.1 coverage xml
 uv run python tools/validate_repo.py
 uv run python tools/evaluations/mcp_p3.py
 ```
