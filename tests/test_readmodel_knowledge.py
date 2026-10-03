@@ -280,7 +280,7 @@ class KnowledgeIndexTests(unittest.TestCase):
                     )
                     self.assertEqual(
                         connection.execute("SELECT COUNT(*) FROM ref").fetchone()[0],
-                        590,
+                        632,
                     )
 
             with KnowledgeIndex(first_path) as index:
