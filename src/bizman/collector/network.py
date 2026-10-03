@@ -4,8 +4,8 @@ import base64
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
-import json
 import ipaddress
+import json
 from pathlib import Path
 import re
 from typing import Any
