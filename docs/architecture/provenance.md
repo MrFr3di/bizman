@@ -47,11 +47,11 @@ Repository validation checks the registry schemas and prevents source-id collisi
 It returns a frozen, path-free `EvidenceTraceResult` containing bounded metadata such as:
 
 - original evidence ref and source id;
-- source kind (`har_capture` / `promoted_session`);
+- source kind (`har_capture` / `promoted_session` / `webcopy_snapshot`);
 - locator kind and ordinal;
 - source record/event count;
 - whether raw source bytes are committed;
-- exact HAR SHA-256 when available;
+- source-level SHA-256 when available (raw HAR hash or webcopy origin-index hash);
 - runtime session UUIDv7 when available;
 - documented observation time/window;
 - source privacy statement and provenance policy.
