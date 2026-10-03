@@ -1,0 +1,31 @@
+{
+ "schema_version": "1.0",
+ "source_id": "src.webcopy.bizmania.2026-10-03.01",
+ "source": "https://bizmania.ru/help/products/?product=<slug>",
+ "total_count": 301,
+ "part_count": 4,
+ "parts": [
+  {
+   "path": "part-000.json",
+   "offset": 0,
+   "count": 76
+  },
+  {
+   "path": "part-001.json",
+   "offset": 76,
+   "count": 75
+  },
+  {
+   "path": "part-002.json",
+   "offset": 151,
+   "count": 75
+  },
+  {
+   "path": "part-003.json",
+   "offset": 226,
+   "count": 75
+  }
+ ],
+ "confidence": "documented",
+ "note": "Documented product attributes and recipes captured from the help pages on 2026-10-03. Kept separate from knowledge/domain/products so the projected product records keep only evidence refs resolvable by bizman.core.trace_evidence; every record carries source.uri and html_sha256 for source-level webcopy provenance."
+}

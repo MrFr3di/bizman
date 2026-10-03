@@ -2,9 +2,9 @@
   "schema_version": "2.0",
   "generated_at": "2026-09-07",
   "status": "curated-corpus-complete",
-  "source_capture_count": 3,
-  "network_entry_count": 17108,
-  "first_party_entry_count": 16202,
+  "source_capture_count": 4,
+  "network_entry_count": 17204,
+  "first_party_entry_count": 16294,
   "application_event_count": 555,
   "policy": {
     "raw_har_committed": false,
@@ -25,7 +25,7 @@
     "ci_workflow": ".github/workflows/collector-e2e.yml"
   },
   "datasets": [
-    {"id":"captures","path":"knowledge/sources/captures.json","format":"json","records":3,"purpose":"Source provenance, SHA-256, sizes and capture-level statistics"},
+    {"id":"captures","path":"knowledge/sources/captures.json","format":"json","records":4,"purpose":"Source provenance, SHA-256, sizes and capture-level statistics"},
     {"id":"application-events","path":"knowledge/http/application-events/index.json","format":"partition-manifest/jsonl","records":555,"purpose":"All first-party non-static BizMania network events"},
     {"id":"post-observations","path":"knowledge/http/post-observations.jsonl","format":"jsonl","records":17,"purpose":"All observed first-party POST requests with body/query evidence"},
     {"id":"write-actions","path":"knowledge/actions/catalog.json","format":"json","records":11,"purpose":"Normalized observed state-changing action families"},
@@ -36,13 +36,24 @@
     {"id":"json-responses","path":"knowledge/http/json-responses/index.json","format":"partition-manifest/jsonl","records":36,"purpose":"Unique captured first-party JSON responses"},
     {"id":"game-html-pages","path":"knowledge/pages/index.json","format":"partition-manifest/jsonl","records":180,"purpose":"Normalized text snapshots of captured non-Wiki game HTML pages"},
     {"id":"assets","path":"knowledge/http/assets/index.json","format":"partition-manifest/json","records":914,"purpose":"Static first-party resource census without committing binaries"},
+    {"id":"session-assets","path":"knowledge/http/session-assets/index.json","format":"partition-manifest/json","records":7,"purpose":"Static assets and query-key families observed in src.har.bizmania.2026-10-03.01 that the canonical asset census does not contain"},
     {"id":"javascript-index","path":"knowledge/javascript/script-index.json","format":"json","records":29,"purpose":"Unique captured JavaScript resources with hashes and provenance"},
     {"id":"javascript-snippets","path":"knowledge/javascript/relevant-snippets.jsonl","format":"jsonl","records":14,"purpose":"Relevant JavaScript functions/routes for protocol research"},
     {"id":"wiki-topics","path":"knowledge/wiki/topics/index.json","format":"partition-manifest/jsonl","records":87,"purpose":"Full normalized text of captured BizMania Wiki topics"},
     {"id":"wiki-navigation","path":"knowledge/wiki/navigation.json","format":"json","records":89,"purpose":"Wiki taxonomy and capture coverage; 87 captured topics plus 2 missing-from-capture navigation topics"},
+    {"id":"wiki-recovered-topics","path":"knowledge/wiki/recovered-topics/index.json","format":"partition-manifest/jsonl","records":89,"purpose":"Normalized Wiki topic revisions recovered on 2026-10-03; explicit revision of the canonical topics corpus with per-record reason and superseding observation reference"},
     {"id":"products","path":"knowledge/domain/products/index.json","format":"partition-manifest/json","records":303,"purpose":"Product catalog from Wiki plus observed numeric IDs"},
+    {"id":"product-categories","path":"knowledge/domain/product-categories/index.json","format":"partition-manifest/json","records":18,"purpose":"Product category grouping recovered from the captured Wiki product directory; preserves ambiguous display names with every candidate catalog id"},
+    {"id":"product-attributes","path":"knowledge/domain/product-attributes/index.json","format":"partition-manifest/json","records":301,"purpose":"Documented product attributes and recipes captured from the help pages: weight, volume, storage, retail group, production enterprise/department and material/quality/energy recipe per product"},
+    {"id":"buildings","path":"knowledge/domain/buildings.json","format":"json","purpose":"Building catalog (71 records): 48 price strings exactly as stated by the captured Wiki topic Виды зданий plus numeric construction ids and required materials for all 71 construction help entries"},
+    {"id":"enterprise-types","path":"knowledge/domain/enterprise-types/index.json","format":"partition-manifest/json","records":49,"purpose":"Enterprise type reference from the captured help pages: industry, required characteristic and company level, subdivisions and production schemes"},
+    {"id":"currency-rates","path":"knowledge/domain/currency-rates.json","format":"json","records":7,"purpose":"Official exchange rates exactly as captured from the help currency page; the base row is the Russian ruble at 1 p."},
+    {"id":"game-help","path":"knowledge/game-help/index.json","format":"partition-manifest/jsonl","records":34,"purpose":"First-party game help corpus captured 2026-10-03: 27 help topics, 6 reference pages and the BM-8 announcement"},
+    {"id":"legal","path":"knowledge/legal/index.json","format":"partition-manifest/jsonl","records":4,"purpose":"Game legislation captured 2026-10-03: the game rules and three in-game laws with revision strings where stated"},
     {"id":"domain-entities","path":"knowledge/domain/entities.json","format":"json","records":19,"purpose":"Observed company, city and unit entities with evidence"},
     {"id":"operation-index","path":"knowledge/http/operation-index.json","format":"json","purpose":"High-value operation-oriented index for automation and reverse engineering"},
+    {"id":"session-endpoints","path":"knowledge/http/session-endpoints/index.json","format":"partition-manifest/json","records":51,"purpose":"First-party endpoints observed while read-only navigating previously unobserved surfaces in promoted session src.session.walk.2026-10-03.01"},
+    {"id":"surface-probe","path":"knowledge/http/surface-probe/index.json","format":"partition-manifest/json","records":94,"purpose":"Per-surface probe outcome for every non-wiki first-party route that had no observed network event, including state-changing surfaces withheld pending approval"},
     {"id":"analytics-dimensions","path":"knowledge/domain/analytics-dimensions.json","format":"json","purpose":"Live-session analytic dimensions: product categories, country references and observed numeric product and character IDs"}
   ]
 }

@@ -26,6 +26,11 @@ from bizman.core.current_read import (
     list_current_units,
 )
 from bizman.core.detection import DetectionRequest, DetectorRunSummary, detect_changes
+from bizman.core.index import (
+    AgentIndexRebuildRequest,
+    AgentIndexRebuildResult,
+    rebuild_agent_index,
+)
 from bizman.core.errors import (
     AssetError,
     BizManError,
@@ -87,6 +92,8 @@ from bizman.core.validation import ValidationResult, validate_repository
 
 
 __all__ = [
+    "AgentIndexRebuildRequest",
+    "AgentIndexRebuildResult",
     "AssetError",
     "AssetId",
     "BizManError",
@@ -161,6 +168,7 @@ __all__ = [
     "list_session_anomalies",
     "list_sessions",
     "plan_current",
+    "rebuild_agent_index",
     "rebuild_current_state",
     "resolve_knowledge",
     "search_knowledge",

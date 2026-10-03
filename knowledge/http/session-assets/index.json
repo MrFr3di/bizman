@@ -1,0 +1,14 @@
+{
+ "schema_version": "1.0",
+ "source_id": "src.har.bizmania.2026-10-03.01",
+ "supersedes_dataset": "knowledge/http/assets/index.json",
+ "note": "Static assets and query-key families observed in src.har.bizmania.2026-10-03.01 that the canonical asset census does not contain.",
+ "total_records": 7,
+ "parts": [
+  {
+   "file": "part-000.json",
+   "records": 7,
+   "offset": 0
+  }
+ ]
+}
