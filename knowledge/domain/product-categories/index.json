@@ -1,0 +1,14 @@
+{
+ "schema_version": "1.0",
+ "source_id": "src.session.walk.2026-10-03.01",
+ "supersedes_field": "knowledge/domain/products/*.jsonl#categories",
+ "note": "Product grouping recovered from the captured Wiki directory. Ambiguous display names are preserved with every candidate id instead of being resolved.",
+ "total_records": 18,
+ "parts": [
+  {
+   "file": "part-000.json",
+   "records": 18,
+   "offset": 0
+  }
+ ]
+}

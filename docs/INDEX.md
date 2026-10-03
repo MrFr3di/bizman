@@ -14,7 +14,8 @@
 - `docs/research/captures.md` — сведения об исходных захватах.
 - `knowledge/sources/captures.json` — точные SHA-256 и capture-level метаданные HAR.
 - `knowledge/sources/promoted-sessions.json` — machine-readable provenance identity исторических promoted collector sessions.
-- `bizman.core.trace_evidence` / MCP `evidence.trace` — bounded provenance resolution без доступа к raw HAR/JSONL.
+- `knowledge/sources/webcopy-bizmania.2026-10-03.01.json` — манифест внешнего офлайн-снапшота публичных страниц; `docs/research/webcopy-2026-10-03.md` — методика, провенанс и границы извлечения.
+- `bizman.core.trace_evidence` / MCP `evidence.trace` — bounded provenance resolution без доступа к raw HAR/JSONL; webcopy-источник даёт source-level провенанс (path + uri + sha256).
 - `docs/ROADMAP.md` — текущий delivery stage и границы следующих этапов; P3 read-only MCP завершён, текущий этап — P4 Replayable Current State.
 
 ## Current State
@@ -37,6 +38,7 @@
 - `docs/benchmarks/p3e-mcp-baseline-2026-09-29.md` — durable P3-E baseline: retrieval parity, action provenance, call budgets, bounded schemas/results, sanitized errors and installed stdio proof.
 - `src/bizman/mcp/` — завершённый read-only stdio adapter из 14 Core-backed tools.
 - `src/bizman/telegram/` — read-only Telegram adapter (long polling, 16 команд) над тем же Core; токен и allowlist chat-id только через env.
+- `bizman.core.rebuild_agent_index` / CLI `bizman index-rebuild` — path-free пересборка derived Agent Index без передачи пути к БД.
 - Обычные agent/read/MCP запросы должны идти через Core, а не читать repository JSON/JSONL, detector SQLite или Agent Index напрямую.
 
 ## HTTP / протокол
@@ -49,6 +51,9 @@
 - `knowledge/http/forms/index.json` — 87 уникальных HTML-форм.
 - `knowledge/forms/parameters.json` — 74 параметра форм с sample values.
 - `knowledge/http/json-responses/index.json` — 36 JSON-response наблюдений.
+- `knowledge/http/session-assets/index.json` — 7 статических ресурсов и query-key семейств из захвата 2026-10-03, отсутствовавших в каноническом census.
+- `knowledge/http/session-endpoints/index.json` — 51 endpoint из read-only обхода 2026-10-03.
+- `knowledge/http/surface-probe/index.json` — 94 результата проверки поверхностей без наблюдавшихся сетевых событий.
 - `knowledge/http/operation-index.json` — компактный индекс важных операций.
 
 ## HTML и JavaScript
@@ -60,7 +65,12 @@
 
 ## Доменная модель
 
-- `knowledge/domain/products/index.json` — 303 товара.
+- `knowledge/domain/products/index.json` — 303 товара (каталог с устойчивыми ID и наблюдёнными numeric ID).
+- `knowledge/domain/product-categories/index.json` — 18 категорий товаров, восстановленных из вики-справочника; неоднозначные имена сохранены со всеми кандидатами.
+- `knowledge/domain/product-attributes/index.json` — 301 запись с документированными атрибутами и рецептами из help-страниц снапшота: вес, объём, хранение, розничная группа, производство, материалы/качество/энергия.
+- `knowledge/domain/buildings.json` — 71 запись: 48 зданий с ценниками ровно в том виде, как они записаны в вики, плюс numeric_id и требуемые материалы для всех 71 строительных страниц снапшота.
+- `knowledge/domain/enterprise-types/index.json` — 49 видов предприятий: отрасль, требуемая характеристика и уровень компании, подразделения, схемы производства.
+- `knowledge/domain/currency-rates.json` — 7 официальных курсов валют (базовая строка — российский рубль).
 - `knowledge/domain/entities.json` — 19 наблюдавшихся company/city/unit сущностей.
 - `knowledge/entities/observed-ids.json` — дополнительные извлечённые ID, если нужны низкоуровневые связи.
 
@@ -68,7 +78,10 @@
 
 - `docs/wiki/INDEX.md` — навигация по Wiki-корпусу.
 - `knowledge/wiki/topics/index.json` — 87 полных нормализованных Wiki-тем.
+- `knowledge/wiki/recovered-topics/index.json` — 89 тем, восстановленных 2026-10-03: явная ревизия канонического корпуса с причиной расхождения и ссылкой на наблюдение.
 - `knowledge/wiki/navigation.json` — taxonomy: 89 navigation topics, из них 87 захвачены.
+- `knowledge/game-help/index.json` — 34 записи первого help-корпуса: 27 тем, 6 справочных страниц и анонс БМ-8.
+- `knowledge/legal/index.json` — 4 записи: правила игры и три игровых закона с редакциями.
 
 ## Проверка
 

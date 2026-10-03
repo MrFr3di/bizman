@@ -1,0 +1,14 @@
+{
+ "schema_version": "1.0",
+ "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+ "source_id": "src.session.walk.2026-10-03.01",
+ "note": "Endpoint observations promoted from one read-only navigated collector session. Session bytes stay external to Git.",
+ "total_records": 51,
+ "parts": [
+  {
+   "file": "part-000.json",
+   "records": 51,
+   "offset": 0
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+{
+ "schema_version": "1.0",
+ "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+ "source_id": "src.session.walk.2026-10-03.01",
+ "supersedes_dataset": "knowledge/wiki/topics/index.json",
+ "note": "Normalized topic text recovered on 2026-10-03. The canonical corpus keeps its 2026-09-06 observation; every record here states why it differs instead of replacing it.",
+ "total_records": 89,
+ "parts": [
+  {
+   "file": "part-000.jsonl",
+   "records": 25,
+   "offset": 0
+  },
+  {
+   "file": "part-001.jsonl",
+   "records": 25,
+   "offset": 25
+  },
+  {
+   "file": "part-002.jsonl",
+   "records": 25,
+   "offset": 50
+  },
+  {
+   "file": "part-003.jsonl",
+   "records": 14,
+   "offset": 75
+  }
+ ]
+}

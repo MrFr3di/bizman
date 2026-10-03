@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-07",
+  "generated_at": "2026-10-03",
   "policy": "Raw HAR files are not committed. SHA-256 identifies the exact supplied source files; legacy IDs are aliases only.",
   "captures": [
     {
@@ -102,6 +102,36 @@
         {"mime": "application/javascript", "count": 89},
         {"mime": "application/json", "count": 89},
         {"mime": "image/jpeg", "count": 7}
+      ]
+    },
+    {
+      "source_id": "src.har.bizmania.2026-10-03.01",
+      "legacy_source_ids": ["har:bizmania-2026-10-03.har"],
+      "file_name": "bizmania-2026-10-03.har",
+      "sha256": "b1837f8a3402055d54fb8500f9e9b274bc3d36175cc3a0638fafa9cc40ed59e4",
+      "bytes": 1323385,
+      "entries": 96,
+      "first_party_entries": 92,
+      "application_entries": 3,
+      "started_at": "2026-10-03T10:05:46.939Z",
+      "ended_at": "2026-10-03T10:06:17.188Z",
+      "creator": {"name": "WebInspector", "version": "537.36"},
+      "pages": 1,
+      "methods": {"GET": 96},
+      "top_hosts": [
+        {"host": "bizmania.ru", "count": 92},
+        {"host": "mc.yandex.ru", "count": 3},
+        {"host": "counter.yadro.ru", "count": 1}
+      ],
+      "top_mime_types": [
+        {"mime": "image/png", "count": 29},
+        {"mime": "image/gif", "count": 20},
+        {"mime": "text/plain", "count": 17},
+        {"mime": "application/octet-stream", "count": 10},
+        {"mime": "text/css", "count": 8},
+        {"mime": "x-unknown", "count": 5},
+        {"mime": "text/html", "count": 3},
+        {"mime": "image/jpeg", "count": 1}
       ]
     }
   ]

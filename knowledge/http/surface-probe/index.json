@@ -1,0 +1,14 @@
+{
+ "schema_version": "1.0",
+ "source_session": "01a10134-7a8f-743d-bdb8-f3cc1d288519",
+ "source_id": "src.session.walk.2026-10-03.01",
+ "note": "Answers the open question 'is this discovered-reference surface real?' for every non-wiki first-party route that had no observed network event.",
+ "total_records": 94,
+ "parts": [
+  {
+   "file": "part-000.json",
+   "records": 94,
+   "offset": 0
+  }
+ ]
+}

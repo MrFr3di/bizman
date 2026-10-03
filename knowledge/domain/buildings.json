@@ -1,0 +1,7429 @@
+{
+ "schema_version": "1.1",
+ "count": 71,
+ "source_topic": "Виды зданий",
+ "confidence": "documented",
+ "webcopy_source": "src.webcopy.bizmania.2026-10-03.01",
+ "note": "Building catalog: 48 buildings with Wiki price strings, extended to all 71 construction entries captured from the construction help pages. Records without price_text have no price in the captured Wiki topic.",
+ "buildings": [
+  {
+   "id": "bm.building.01",
+   "name": "Черёмушки",
+   "price_text": "~ 1.27 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 16,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-922"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "96 480",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 168",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "129 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "576",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 728",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 160",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "10 800",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "7 200",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 080",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "360",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "36 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "10 800",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.02",
+   "name": "Космос",
+   "price_text": "~ 2.68 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 17,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-923"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "170 880",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "7 488",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "297 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 536",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 496",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 760",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 840",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 920",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "4 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 840",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "38 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 880",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "960",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "192 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "28 800",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.03",
+   "name": "Гетто",
+   "price_text": "~ 853.28 млн p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 19,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-924"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "72 360",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 376",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "97 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "432",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 296",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 620",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 080",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "540",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 350",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 080",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "10 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "810",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "270",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "54 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "8 100",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.04",
+   "name": "Пифагор",
+   "price_text": "~ 853.28 млн p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 20,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-925"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "72 360",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 376",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "97 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "432",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 296",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 620",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 080",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "540",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 350",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 080",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "10 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "810",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "270",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "54 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "8 100",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.05",
+   "name": "Сапфир",
+   "price_text": "~ 6.55 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 22,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-926"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "479 160",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "5 544",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "475 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "198 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "2 376",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "4 752",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "11 880",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "9 900",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "3 960",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "9 900",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "5 940",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "9 900",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "69 300",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "7 920",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "990",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "495 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "99 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "43 560",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.06",
+   "name": "Флагман",
+   "price_text": "~ 1.34 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 23,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-927"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "101 760",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 248",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "124 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "48 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "576",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 152",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 920",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 880",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "960",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "960",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "72 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "12 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "10 560",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.07",
+   "name": "Дубрава",
+   "price_text": "~ 1.66 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 24,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-928"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "121 680",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 024",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "158 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "4 320",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "720",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 152",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 520",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "3 600",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "25 200",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 880",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "360",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "180 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "36 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "15 840",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.08",
+   "name": "Березовая роща",
+   "price_text": "~ 2.02 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 25,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-929"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "152 640",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 872",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "187 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "72 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "864",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 728",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 880",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "4 320",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 440",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "21 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 440",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "720",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "108 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "18 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "15 840",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.09",
+   "name": "Рыжик",
+   "price_text": "~ 1 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 26,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-930"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "120 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 344",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "110 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "4 800",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "576",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 728",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 680",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "480",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "960",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "72 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "12 000",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.10",
+   "name": "Рябинушка",
+   "price_text": "~ 1.34 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 28,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-931"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "101 760",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 248",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "124 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "48 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "576",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 152",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 920",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 880",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "960",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "960",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "72 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "12 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "10 560",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.11",
+   "name": "Пионер",
+   "price_text": "~ 1.23 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 31,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-932"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "100 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 584",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "111 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "18 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "7 200",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "432",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "864",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 520",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 800",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 080",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "2 880",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "720",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 440",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "14 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "18 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.12",
+   "name": "Бригантина",
+   "price_text": "~ 1.50 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 32,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-933"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "180 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 016",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "165 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "7 200",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "864",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 592",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 520",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "21 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 440",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "720",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "108 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "18 000",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.13",
+   "name": "Свечка",
+   "price_text": "~ 1.11 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 33,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-934"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "81 120",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 016",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "105 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "2 880",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "480",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "768",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 680",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "480",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "2 400",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "16 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 920",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "240",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "120 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "24 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "10 560",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.14",
+   "name": "Рубин",
+   "price_text": "~ 1.47 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 35,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-935"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "108 160",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 688",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "140 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "3 840",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "640",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 024",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 240",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 280",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "640",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 600",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 280",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "3 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "22 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 560",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "320",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "160 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "32 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "14 080",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.15",
+   "name": "Олимп",
+   "price_text": "~ 2.12 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 36,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-936"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "154 880",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 792",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "153 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "64 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "768",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 536",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 840",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 200",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 280",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "3 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 920",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "3 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "22 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 560",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "320",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "160 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "32 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "14 080",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.16",
+   "name": "Аквамарин",
+   "price_text": "~ 2.68 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 37,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-937"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "170 880",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "7 488",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "297 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 536",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 496",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 760",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 840",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 920",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "4 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 840",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "38 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 880",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "960",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "192 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "28 800",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.17",
+   "name": "Топаз",
+   "price_text": "~ 2.34 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 38,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-938"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "149 520",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "6 552",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "260 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 344",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 184",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 040",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 360",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 680",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "4 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 360",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "33 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 520",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "840",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "168 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "25 200",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.18",
+   "name": "Триумф",
+   "price_text": "~ 1.34 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 39,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-939"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "101 760",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 248",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "124 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "48 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "576",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 152",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 920",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 880",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "960",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "960",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "72 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "12 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "10 560",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.19",
+   "name": "Александрия",
+   "price_text": "~ 1.38 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 40,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-940"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "119 040",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 936",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "144 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "768",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 248",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 680",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 880",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "960",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "7 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "4 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "720",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "240",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "24 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "7 200",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "67 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "9 600",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.20",
+   "name": "Синяя птица",
+   "price_text": "~ 2.87 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 41,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-941"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "355 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 264",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "220 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "9 600",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 152",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 456",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 840",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 920",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "5 760",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 920",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 920",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "4 800",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "33 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 840",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "240 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "48 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "48 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.21",
+   "name": "Высотный",
+   "price_text": "~ 1.50 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 42,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-942"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "180 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 016",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "165 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "7 200",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "864",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 592",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 520",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "21 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 440",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "720",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "108 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "18 000",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.22",
+   "name": "Гуливер",
+   "price_text": "~ 4.77 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 43,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-943"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "348 480",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "4 032",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "345 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "144 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 728",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 456",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "8 640",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "7 200",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 880",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "7 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "4 320",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "7 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "50 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "5 760",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "720",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "360 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "72 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "31 680",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.23",
+   "name": "Луна",
+   "price_text": "~ 3.56 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 44,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-944"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "259 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 024",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "302 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "108 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 296",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 592",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "10 260",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 240",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 620",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "3 780",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 240",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "6 480",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "21 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 700",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 620",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "108 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "32 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "151 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "21 600",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.24",
+   "name": "Буран",
+   "price_text": "~ 5.04 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 45,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-945"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "367 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "4 284",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "428 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "153 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 836",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 672",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "14 535",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "4 590",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 295",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "5 355",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "4 590",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "9 180",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "30 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 825",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "2 295",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "153 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "45 900",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "214 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "30 600",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.25",
+   "name": "Прогресс",
+   "price_text": "~ 5.04 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 46,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-946"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "367 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "4 284",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "428 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "153 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 836",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 672",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "14 535",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "4 590",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 295",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "5 355",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "4 590",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "9 180",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "30 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 825",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "2 295",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "153 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "45 900",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "214 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "30 600",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.26",
+   "name": "Меркурий",
+   "price_text": "~ 5.82 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 47,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-947"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "351 900",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "7 650",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "489 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "229 500",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "382 500",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 836",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 672",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "14 535",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "4 590",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 295",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "5 355",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "4 590",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "12 240",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 060",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "6 120",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "61 200",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "214 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "30 600",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.27",
+   "name": "Федерация",
+   "price_text": "~ 14.83 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 48,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-948"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "897 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "19 500",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "1 248 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "585 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "975 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "4 680",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "9 360",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "37 050",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "11 700",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "5 850",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "13 650",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "11 700",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "31 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "7 800",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "15 600",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "156 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "546 000",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "78 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.28",
+   "name": "Симфония",
+   "price_text": "~ 5.34 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 49,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-949"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "388 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "4 536",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "453 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "162 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 944",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 888",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "15 390",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "4 860",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 430",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "5 670",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "4 860",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "9 720",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "32 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "4 050",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "2 430",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "162 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "48 600",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "226 800",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "32 400",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.29",
+   "name": "Евразия",
+   "price_text": "~ 4.45 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 50,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-950"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "269 100",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "5 850",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "374 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "175 500",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "292 500",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 404",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 808",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "11 115",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 510",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 755",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "4 095",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 510",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "9 360",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 340",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "4 680",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "46 800",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "163 800",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "23 400",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.30",
+   "name": "Цитадель",
+   "price_text": "~ 3.31 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 51,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-951"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "240 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 880",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "288 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "78 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 200",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 920",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "10 200",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 600",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 800",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "4 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 600",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "36 000",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 400",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 200",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "180 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "30 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "168 000",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "24 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.31",
+   "name": "Стандарт",
+   "price_text": "~ 1.16 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 52,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-952"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "75 360",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 920",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "115 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "2 880",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "480",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "768",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "4 080",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 680",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "960",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "72 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "12 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "67 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "9 600",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.32",
+   "name": "Башня",
+   "price_text": "~ 1.59 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 53,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-953"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "103 620",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 640",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "158 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "3 960",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "660",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 056",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 610",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 980",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "990",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "2 310",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 980",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "19 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 320",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "660",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "99 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "16 500",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "92 400",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "13 200",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.33",
+   "name": "школа",
+   "price_text": "~ 1.31 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 64,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-964"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "86 400",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 800",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "147 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "30 600",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "792",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 440",
+     "slug": "door"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "18 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 060",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 080",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "540",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 260",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 080",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "10 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "720",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "360",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "54 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "9 000",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.34",
+   "name": "поликлиника",
+   "price_text": "~ 520.53 млн p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 80,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-973"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "32 640",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 152",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "59 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "320",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "768",
+     "slug": "door"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "8 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "3 200",
+     "slug": "brick"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "960",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "800",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "320",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "480",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "4 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "320",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "160",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "24 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "4 000",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.35",
+   "name": "полиция",
+   "price_text": "~ 363.54 млн p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 82,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-975"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "24 640",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "800",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "36 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "128",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "384",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 520",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "480",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "240",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "560",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "480",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "960",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "3 200",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "400",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "240",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "16 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "4 800",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.36",
+   "name": "МегаФедерация",
+   "price_text": "~ 21.96 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 97,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-980"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "1 462 500",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "28 080",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "1 755 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "877 500",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "1 462 500",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "7 020",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "14 040",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "55 575",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "17 550",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "8 775",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "20 475",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "17 550",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "35 100",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "117 000",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "14 625",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "8 775",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "585 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "175 500",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "819 000",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "117 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.37",
+   "name": "Великан",
+   "price_text": "~ 8.34 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 100,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-910"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "609 840",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "7 056",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "604 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "252 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "3 024",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "6 048",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "15 120",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "12 600",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "5 040",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "12 600",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "7 560",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "12 600",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "88 200",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "10 080",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 260",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "630 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "126 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "55 440",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.38",
+   "name": "Калейдоскоп",
+   "price_text": "~ 2.49 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 101,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-911"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "182 520",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "4 536",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "237 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "6 480",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 080",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 728",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 780",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "2 160",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 080",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "2 700",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "2 160",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "5 400",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "37 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "4 320",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "540",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "270 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "54 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "23 760",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.39",
+   "name": "Ежевика",
+   "price_text": "~ 1.38 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 102,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-912"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "119 040",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 936",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "144 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "768",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 248",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 680",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 880",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "960",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "7 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "4 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "720",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "240",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "24 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "7 200",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "67 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "9 600",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.40",
+   "name": "Ямайка",
+   "price_text": "~ 2.87 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 103,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-913"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "355 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 264",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "220 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "9 600",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 152",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 456",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 840",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 920",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "5 760",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 920",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 920",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "4 800",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "33 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 840",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "240 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "48 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "48 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.41",
+   "name": "Реноватор",
+   "price_text": "~ 2.76 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 104,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-914"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "238 080",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "7 872",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "288 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 536",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 496",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 360",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 920",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "5 760",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 920",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 920",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "14 400",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "9 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 440",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "480",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "48 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "14 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "134 400",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "19 200",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.42",
+   "name": "Волна",
+   "price_text": "~ 2.91 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 105,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-915"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "212 960",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 464",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "211 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "88 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 056",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 112",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 280",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "4 400",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 760",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "4 400",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "2 640",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "4 400",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "30 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 520",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "440",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "220 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "44 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "19 360",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.43",
+   "name": "Близнецы",
+   "price_text": "~ 1.55 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 106,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-916"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "117 920",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 872",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "158 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "704",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 112",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 640",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 760",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "880",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "2 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 760",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "13 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "8 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 320",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "440",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "44 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "13 200",
+     "slug": "plaster"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.44",
+   "name": "Символ",
+   "price_text": "~ 1.57 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 107,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-917"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "118 720",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 456",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "145 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "56 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "672",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 344",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 240",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 120",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "3 360",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 120",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 120",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "16 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 120",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "560",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "84 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "14 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "12 320",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.45",
+   "name": "Апельсин",
+   "price_text": "~ 3.78 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 108,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-918"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "286 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 510",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "351 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "135 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 620",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 240",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 400",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "2 700",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "8 100",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "2 700",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "2 700",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "40 500",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 700",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 350",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "202 500",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "33 750",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "29 700",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.46",
+   "name": "Каскад",
+   "price_text": "~ 2.51 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 109,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-919"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "310 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 856",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "193 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "8 400",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 008",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 024",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 360",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 680",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "5 040",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 680",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 680",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "4 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "29 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 360",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "420",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "210 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "42 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "42 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.47",
+   "name": "Терраса",
+   "price_text": "~ 828.78 млн p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 110,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-920"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "60 840",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 512",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "79 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "2 160",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "360",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "576",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 260",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "720",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "360",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "900",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "720",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "1 800",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "12 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 440",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "180",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "90 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "18 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "7 920",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.48",
+   "name": "Призма",
+   "price_text": "~ 1.36 млрд p.",
+   "currency_mark": "p.",
+   "price_is_approximate": true,
+   "numeric_id": 111,
+   "source_topic": "Виды зданий",
+   "confidence": "documented",
+   "note": "Price string exactly as written in the captured Wiki. The page states no currency name and no column legend, so neither the currency nor whether the value is a base or minimum price is documented. No numeric building id is exposed by the page. Numeric id and required materials captured from the construction help page on 2026-10-03.",
+   "evidence": [
+    "src.session.walk.2026-10-03.01#seq-None",
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-921"
+   ],
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "112 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 760",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "124 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "20 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "8 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "480",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "960",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 800",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "2 000",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "800",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "2 000",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 200",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "3 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "800",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 600",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "16 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "20 000",
+     "slug": "fasteners"
+    }
+   ]
+  },
+  {
+   "id": "bm.building.49",
+   "name": "магазин",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 54,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "10 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "112",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "9 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "400",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "48",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "144",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "280",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "80",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "40",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "100",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "80",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "240",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "100",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "60",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "4 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "1 200",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "5 600",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "800",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-954"
+   ]
+  },
+  {
+   "id": "bm.building.50",
+   "name": "магазин",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 55,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "64 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "672",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "57 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "2 400",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "288",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "864",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 680",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "480",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "240",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "600",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "480",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "1 440",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "4 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "600",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "360",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "24 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "7 200",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "33 600",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "4 800",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-955"
+   ]
+  },
+  {
+   "id": "bm.building.51",
+   "name": "супермаркет",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 56,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "81 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "840",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "72 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "3 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "360",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 080",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 100",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "600",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "300",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "750",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "600",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "1 800",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "6 000",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "750",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "450",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "30 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "9 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "42 000",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "6 000",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-956"
+   ]
+  },
+  {
+   "id": "bm.building.52",
+   "name": "супермаркет",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 57,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "194 400",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 016",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "172 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "7 200",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "864",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 592",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 040",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "4 320",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 800",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 080",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "72 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "21 600",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "100 800",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "14 400",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-957"
+   ]
+  },
+  {
+   "id": "bm.building.53",
+   "name": "супермаркет",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 58,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "72 900",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "756",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "64 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "2 700",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "324",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "972",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 890",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "540",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "270",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "675",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "540",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "1 620",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "5 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "675",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "405",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "27 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "8 100",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "37 800",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "5 400",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-958"
+   ]
+  },
+  {
+   "id": "bm.building.54",
+   "name": "торг.центр",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 59,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "226 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "4 752",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "302 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "162 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "270 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 296",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "2 592",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "7 560",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "2 160",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 080",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "2 700",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "2 160",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "6 480",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "21 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 700",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 620",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "108 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "32 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "151 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "21 600",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-959"
+   ]
+  },
+  {
+   "id": "bm.building.55",
+   "name": "торг.центр",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 60,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "151 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "3 168",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "201 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "108 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "180 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "864",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 728",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "5 040",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "4 320",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 400",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 800",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 080",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "72 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "21 600",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "100 800",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "14 400",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-960"
+   ]
+  },
+  {
+   "id": "bm.building.56",
+   "name": "торг.центр",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 61,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "100 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "2 112",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "134 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "72 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "120 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "576",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 152",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 360",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "960",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "480",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "960",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "2 880",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "9 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 200",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "720",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "48 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "14 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "67 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "9 600",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-961"
+   ]
+  },
+  {
+   "id": "bm.building.57",
+   "name": "старинный",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 62,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "96 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 100",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "100 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "32 500",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "500",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "800",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 250",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 000",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "500",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 250",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 000",
+     "slug": "pipes"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "11 000",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-962"
+   ]
+  },
+  {
+   "id": "bm.building.58",
+   "name": "мегастор",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 63,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "268 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "5 632",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "358 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "192 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "320 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 536",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 072",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "8 960",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "2 560",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 280",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "3 200",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "2 560",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "7 680",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "25 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "3 200",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 920",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "128 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "38 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "179 200",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "25 600",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-963"
+   ]
+  },
+  {
+   "id": "bm.building.59",
+   "name": "больница",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 65,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "460 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "7 680",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "576 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "38 400",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "3 072",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "7 680",
+     "slug": "door"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "64 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "8 960",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "6 400",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "2 560",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "6 400",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 840",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "10 240",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "2 560",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "5 120",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "51 200",
+     "slug": "plaster"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-965"
+   ]
+  },
+  {
+   "id": "bm.building.60",
+   "name": "институт",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 66,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "116 160",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 344",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "124 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "48 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "576",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "1 152",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 840",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 440",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 680",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 440",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "7 200",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "4 800",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "720",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "240",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "24 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "7 200",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "10 560",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-966"
+   ]
+  },
+  {
+   "id": "bm.building.61",
+   "name": "стадион",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 71,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "264 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "28 800",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "1 176 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "240 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "2 640 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "168 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "10 800",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "2 400",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 200",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "3 000",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "2 400",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "24 000",
+     "slug": "paint"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "120 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "240 000",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "24 000",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-967"
+   ]
+  },
+  {
+   "id": "bm.building.62",
+   "name": "космос",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 72,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "331 240",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "8 232",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "431 200",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "11 760",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "1 960",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "3 136",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "6 860",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "3 920",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "1 960",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "4 900",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "3 920",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "9 800",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "68 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "7 840",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "980",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "490 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "98 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "43 120",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-968"
+   ]
+  },
+  {
+   "id": "bm.building.63",
+   "name": "плаза",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 73,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "496 080",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "6 084",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "608 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "234 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "2 808",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "5 616",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "14 040",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "11 700",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "4 680",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "11 700",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "7 020",
+     "slug": "pipes"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "70 200",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "4 680",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "2 340",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "351 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "58 500",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "51 480",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-969"
+   ]
+  },
+  {
+   "id": "bm.building.64",
+   "name": "советский",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 77,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "96 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 120",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "96 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "40 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "480",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "960",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 400",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "2 000",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "800",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "2 000",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 200",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "2 000",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "14 000",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "1 600",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "200",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "100 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "20 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "8 800",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-970"
+   ]
+  },
+  {
+   "id": "bm.building.65",
+   "name": "мини",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 78,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "100 800",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 584",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "111 600",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "18 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "7 200",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "432",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "864",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "2 520",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "1 800",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "720",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "1 080",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "2 880",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "720",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "1 440",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "14 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "18 000",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-971"
+   ]
+  },
+  {
+   "id": "bm.building.66",
+   "name": "бассейн",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 79,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "88 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "9 600",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "392 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "80 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "880 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "56 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "3 600",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "800",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "400",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "1 000",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "800",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "8 000",
+     "slug": "paint"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "40 000",
+     "slug": "plaster"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "80 000",
+     "slug": "plastic"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "8 000",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-972"
+   ]
+  },
+  {
+   "id": "bm.building.67",
+   "name": "клинический центр",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 81,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "35 200",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "448",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "46 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "16 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "192",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "384",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 120",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "800",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "320",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "800",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "480",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "1 280",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "320",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "640",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "6 400",
+     "slug": "plaster"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-974"
+   ]
+  },
+  {
+   "id": "bm.building.68",
+   "name": "суд",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 83,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "32 640",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "1 152",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "62 400",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "320",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "768",
+     "slug": "door"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "8 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "3 200",
+     "slug": "brick"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 520",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "480",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "240",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "560",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "480",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "1 280",
+     "slug": "paint"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "320",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "640",
+     "slug": "tile"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "6 400",
+     "slug": "plaster"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-976"
+   ]
+  },
+  {
+   "id": "bm.building.69",
+   "name": "тюрьма",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 84,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "31 360",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "768",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "28 800",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "128",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "384",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 200",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "480",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "240",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "560",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "480",
+     "slug": "pipes"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "3 520",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-977"
+   ]
+  },
+  {
+   "id": "bm.building.70",
+   "name": "колледж",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 85,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Сталь",
+     "quantity_text": "31 360",
+     "slug": "steel"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "768",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "32 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Окна",
+     "quantity_text": "128",
+     "slug": "window"
+    },
+    {
+     "name": "Дверь",
+     "quantity_text": "384",
+     "slug": "door"
+    },
+    {
+     "name": "Светильник",
+     "quantity_text": "1 280",
+     "slug": "lamp"
+    },
+    {
+     "name": "Сантехника",
+     "quantity_text": "480",
+     "slug": "sanitary"
+    },
+    {
+     "name": "Провода",
+     "quantity_text": "240",
+     "slug": "wires"
+    },
+    {
+     "name": "Обогреватель",
+     "quantity_text": "560",
+     "slug": "heater"
+    },
+    {
+     "name": "Трубы",
+     "quantity_text": "480",
+     "slug": "pipes"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "2 400",
+     "slug": "paint"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "1 600",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "240",
+     "slug": "floor"
+    },
+    {
+     "name": "Керамическая плитка",
+     "quantity_text": "80",
+     "slug": "tile"
+    },
+    {
+     "name": "Герметик",
+     "quantity_text": "8 000",
+     "slug": "glue"
+    },
+    {
+     "name": "Штукатурка",
+     "quantity_text": "2 400",
+     "slug": "plaster"
+    },
+    {
+     "name": "Крепеж",
+     "quantity_text": "3 520",
+     "slug": "fasteners"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-978"
+   ]
+  },
+  {
+   "id": "bm.building.71",
+   "name": "Чудо света",
+   "price_text": null,
+   "currency_mark": null,
+   "price_is_approximate": null,
+   "numeric_id": 86,
+   "source_topic": null,
+   "confidence": "documented",
+   "note": "Name, numeric id and required materials captured from the construction help pages; no price for this building is stated by the captured Wiki topic.",
+   "materials": [
+    {
+     "name": "Золото",
+     "quantity_text": "1 200 000",
+     "slug": "gold"
+    },
+    {
+     "name": "Алюминий",
+     "quantity_text": "3 600 000",
+     "slug": "aluminium"
+    },
+    {
+     "name": "Пластик",
+     "quantity_text": "12 000 000",
+     "slug": "plastic"
+    },
+    {
+     "name": "Сталь",
+     "quantity_text": "6 000 000",
+     "slug": "steel"
+    },
+    {
+     "name": "Стекло",
+     "quantity_text": "12 000 000",
+     "slug": "glass"
+    },
+    {
+     "name": "Краска",
+     "quantity_text": "1 200 000",
+     "slug": "paint"
+    },
+    {
+     "name": "Телевизор",
+     "quantity_text": "240 000",
+     "slug": "tv"
+    },
+    {
+     "name": "Настольный компьютер",
+     "quantity_text": "36 000"
+    },
+    {
+     "name": "Принтер",
+     "quantity_text": "240 000",
+     "slug": "printer"
+    },
+    {
+     "name": "Диван",
+     "quantity_text": "12 000",
+     "slug": "sofa"
+    },
+    {
+     "name": "Кресло",
+     "quantity_text": "24 000",
+     "slug": "chair"
+    },
+    {
+     "name": "Шкаф",
+     "quantity_text": "60 000",
+     "slug": "wardrobe"
+    },
+    {
+     "name": "Стол",
+     "quantity_text": "180 000",
+     "slug": "table"
+    },
+    {
+     "name": "Посуда",
+     "quantity_text": "360 000",
+     "slug": "dishes"
+    },
+    {
+     "name": "Кирпич",
+     "quantity_text": "1 800 000",
+     "slug": "brick"
+    },
+    {
+     "name": "Бетонный блок",
+     "quantity_text": "420 000",
+     "slug": "concrete"
+    },
+    {
+     "name": "Цемент",
+     "quantity_text": "6 000 000",
+     "slug": "cement"
+    },
+    {
+     "name": "Прибор",
+     "quantity_text": "6 000",
+     "slug": "device"
+    },
+    {
+     "name": "Обои",
+     "quantity_text": "360 000",
+     "slug": "wallpaper"
+    },
+    {
+     "name": "Напольные покрытия",
+     "quantity_text": "120 000",
+     "slug": "floor"
+    }
+   ],
+   "evidence": [
+    "src.webcopy.bizmania.2026-10-03.01#entry-909",
+    "src.webcopy.bizmania.2026-10-03.01#entry-979"
+   ]
+  }
+ ]
+}
