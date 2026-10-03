@@ -17,7 +17,7 @@ Completed foundations include:
 - installable `src/bizman` package and stable `bizman.core` application boundary;
 - deterministic `bizman.readmodel` Agent Index over 590 curated records plus verified session/change intelligence;
 - bounded path-free `bizman.core` read API for knowledge, provenance, sessions and profile-scoped changes;
-- read-only `bizman-mcp` stdio adapter with 10 bounded Core-backed tools;
+- read-only `bizman-mcp` stdio adapter with 14 bounded Core-backed tools;
 - read-only `bizman-telegram` long-polling adapter with 11 bounded Core-backed commands;
 - deterministic `bizman.current` replay foundation over immutable evidence;
 - unified `bizman` CLI;
@@ -163,11 +163,11 @@ Operational sessions/events/CAS, browser profiles, detector SQLite state, Curren
 - evidence provenance trace;
 - session list/get, deterministic comparison and anomaly-signal listing;
 - profile-scoped change list/get;
-- deterministic Current State rebuild from immutable finalized evidence.
+- deterministic Current State rebuild and bounded Current State status/company/unit/product reads.
 
-CLI and MCP adapters consume Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation. Current State similarly derives its fixed database path internally as `BizManData/state/current.sqlite3`; callers do not provide a database path or arbitrary analysis-profile hash. The `bizman.telegram` adapter follows the same rule and consumes only Core.
+CLI and MCP adapters consume Core rather than lower implementation packages. The derived Agent Index lives below Core in `bizman.readmodel`; callers never provide a database path, and list cursors are bounded, operation-scoped and bound to the semantic index generation. Current State similarly derives its fixed database path internally as `BizManData/state/current.sqlite3`; callers do not provide a database path or arbitrary analysis-profile hash, and Current State list cursors are scoped to the request filter and bound to the projection `state_fingerprint`. The `bizman.telegram` adapter follows the same rule and consumes only Core.
 
-The completed P3 MCP adapter is read-only, local-stdio only and exposes exactly 10 bounded tools. It does not expose arbitrary paths/SQL, raw HAR/session bytes, HTTP/OAuth, resources, Tasks or write automation. P4-A adds Current State only as an internal/Core capability; no new MCP or CLI Current State command is introduced yet. Analytics and writes remain later stages.
+The completed P3 MCP adapter is read-only, local-stdio only and now exposes exactly 14 bounded tools. It does not expose arbitrary paths/SQL, raw HAR/session bytes, HTTP/OAuth, resources, Tasks or write automation. P4 adds a read-only Current State surface over the same Core: `bizman current rebuild|status|companies|units|products` on the CLI and `current.status`, `current.companies`, `current.units`, `current.products` on MCP. Analytics and writes remain later stages.
 
 ## Change detection
 

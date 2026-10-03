@@ -12,6 +12,10 @@ from bizman.core import (
     ChangeGetRequest,
     ChangeListRequest,
     CoreContext,
+    CurrentCompanyListRequest,
+    CurrentProductListRequest,
+    CurrentStatusRequest,
+    CurrentUnitListRequest,
     EvidenceTraceRequest,
     KnowledgeGetRequest,
     KnowledgeResolveRequest,
@@ -23,15 +27,29 @@ from bizman.core import (
     SessionListRequest,
     SystemUtcClock,
     compare_sessions,
+    current_status,
     get_change,
     get_knowledge,
     get_session,
     list_changes,
+    list_current_companies,
+    list_current_products,
+    list_current_units,
     list_session_anomalies,
     list_sessions,
     resolve_knowledge,
     search_knowledge,
     trace_evidence,
+)
+from bizman.current import (
+    CompanyState,
+    CurrentProjectionSpec,
+    CurrentStateStore,
+    ObservedProduct,
+    ReplaySession,
+    UnitProductState,
+    UnitState,
+    build_current_snapshot,
 )
 from bizman.readmodel import (
     ChangeIndexRecord,
@@ -125,6 +143,148 @@ def _build_context(
     )
 
 
+CURRENT_SESSION_ID = "01991c7d-a400-7000-8000-0000000000c1"
+
+
+def _current_snapshot():
+    session = ReplaySession(
+        started_at="2026-09-29T10:00:00Z",
+        session_id=CURRENT_SESSION_ID,
+        manifest_sha256="c" * 64,
+        evidence_sha256="d" * 64,
+        ended_at="2026-09-29T10:01:00Z",
+        status="completed",
+        event_count=3,
+        last_sequence=2,
+    )
+    companies = tuple(
+        CompanyState(
+            company_id=company_id,
+            name=f"Company {company_id}",
+            source_session_id=CURRENT_SESSION_ID,
+            source_sequence=sequence,
+            observed_at=f"2026-09-29T10:00:0{sequence}Z",
+        )
+        for sequence, company_id in enumerate(("13393", "13394", "13395"))
+    )
+    units = (
+        UnitState(
+            unit_id="33670",
+            company_id="13393",
+            display_name="Детский магазин",
+            city_name="Анкара",
+            level=1,
+            source_session_id=CURRENT_SESSION_ID,
+            source_sequence=0,
+            observed_at="2026-09-29T10:00:00Z",
+        ),
+        UnitState(
+            unit_id="33671",
+            company_id="13393",
+            display_name="Второй магазин",
+            city_name="Стамбул",
+            level=2,
+            source_session_id=CURRENT_SESSION_ID,
+            source_sequence=1,
+            observed_at="2026-09-29T10:00:01Z",
+        ),
+        UnitState(
+            unit_id="33672",
+            company_id="13394",
+            display_name="Третий магазин",
+            city_name="Измир",
+            level=1,
+            source_session_id=CURRENT_SESSION_ID,
+            source_sequence=2,
+            observed_at="2026-09-29T10:00:02Z",
+        ),
+    )
+    products = (
+        ObservedProduct(
+            product_numeric_id=101,
+            catalog_key="car-seat",
+            resolution="resolved",
+        ),
+        ObservedProduct(
+            product_numeric_id=102,
+            catalog_key=None,
+            resolution="unresolved",
+        ),
+    )
+    unit_products = (
+        UnitProductState(
+            unit_id="33670",
+            product_numeric_id=101,
+            revenue=100,
+            profit=20,
+            stock_qty=5,
+            stock_quality=0.5,
+            our_price=30,
+            city_quality=0.4,
+            city_price=35,
+            sales_volume=2,
+            supply_qty=1,
+            supply_cost=10,
+            source_session_id=CURRENT_SESSION_ID,
+            source_sequence=0,
+            observed_at="2026-09-29T10:00:00Z",
+        ),
+        UnitProductState(
+            unit_id="33670",
+            product_numeric_id=102,
+            revenue=200,
+            profit=40,
+            stock_qty=6,
+            stock_quality=0.6,
+            our_price=31,
+            city_quality=0.5,
+            city_price=36,
+            sales_volume=3,
+            supply_qty=2,
+            supply_cost=11,
+            source_session_id=CURRENT_SESSION_ID,
+            source_sequence=1,
+            observed_at="2026-09-29T10:00:01Z",
+        ),
+        UnitProductState(
+            unit_id="33671",
+            product_numeric_id=101,
+            revenue=300,
+            profit=60,
+            stock_qty=7,
+            stock_quality=0.7,
+            our_price=32,
+            city_quality=0.6,
+            city_price=37,
+            sales_volume=4,
+            supply_qty=3,
+            supply_cost=12,
+            source_session_id=CURRENT_SESSION_ID,
+            source_sequence=2,
+            observed_at="2026-09-29T10:00:02Z",
+        ),
+    )
+    return build_current_snapshot(
+        CurrentProjectionSpec(
+            analysis_profile_sha256="a" * 64,
+            unit_economics_contract="mcp-current-read-fixture",
+            catalog_resolver_sha256="b" * 64,
+        ),
+        (session,),
+        companies=companies,
+        units=units,
+        products=products,
+        unit_products=unit_products,
+    )
+
+
+def _build_current_state(data_dir: Path) -> None:
+    with CurrentStateStore.open_rw(
+        data_dir / "state" / "current.sqlite3"
+    ) as store:
+        store.replace_snapshot(_current_snapshot())
+
+
 def _run(coro):
     return asyncio.run(coro)
 
@@ -147,6 +307,7 @@ class MCPProtocolTests(unittest.TestCase):
         cls.data_dir = Path(cls._tmp.name) / "BizManData"
         cls.runtime = _runtime_projection()
         cls.context = _build_context(cls.data_dir, cls.runtime)
+        _build_current_state(cls.data_dir)
 
     @classmethod
     def tearDownClass(cls):
@@ -178,6 +339,10 @@ class MCPProtocolTests(unittest.TestCase):
                 "sessions.anomalies",
                 "changes.list",
                 "changes.get",
+                "current.status",
+                "current.companies",
+                "current.units",
+                "current.products",
             },
         )
 
@@ -194,6 +359,9 @@ class MCPProtocolTests(unittest.TestCase):
             "sessions.list",
             "sessions.anomalies",
             "changes.list",
+            "current.companies",
+            "current.units",
+            "current.products",
         ):
             schema = tools[name]["inputSchema"]
             self.assertEqual(schema["properties"]["limit"]["default"], 10)
@@ -583,6 +751,180 @@ class MCPProtocolTests(unittest.TestCase):
         self.assertEqual({profile for profile, _ in collected}, {PROFILE_A})
         self.assertEqual(len(collected), len(set(collected)))
 
+    def test_current_state_tools_equal_direct_core_results(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+        from bizman.mcp.models import (
+            current_company_list_result,
+            current_product_list_result,
+            current_status_result,
+            current_unit_list_result,
+        )
+
+        expected_status = current_status_result(
+            current_status(self.context, CurrentStatusRequest())
+        ).model_dump(mode="json")
+        expected_companies = current_company_list_result(
+            list_current_companies(
+                self.context,
+                CurrentCompanyListRequest(limit=10),
+            )
+        ).model_dump(mode="json")
+        expected_units = current_unit_list_result(
+            list_current_units(
+                self.context,
+                CurrentUnitListRequest(limit=10, company_id="13393"),
+            )
+        ).model_dump(mode="json")
+        expected_products = current_product_list_result(
+            list_current_products(
+                self.context,
+                CurrentProductListRequest(limit=10, unit_id="33670"),
+            )
+        ).model_dump(mode="json")
+
+        async def scenario():
+            async with Client(build_server(self.context)) as client:
+                return (
+                    await client.call_tool("current.status", {}),
+                    await client.call_tool("current.companies", {}),
+                    await client.call_tool(
+                        "current.units",
+                        {"company_id": "13393"},
+                    ),
+                    await client.call_tool(
+                        "current.products",
+                        {"unit_id": "33670"},
+                    ),
+                )
+
+        status, companies, units, products = _run(scenario())
+        for value in (status, companies, units, products):
+            self.assertFalse(value.is_error)
+            self.assertLessEqual(_encoded_size(value.structured_content), 8 * 1024)
+
+        self.assertEqual(status.structured_content, expected_status)
+        self.assertEqual(companies.structured_content, expected_companies)
+        self.assertEqual(units.structured_content, expected_units)
+        self.assertEqual(products.structured_content, expected_products)
+        self.assertEqual(len(companies.structured_content["items"]), 3)
+        self.assertEqual(len(units.structured_content["items"]), 2)
+        self.assertEqual(len(products.structured_content["items"]), 2)
+        self.assertEqual(
+            status.structured_content["state_fingerprint"],
+            current_status(
+                self.context,
+                CurrentStatusRequest(),
+            ).state_fingerprint,
+        )
+
+    def test_current_company_pagination_is_scoped_and_generation_bound(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+
+        async def first_page():
+            async with Client(build_server(self.context)) as client:
+                return await client.call_tool(
+                    "current.companies",
+                    {"limit": 2},
+                )
+
+        page = _run(first_page())
+        self.assertFalse(page.is_error)
+        self.assertEqual(len(page.structured_content["items"]), 2)
+        cursor = page.structured_content["next_cursor"]
+        self.assertIsNotNone(cursor)
+
+        async def second_page():
+            async with Client(build_server(self.context)) as client:
+                return (
+                    await client.call_tool(
+                        "current.companies",
+                        {"limit": 2, "cursor": cursor},
+                    ),
+                    await client.call_tool(
+                        "current.units",
+                        {"limit": 2, "cursor": cursor},
+                    ),
+                )
+
+        second, wrong_scope = _run(second_page())
+        self.assertFalse(second.is_error)
+        self.assertEqual(len(second.structured_content["items"]), 1)
+        self.assertIsNone(second.structured_content["next_cursor"])
+        self.assertTrue(wrong_scope.is_error)
+        rendered = json.dumps(
+            [
+                block.model_dump(mode="json", by_alias=True, exclude_none=True)
+                for block in wrong_scope.content
+            ],
+            ensure_ascii=False,
+        )
+        self.assertIn("Invalid Current State read request", rendered)
+        self.assertNotIn("does not belong", rendered)
+        self.assertNotIn("Traceback", rendered)
+        self.assertNotIn(str(self.data_dir), rendered)
+
+        with CurrentStateStore.open_rw(
+            self.data_dir / "state" / "current.sqlite3"
+        ) as store:
+            store.mark_stale("synthetic cursor generation change")
+        try:
+            async def stale_generation():
+                async with Client(build_server(self.context)) as client:
+                    return await client.call_tool(
+                        "current.companies",
+                        {"limit": 2, "cursor": cursor},
+                    )
+
+            stale = _run(stale_generation())
+        finally:
+            _build_current_state(self.data_dir)
+
+        self.assertTrue(stale.is_error)
+        rendered = json.dumps(
+            [
+                block.model_dump(mode="json", by_alias=True, exclude_none=True)
+                for block in stale.content
+            ],
+            ensure_ascii=False,
+        )
+        self.assertIn("Invalid Current State read request", rendered)
+        self.assertNotIn("generation", rendered.casefold())
+        self.assertNotIn("Traceback", rendered)
+        self.assertNotIn(str(self.data_dir), rendered)
+
+    def test_missing_current_state_error_remains_sanitized(self):
+        from mcp import Client
+        from bizman.mcp import build_server
+
+        with tempfile.TemporaryDirectory() as tmp:
+            missing_data = Path(tmp) / "BizManData"
+            context = CoreContext(
+                assets=RepositoryAssets(REPO_ROOT),
+                data_dir=missing_data,
+                clock=SystemUtcClock(),
+            )
+
+            async def scenario():
+                async with Client(build_server(context)) as client:
+                    return await client.call_tool("current.status", {})
+
+            result = _run(scenario())
+
+        self.assertTrue(result.is_error)
+        rendered = json.dumps(
+            [
+                block.model_dump(mode="json", by_alias=True, exclude_none=True)
+                for block in result.content
+            ],
+            ensure_ascii=False,
+        )
+        self.assertIn("Current State is unavailable", rendered)
+        self.assertNotIn(str(missing_data), rendered)
+        self.assertNotIn("Traceback", rendered)
+        self.assertNotIn("sqlite", rendered.casefold())
+
     def test_cursor_from_changed_generation_fails_as_sanitized_tool_error(self):
         from mcp import Client
         from bizman.mcp import build_server
@@ -732,6 +1074,18 @@ class MCPProtocolTests(unittest.TestCase):
                         "evidence.trace",
                         {"evidence_ref": "../raw.har#entry-1"},
                     ),
+                    await client.call_tool(
+                        "current.companies",
+                        {"limit": 51},
+                    ),
+                    await client.call_tool(
+                        "current.units",
+                        {"company_id": "013"},
+                    ),
+                    await client.call_tool(
+                        "current.products",
+                        {"cursor": "not-a-core-cursor"},
+                    ),
                 )
 
         results = _run(scenario())
@@ -828,6 +1182,10 @@ class MCPStdioSmokeTests(unittest.TestCase):
                 "sessions.anomalies",
                 "changes.list",
                 "changes.get",
+                "current.status",
+                "current.companies",
+                "current.units",
+                "current.products",
             },
         )
         self.assertFalse(result.is_error)

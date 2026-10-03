@@ -14,6 +14,10 @@ from bizman.core import (
     CoreContext,
     ChangeGetRequest,
     ChangeListRequest,
+    CurrentCompanyListRequest,
+    CurrentProductListRequest,
+    CurrentStatusRequest,
+    CurrentUnitListRequest,
     DataIntegrityError,
     EvidenceTraceRequest,
     KnowledgeGetRequest,
@@ -24,11 +28,15 @@ from bizman.core import (
     SessionCompareRequest,
     SessionGetRequest,
     SessionListRequest,
+    current_status,
     get_change,
     get_knowledge,
     compare_sessions,
     get_session,
     list_changes,
+    list_current_companies,
+    list_current_products,
+    list_current_units,
     list_session_anomalies,
     list_sessions,
     resolve_knowledge,
@@ -38,6 +46,10 @@ from bizman.core import (
 from bizman.mcp.models import (
     ChangeGetResult,
     ChangeListResult,
+    CurrentCompanyListResult,
+    CurrentProductListResult,
+    CurrentStatusResult,
+    CurrentUnitListResult,
     EvidenceGetResult,
     EvidenceResolveResult,
     EvidenceSearchResult,
@@ -49,6 +61,10 @@ from bizman.mcp.models import (
     SessionSummaryResult,
     change_get_result,
     change_list_result,
+    current_company_list_result,
+    current_product_list_result,
+    current_status_result,
+    current_unit_list_result,
     get_result,
     resolve_result,
     search_result,
@@ -79,6 +95,10 @@ ProfileSha256 = Annotated[
 ]
 ChangeId = Annotated[str, Field(min_length=1, max_length=256)]
 Cursor = Annotated[str, Field(min_length=1, max_length=2048)]
+EntityId = Annotated[
+    str,
+    Field(min_length=1, max_length=32, pattern=r"^[1-9][0-9]*$"),
+]
 EvidenceReference = Annotated[
     str,
     Field(
@@ -119,6 +139,33 @@ def _raise_tool_error(exc: Exception) -> NoReturn:
     raise AssertionError("unexpected exception passed to _raise_tool_error")
 
 
+def _raise_current_tool_error(exc: Exception) -> NoReturn:
+    if isinstance(exc, AssetError):
+        raise ToolError(
+            "BizMan provenance or repository assets are unavailable or invalid."
+        ) from exc
+    if isinstance(exc, ConfigurationError):
+        raise ToolError(
+            "Current State is unavailable; rebuild it before using Current State read tools."
+        ) from exc
+    if isinstance(exc, ContractMismatchError):
+        raise ToolError(
+            "Current State is incompatible with this BizMan version; rebuild it."
+        ) from exc
+    if isinstance(exc, DataIntegrityError):
+        raise ToolError(
+            "Current State read data failed integrity validation; rebuild trusted "
+            "Current State."
+        ) from exc
+    if isinstance(exc, OperationError):
+        raise ToolError("Current State read operation failed.") from exc
+    if isinstance(exc, (TypeError, ValueError)):
+        raise ToolError("Invalid Current State read request.") from exc
+    raise AssertionError(
+        "unexpected exception passed to _raise_current_tool_error"
+    )
+
+
 def build_server(context: CoreContext) -> MCPServer:
     if not isinstance(context, CoreContext):
         raise TypeError("context must be CoreContext")
@@ -126,9 +173,10 @@ def build_server(context: CoreContext) -> MCPServer:
     server = MCPServer(
         "BizMan",
         instructions=(
-            "Read-only BizMan evidence, provenance, session, and change tools. Use "
-            "canonical refs returned by resolve/search for exact evidence gets, and "
-            "evidence refs for provenance traces. Tool outputs come from BizMan Core."
+            "Read-only BizMan evidence, provenance, session, change, and Current "
+            "State tools. Use canonical refs returned by resolve/search for exact "
+            "evidence gets, and evidence refs for provenance traces. Tool outputs "
+            "come from BizMan Core."
         ),
     )
 
@@ -449,6 +497,138 @@ def build_server(context: CoreContext) -> MCPServer:
             ValueError,
         ) as exc:
             _raise_tool_error(exc)
+
+    @server.tool(
+        name="current.status",
+        title="Get BizMan Current State status",
+        description=(
+            "Return bounded Current State projection metadata: identity, input/state "
+            "fingerprints, ready/stale status, and replay checkpoint."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=True,
+    )
+    def current_status_tool() -> CurrentStatusResult:
+        try:
+            return current_status_result(
+                current_status(context, CurrentStatusRequest())
+            )
+        except (
+            AssetError,
+            ConfigurationError,
+            ContractMismatchError,
+            DataIntegrityError,
+            OperationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            _raise_current_tool_error(exc)
+
+    @server.tool(
+        name="current.companies",
+        title="List BizMan Current State companies",
+        description=(
+            "List bounded Current State companies using an opaque Core cursor bound "
+            "to the state fingerprint."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=True,
+    )
+    def current_companies(
+        limit: PageLimit = 10,
+        cursor: Cursor | None = None,
+    ) -> CurrentCompanyListResult:
+        try:
+            return current_company_list_result(
+                list_current_companies(
+                    context,
+                    CurrentCompanyListRequest(limit=limit, cursor=cursor),
+                )
+            )
+        except (
+            AssetError,
+            ConfigurationError,
+            ContractMismatchError,
+            DataIntegrityError,
+            OperationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            _raise_current_tool_error(exc)
+
+    @server.tool(
+        name="current.units",
+        title="List BizMan Current State units",
+        description=(
+            "List bounded Current State units, optionally scoped to one company, "
+            "using an opaque Core cursor bound to the filter and state fingerprint."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=True,
+    )
+    def current_units(
+        limit: PageLimit = 10,
+        cursor: Cursor | None = None,
+        company_id: EntityId | None = None,
+    ) -> CurrentUnitListResult:
+        try:
+            return current_unit_list_result(
+                list_current_units(
+                    context,
+                    CurrentUnitListRequest(
+                        limit=limit,
+                        cursor=cursor,
+                        company_id=company_id,
+                    ),
+                )
+            )
+        except (
+            AssetError,
+            ConfigurationError,
+            ContractMismatchError,
+            DataIntegrityError,
+            OperationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            _raise_current_tool_error(exc)
+
+    @server.tool(
+        name="current.products",
+        title="List BizMan Current State products",
+        description=(
+            "List bounded Current State unit products, optionally scoped to one unit, "
+            "using an opaque Core cursor bound to the filter and state fingerprint."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=True,
+    )
+    def current_products(
+        limit: PageLimit = 10,
+        cursor: Cursor | None = None,
+        unit_id: EntityId | None = None,
+    ) -> CurrentProductListResult:
+        try:
+            return current_product_list_result(
+                list_current_products(
+                    context,
+                    CurrentProductListRequest(
+                        limit=limit,
+                        cursor=cursor,
+                        unit_id=unit_id,
+                    ),
+                )
+            )
+        except (
+            AssetError,
+            ConfigurationError,
+            ContractMismatchError,
+            DataIntegrityError,
+            OperationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            _raise_current_tool_error(exc)
 
     return server
 

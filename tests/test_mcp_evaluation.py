@@ -70,7 +70,7 @@ class MCPCompletionEvaluationTests(unittest.TestCase):
 
         surface = report["surface"]
         self.assertTrue(surface["passed"])
-        self.assertEqual(surface["tool_count"], 10)
+        self.assertEqual(surface["tool_count"], 14)
         self.assertEqual(set(surface["tools"]), EXPECTED_TOOLS)
         self.assertTrue(surface["schemas_explicit"])
         self.assertTrue(surface["annotations_read_only_closed_world"])
