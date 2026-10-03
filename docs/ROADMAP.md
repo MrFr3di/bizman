@@ -488,12 +488,11 @@ still subject to the P4-C completion review.
 
 Remaining domain priority after P4-C:
 
-1. products;
-2. inventory/stock;
-3. supply links/orders;
-4. retail/prices;
-5. production;
-6. finance only when evidence is sufficiently trustworthy.
+1. inventory/stock;
+2. supply links/orders;
+3. retail/prices;
+4. production;
+5. finance only when evidence is sufficiently trustworthy.
 
 A projection must refuse or explicitly mark itself stale when D1 reports an incompatible/unknown structural change affecting parser assumptions. P4-A provides the explicit stale-state storage contract; automatic D1 binding remains a later P4 slice.
 
