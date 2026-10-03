@@ -468,13 +468,15 @@ Implemented:
   `(unit_id, product_numeric_id)`, with source session/sequence/time;
 - curated numeric-id resolution is separate, nullable and fingerprinted by its
   normalization-relevant semantics;
-- Current State projection/schema/user version is 3, with STRICT
-  `observed_product`, `unit_product` and `product_surface_state` tables;
+- Current State unit-economics entered at projection/schema v3; C3 hardening
+  advances projection/schema/user version to 4 with an additional STRICT
+  `orphan_unit_product` table so successful typed evidence for an unverified
+  unit remains attributable without becoming an FK-backed unit association;
 - every verified unit has explicit `shop.goods` coverage:
   `ready`, `unknown` or `stale`; missing goods evidence is UNKNOWN and is
   never interpreted as an empty roster or deletion;
-- exact v1/v2 databases are rebuilt through a verified sibling v3 database and
-  atomically replaced; foreign/newer/unknown schemas remain fail-closed;
+- exact v1/v2/v3 databases are rebuilt through a verified sibling v4 database
+  and atomically replaced; foreign/newer/unknown schemas remain fail-closed;
 - Core/CLI/MCP expose bounded read-only current-product reads; no write
   semantics are introduced.
 
@@ -482,9 +484,9 @@ C3 acceptance/hardening is the active slice. The real Chrome fixture exercises
 the same typed goods capture/parser path with two stable product IDs and seeded
 privacy canaries, then proves unit/product provenance and delete/replay
 fingerprint equivalence. Orphan goods evidence for a unit that never appears in
-the verified company roster remains immutable replay evidence and cannot become
-an FK-backed authoritative association; its final derived representation is
-still subject to the P4-C completion review.
+the verified company roster is persisted separately with unit/product identity,
+source session/sequence/time, typed-artifact SHA/schema and an explicit orphan
+reason; it never becomes an FK-backed authoritative unit-product association.
 
 Remaining domain priority after P4-C:
 
