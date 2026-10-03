@@ -2,7 +2,7 @@
  "schema_version": "1.0",
  "source_id": "src.session.walk.2026-10-03.01",
  "supersedes_field": "knowledge/domain/products/*.jsonl#categories",
- "note": "Product grouping recovered from the captured Wiki directory. Ambiguous display names are preserved with every candidate id instead of being resolved.",
+ "note": "Product grouping recovered from the captured Wiki directory. The source topic is canonically evidenced by src.har.bizmania-faq.2026-09-06.01#entry-442; ambiguous display names remain associated with every candidate product id instead of being silently resolved.",
  "total_records": 18,
  "parts": [
   {
