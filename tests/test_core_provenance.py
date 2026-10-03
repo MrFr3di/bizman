@@ -23,6 +23,7 @@ from bizman.readmodel import project_curated_knowledge
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HAR_REF = "src.har.bizmania.2026-09-06.01#entry-224"
 LIVE_REF = "live-cdp-2026-09-07#seq-25730"
+WEBCOPY_REF = "src.webcopy.bizmania.2026-10-03.01#entry-1001"
 
 
 def _context(root: Path, data_dir: Path) -> CoreContext:
@@ -94,6 +95,32 @@ class CoreEvidenceTraceTests(unittest.TestCase):
         self.assertIn("external sanitized collector evidence", trace.privacy)
         self.assertIn("Historical runtime source bytes", trace.provenance_policy)
 
+    def test_known_webcopy_trace_returns_source_level_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = trace_evidence(
+                _context(REPO_ROOT, Path(tmp) / "BizManData"),
+                EvidenceTraceRequest(WEBCOPY_REF),
+            )
+
+        self.assertIsNotNone(result.trace)
+        assert result.trace is not None
+        trace = result.trace
+        self.assertEqual(trace.source_id, "src.webcopy.bizmania.2026-10-03.01")
+        self.assertEqual(trace.source_kind, "webcopy_snapshot")
+        self.assertEqual(trace.locator_kind, "entry")
+        self.assertEqual(trace.ordinal, 1001)
+        self.assertEqual(trace.source_record_count, 3130)
+        self.assertFalse(trace.raw_source_committed)
+        self.assertEqual(
+            trace.source_sha256,
+            "f47fe0330ded4e4802f905f53498db448e734f943e52a90a4a6560e31d6d74da",
+        )
+        self.assertIsNone(trace.runtime_session_id)
+        self.assertEqual(trace.observed_from, "2026-10-03T16:32:00+03:00")
+        self.assertEqual(trace.observed_to, "2026-10-03T16:57:00+03:00")
+        self.assertIn("documentation pages", trace.privacy)
+        self.assertIn("origin-index SHA-256", trace.provenance_policy)
+
     def test_unknown_or_out_of_range_evidence_returns_no_trace(self):
         refs = (
             "unknown.source#entry-1",
@@ -101,6 +128,8 @@ class CoreEvidenceTraceTests(unittest.TestCase):
             "src.har.bizmania.2026-09-06.01#seq-1",
             "live-cdp-2026-09-07#seq-32128",
             "live-cdp-2026-09-07#entry-1",
+            "src.webcopy.bizmania.2026-10-03.01#entry-3130",
+            "src.webcopy.bizmania.2026-10-03.01#seq-1",
         )
         with tempfile.TemporaryDirectory() as tmp:
             context = _context(REPO_ROOT, Path(tmp) / "BizManData")
