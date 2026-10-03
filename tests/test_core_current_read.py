@@ -220,7 +220,7 @@ class CoreCurrentReadDtoTests(unittest.TestCase):
 
         status = CurrentStatusResult(
             projection_name="bizman.current",
-            projection_version=3,
+            projection_version=4,
             analysis_profile_sha256=SHA_A,
             input_fingerprint=SHA_B,
             state_fingerprint=SHA_C,
