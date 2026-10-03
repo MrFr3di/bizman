@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -610,6 +611,75 @@ class MarketStore:
             raise MarketStoreIntegrityError(
                 "persisted market observation violates semantic invariants"
             ) from exc
+
+    def iter_observations(
+        self,
+        *,
+        surface: str | None = None,
+        request_key: str | None = None,
+    ) -> Iterator[MarketObservationRecord]:
+        """Stream every matching row ordered by captured time; no limit."""
+
+        if surface is not None:
+            _require_text(surface, name="surface")
+        if request_key is not None:
+            _require_text(request_key, name="request_key")
+
+        conditions: list[str] = []
+        parameters: list[object] = []
+        if surface is not None:
+            conditions.append("surface = ?")
+            parameters.append(surface)
+        if request_key is not None:
+            conditions.append("request_key = ?")
+            parameters.append(request_key)
+        where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        try:
+            cursor = self._connection.execute(
+                f"""
+                SELECT observation_id, surface, request_key, captured_at,
+                       source_session_id, source_sequence, evidence_ref,
+                       response_text_sha256, artifact_sha256, payload
+                FROM observation{where}
+                ORDER BY captured_at, source_sequence, observation_id
+                """,
+                parameters,
+            )
+        except sqlite3.Error as exc:
+            raise MarketStoreOperationError(
+                "market observation read failed"
+            ) from exc
+
+        def _records() -> Iterator[MarketObservationRecord]:
+            while True:
+                try:
+                    row = cursor.fetchone()
+                except sqlite3.Error as exc:
+                    raise MarketStoreOperationError(
+                        "market observation read failed"
+                    ) from exc
+                if row is None:
+                    return
+                try:
+                    yield MarketObservationRecord(
+                        observation_id=str(row[0]),
+                        surface=str(row[1]),
+                        request_key=str(row[2]),
+                        captured_at=str(row[3]),
+                        source_session_id=str(row[4]),
+                        source_sequence=int(row[5]),
+                        evidence_ref=str(row[6]),
+                        response_text_sha256=str(row[7]),
+                        artifact_sha256=str(row[8]),
+                        payload=str(row[9]),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise MarketStoreIntegrityError(
+                        "persisted market observation violates semantic invariants"
+                    ) from exc
+
+        return _records()
 
     def count(self) -> int:
         try:
