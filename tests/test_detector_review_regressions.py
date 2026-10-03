@@ -10,7 +10,6 @@ from tools.bizman_detector.evidence import EvidenceIdentity
 from tools.bizman_detector.model import AnalysisProfile, DiffFact, Finding, MatchState
 from tools.bizman_detector.runner import DetectorRunner
 from tools.bizman_detector.state import (
-    APPLICATION_ID,
     DetectorState,
     StateCompatibilityError,
 )

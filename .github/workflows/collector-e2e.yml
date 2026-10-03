@@ -52,7 +52,7 @@ jobs:
           uv lock --check
           uv sync --locked --extra telegram
       - name: Lint Python sources
-        run: uv run ruff check src
+        run: uv run ruff check
       - name: Enforce package architecture
         run: uv run lint-imports
       - name: Compile Python sources

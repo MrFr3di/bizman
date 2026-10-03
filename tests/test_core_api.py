@@ -152,7 +152,7 @@ class CorePublicApiTests(unittest.TestCase):
             with self.assertRaises(FrozenInstanceError):
                 setattr(value, first_field, getattr(value, first_field))
             with self.assertRaises((AttributeError, FrozenInstanceError, TypeError)):
-                setattr(value, "_probe", True)
+                value._probe = True
         for dto in (
             CollectionRequest,
             DetectionRequest,
