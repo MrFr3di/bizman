@@ -121,11 +121,10 @@ class SupplyStructureInspectionTests(unittest.TestCase):
         )
         self.assertNotIn("TOP_SECRET", repr(report))
 
-    def test_external_fragment_encoded_and_value_only_links_are_not_reported(self) -> None:
+    def test_external_fragment_and_value_only_links_are_not_reported(self) -> None:
         html = b"""
         <a href="https://evil.example/?id=41">external</a>
         <a href="#secret">fragment</a>
-        <a href="/units/vendor/?%69d=42">encoded</a>
         <a href="/plain/path">no query</a>
         <a href="/units/vendor/?id=43&note=TOP_SECRET">safe shape</a>
         """
@@ -138,6 +137,19 @@ class SupplyStructureInspectionTests(unittest.TestCase):
             (("id", 43),),
         )
         self.assertNotIn("TOP_SECRET", repr(report))
+
+    def test_ambiguous_first_party_link_shapes_fail_closed(self) -> None:
+        ambiguous = (
+            b'<a href="/units/vendor/?%69d=42">encoded query</a>',
+            b'<a href="/units/%76endor/?id=42">encoded path</a>',
+            b'<a href="/units/../user/?id=42">dot segment</a>',
+            b'<a href="/units\\vendor/?id=42">backslash</a>',
+            b'<a href="vendor/?id=42">path relative</a>',
+        )
+        for html in ambiguous:
+            with self.subTest(html=html):
+                with self.assertRaises(SupplyProbeStructureError):
+                    inspect_supply_structure(html)
 
     def test_duplicate_attributes_and_duplicate_query_keys_fail_closed(self) -> None:
         for html in (
