@@ -64,11 +64,11 @@ The command:
   - input field base name and optional canonical array index;
 - treats an `input type=hidden` like any other structural input: its name may
   be reported, its value is never retained;
-- ignores hidden/inactive subtrees;
+- ignores hidden/inert/disabled controls and subtrees;
 - fails closed on duplicate HTML attributes/query keys, malformed or
   percent-encoded/path-relative first-party candidates, nested/incomplete
   structural containers, unsupported input-name shapes, non-canonical array
-  indexes or candidate overflow.
+  indexes, excessive nesting or candidate overflow.
 
 Output schema: `bizman.supply-probe.v1`.
 
