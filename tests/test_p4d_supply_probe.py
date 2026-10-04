@@ -269,6 +269,15 @@ class SupplyStructureInspectionTests(unittest.TestCase):
         with self.assertRaises(SupplyProbeCandidateOverflowError):
             inspect_supply_structure(html)
 
+    def test_incomplete_suppressed_subtree_fails_closed(self) -> None:
+        for html in (
+            b'<div hidden><input name="vendor[0]" value="SECRET">',
+            b'<script><a href="/units/vendor/?id=41">x</a>',
+        ):
+            with self.subTest(html=html):
+                with self.assertRaises(SupplyProbeStructureError):
+                    inspect_supply_structure(html)
+
     def test_candidate_overflow_fails_instead_of_truncating(self) -> None:
         links = "".join(
             f'<a href="/units/vendor/?id={index + 1}">x</a>'
