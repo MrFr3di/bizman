@@ -59,17 +59,22 @@ The command:
   - positive signed-64-bit numeric candidates for the narrow keys
     `id`, `product`, `vendor`, `unit`, `supplier`;
   - whether the link is structurally inside a row/form;
-  - input field base name and optional array index;
+  - ephemeral `row_slot` / `form_slot` values used only to group candidates
+    within one probe result;
+  - input field base name and optional canonical array index;
 - treats an `input type=hidden` like any other structural input: its name may
   be reported, its value is never retained;
 - ignores hidden/inactive subtrees;
-- fails closed on duplicate HTML attributes, duplicate query keys, malformed
-  structure or candidate overflow.
+- fails closed on duplicate HTML attributes/query keys, malformed candidate
+  queries, nested/incomplete structural containers, non-canonical array indexes
+  or candidate overflow.
 
 Output schema: `bizman.supply-probe.v1`.
 
-The output is research evidence only. A structural candidate is not a supplier
-ID, order ID or authoritative association until this gate records PASS.
+The output is research evidence only. `row_slot` and `form_slot` are local
+grouping coordinates, not stable identities and never survive as domain keys.
+A structural candidate is not a supplier ID, order ID or authoritative
+association until this gate records PASS.
 
 ## D0 real-evidence matrix
 
