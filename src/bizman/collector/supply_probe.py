@@ -280,16 +280,25 @@ class _SupplyStructureParser(HTMLParser):
             parts = urlsplit(href)
         except ValueError as exc:
             raise SupplyProbeStructureError("supply link is malformed") from exc
-        if (
-            parts.scheme
-            or parts.netloc
-            or parts.fragment
-            or not parts.path.startswith("/")
-            or "%" in parts.path
-            or "%" in parts.query
-            or len(parts.path) > 256
-        ):
+        if parts.scheme or parts.netloc or parts.fragment:
             return
+        if not parts.path.startswith("/"):
+            if parts.query:
+                raise SupplyProbeStructureError(
+                    "relative supply link cannot be resolved safely"
+                )
+            return
+        if (
+            "%" in parts.path
+            or "%" in parts.query
+            or "\\" in parts.path
+            or "//" in parts.path
+            or len(parts.path) > 256
+            or any(segment in {".", ".."} for segment in parts.path.split("/"))
+        ):
+            raise SupplyProbeStructureError(
+                "supply link path/query encoding is ambiguous"
+            )
         try:
             pairs = parse_qsl(
                 parts.query,
