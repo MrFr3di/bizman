@@ -18,6 +18,7 @@ from bizman.cli import detect as detect_command
 from bizman.cli import index_rebuild as index_rebuild_command
 from bizman.cli import market as market_command
 from bizman.cli import probe_product_evidence as probe_product_evidence_command
+from bizman.cli import probe_supply_evidence as probe_supply_evidence_command
 from bizman.cli import validate as validate_command
 
 
@@ -34,6 +35,9 @@ def _parser() -> argparse.ArgumentParser:
     market_command.configure_parser(subparsers.add_parser("market"))
     probe_product_evidence_command.configure_parser(
         subparsers.add_parser("probe-product-evidence")
+    )
+    probe_supply_evidence_command.configure_parser(
+        subparsers.add_parser("probe-supply-evidence")
     )
     validate_command.configure_parser(subparsers.add_parser("validate"))
     return parser
