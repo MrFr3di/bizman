@@ -172,6 +172,8 @@ class SupplyLinkCandidate:
     numeric_query_fields: tuple[tuple[str, int], ...]
     in_row: bool
     in_form: bool
+    row_slot: int | None
+    form_slot: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,6 +182,8 @@ class SupplyInputCandidate:
     index: int | None
     in_row: bool
     in_form: bool
+    row_slot: int | None
+    form_slot: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,6 +196,8 @@ class SupplyStructureReport:
 class _OpenNode:
     tag: str
     suppressed: bool
+    row_slot: int | None
+    form_slot: int | None
 
 
 class _SupplyStructureParser(HTMLParser):
@@ -208,10 +214,54 @@ class _SupplyStructureParser(HTMLParser):
         self.inputs: list[SupplyInputCandidate] = []
         self._stack: list[_OpenNode] = []
         self._suppressed_depth = 0
+        self._next_row_slot = 0
+        self._next_form_slot = 0
 
-    def _context(self) -> tuple[bool, bool]:
-        active = [node.tag for node in self._stack if not node.suppressed]
-        return ("tr" in active, "form" in active)
+    def _pop_from(self, index: int) -> None:
+        closing = self._stack[index:]
+        del self._stack[index:]
+        self._suppressed_depth -= sum(
+            1 for node in closing if node.suppressed
+        )
+
+    def _close_optional_before_start(self, tag: str) -> None:
+        targets: frozenset[str]
+        if tag in {"td", "th"}:
+            targets = frozenset({"td", "th"})
+        elif tag == "tr":
+            targets = frozenset({"tr"})
+        else:
+            return
+        for index in range(len(self._stack) - 1, -1, -1):
+            node = self._stack[index]
+            if node.tag in targets:
+                self._pop_from(index)
+                return
+            if node.tag in {"table", "form"}:
+                return
+
+    def _context(self) -> tuple[int | None, int | None]:
+        row_slot: int | None = None
+        form_slot: int | None = None
+        for node in reversed(self._stack):
+            if node.suppressed:
+                continue
+            if row_slot is None and node.tag == "tr":
+                row_slot = node.row_slot
+            if form_slot is None and node.tag == "form":
+                form_slot = node.form_slot
+            if row_slot is not None and form_slot is not None:
+                break
+        return row_slot, form_slot
+
+    def assert_structurally_complete(self) -> None:
+        if any(
+            node.tag in {"form", "table", "tr", "td", "th"}
+            for node in self._stack
+        ):
+            raise SupplyProbeStructureError(
+                "supply structural container is incomplete"
+            )
 
     def _append_link(self, attrs: list[tuple[str, str | None]]) -> None:
         hrefs = [
@@ -247,8 +297,10 @@ class _SupplyStructureParser(HTMLParser):
                 strict_parsing=True,
                 max_num_fields=_MAX_QUERY_FIELDS,
             )
-        except ValueError:
-            return
+        except ValueError as exc:
+            raise SupplyProbeStructureError(
+                "supply link query is malformed"
+            ) from exc
         keys = [key for key, _value in pairs]
         if (
             len(keys) != len(set(keys))
@@ -270,14 +322,16 @@ class _SupplyStructureParser(HTMLParser):
             raise SupplyProbeCandidateOverflowError(
                 "supply link candidates exceed the bounded research limit"
             )
-        in_row, in_form = self._context()
+        row_slot, form_slot = self._context()
         self.links.append(
             SupplyLinkCandidate(
                 path=parts.path,
                 query_keys=tuple(sorted(keys)),
                 numeric_query_fields=tuple(sorted(numeric)),
-                in_row=in_row,
-                in_form=in_form,
+                in_row=row_slot is not None,
+                in_form=form_slot is not None,
+                row_slot=row_slot,
+                form_slot=form_slot,
             )
         )
 
@@ -297,8 +351,13 @@ class _SupplyStructureParser(HTMLParser):
         index_text = match.group(2)
         index: int | None = None
         if index_text is not None:
-            if len(index_text) > 19:
-                raise SupplyProbeStructureError("supply input index is out of range")
+            if (
+                len(index_text) > 19
+                or (len(index_text) > 1 and index_text.startswith("0"))
+            ):
+                raise SupplyProbeStructureError(
+                    "supply input index is non-canonical"
+                )
             index = int(index_text)
             if index > _MAX_SIGNED_INT64:
                 raise SupplyProbeStructureError("supply input index is out of range")
@@ -307,13 +366,15 @@ class _SupplyStructureParser(HTMLParser):
             raise SupplyProbeCandidateOverflowError(
                 "supply input candidates exceed the bounded research limit"
             )
-        in_row, in_form = self._context()
+        row_slot, form_slot = self._context()
         self.inputs.append(
             SupplyInputCandidate(
                 name=match.group(1),
                 index=index,
-                in_row=in_row,
-                in_form=in_form,
+                in_row=row_slot is not None,
+                in_form=form_slot is not None,
+                row_slot=row_slot,
+                form_slot=form_slot,
             )
         )
 
@@ -323,6 +384,7 @@ class _SupplyStructureParser(HTMLParser):
         attrs: list[tuple[str, str | None]],
     ) -> None:
         normalized = tag.casefold()
+        self._close_optional_before_start(normalized)
         duplicate = _has_duplicate_attribute_names(attrs)
         if duplicate:
             raise SupplyProbeStructureError("duplicate HTML attributes are ambiguous")
@@ -332,9 +394,37 @@ class _SupplyStructureParser(HTMLParser):
             or normalized in _SUPPRESSED_TAGS
             or _hidden(attrs)
         )
+        if (
+            not suppressed
+            and normalized == "form"
+            and any(
+                node.tag == "form" and not node.suppressed
+                for node in self._stack
+            )
+        ):
+            raise SupplyProbeStructureError(
+                "nested supply forms are ambiguous"
+            )
+
+        row_slot: int | None = None
+        form_slot: int | None = None
+        if not suppressed and normalized == "tr":
+            row_slot = self._next_row_slot
+            self._next_row_slot += 1
+        if not suppressed and normalized == "form":
+            form_slot = self._next_form_slot
+            self._next_form_slot += 1
+
         is_void = normalized in _VOID_TAGS
         if not is_void:
-            self._stack.append(_OpenNode(normalized, suppressed))
+            self._stack.append(
+                _OpenNode(
+                    normalized,
+                    suppressed,
+                    row_slot,
+                    form_slot,
+                )
+            )
             if suppressed:
                 self._suppressed_depth += 1
 
@@ -366,9 +456,7 @@ class _SupplyStructureParser(HTMLParser):
         for index in range(len(self._stack) - 1, -1, -1):
             if self._stack[index].tag != normalized:
                 continue
-            closing = self._stack[index:]
-            del self._stack[index:]
-            self._suppressed_depth -= sum(1 for node in closing if node.suppressed)
+            self._pop_from(index)
             return
 
 
@@ -398,6 +486,7 @@ def inspect_supply_structure(
     )
     parser.feed(decoded)
     parser.close()
+    parser.assert_structurally_complete()
     return SupplyStructureReport(
         links=tuple(parser.links),
         inputs=tuple(parser.inputs),
