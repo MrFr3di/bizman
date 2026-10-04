@@ -60,6 +60,8 @@ def run(context: CoreContext, args: argparse.Namespace) -> int:
                 ],
                 "in_row": item.in_row,
                 "in_form": item.in_form,
+                "row_slot": item.row_slot,
+                "form_slot": item.form_slot,
             }
             for item in result.links
         ],
@@ -69,6 +71,8 @@ def run(context: CoreContext, args: argparse.Namespace) -> int:
                 "index": item.index,
                 "in_row": item.in_row,
                 "in_form": item.in_form,
+                "row_slot": item.row_slot,
+                "form_slot": item.form_slot,
             }
             for item in result.inputs
         ],
