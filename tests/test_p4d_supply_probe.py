@@ -249,6 +249,26 @@ class SupplyStructureInspectionTests(unittest.TestCase):
                 b'<a href="/units/vendor/?id=41">x</a></td></tr></table></form>'
             )
 
+    def test_disabled_controls_and_subtrees_are_ignored(self) -> None:
+        html = b"""
+        <fieldset disabled>
+          <input name="vendor[1]" value="SECRET_FIELDSET">
+        </fieldset>
+        <input disabled name="vendor[2]" value="SECRET_INPUT">
+        <input name="vendor[3]" value="SAFE_BUT_NOT_RETAINED">
+        """
+        report = inspect_supply_structure(html)
+        self.assertEqual(
+            [(item.name, item.index) for item in report.inputs],
+            [("vendor", 3)],
+        )
+        self.assertNotIn("SECRET_", repr(report))
+
+    def test_open_depth_is_bounded(self) -> None:
+        html = ("<div>" * 257 + "</div>" * 257).encode()
+        with self.assertRaises(SupplyProbeCandidateOverflowError):
+            inspect_supply_structure(html)
+
     def test_candidate_overflow_fails_instead_of_truncating(self) -> None:
         links = "".join(
             f'<a href="/units/vendor/?id={index + 1}">x</a>'
