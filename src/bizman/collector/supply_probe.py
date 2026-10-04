@@ -260,6 +260,10 @@ class _SupplyStructureParser(HTMLParser):
         return row_slot, form_slot
 
     def assert_structurally_complete(self) -> None:
+        if self._suppressed_depth:
+            raise SupplyProbeStructureError(
+                "supply suppressed subtree is incomplete"
+            )
         if any(
             node.tag in {"form", "table", "tr", "td", "th"}
             for node in self._stack
