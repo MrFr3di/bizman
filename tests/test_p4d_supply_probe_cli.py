@@ -77,14 +77,24 @@ class SupplyProbeCliTests(unittest.TestCase):
                 "numeric_query_fields": [["id", 777], ["product", 418]],
                 "in_row": True,
                 "in_form": True,
+                "row_slot": 0,
+                "form_slot": 0,
             },
         )
         self.assertEqual(
-            [(item["name"], item["index"]) for item in report["inputs"]],
             [
-                ("vendor", 0),
-                ("vendorQuantity", 0),
-                ("vendorPrice", 0),
+                (
+                    item["name"],
+                    item["index"],
+                    item["row_slot"],
+                    item["form_slot"],
+                )
+                for item in report["inputs"]
+            ],
+            [
+                ("vendor", 0, 0, 0),
+                ("vendorQuantity", 0, 0, 0),
+                ("vendorPrice", 0, 0, 0),
             ],
         )
         for forbidden in (
