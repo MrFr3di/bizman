@@ -10,6 +10,7 @@ _MAX_SIGNED_INT64 = (1 << 63) - 1
 _MAX_LINK_CANDIDATES = 256
 _MAX_INPUT_CANDIDATES = 512
 _MAX_QUERY_FIELDS = 16
+_MAX_OPEN_DEPTH = 256
 _SUPPLY_PATH = "/units/shop/"
 _SUPPRESSED_TAGS = frozenset(
     {"script", "style", "template", "noscript", "svg", "iframe"}
@@ -77,7 +78,7 @@ def _has_duplicate_attribute_names(attrs: list[tuple[str, str | None]]) -> bool:
 
 def _hidden(attrs: list[tuple[str, str | None]]) -> bool:
     lowered = {key.casefold(): value for key, value in attrs}
-    if "hidden" in lowered or "inert" in lowered:
+    if "hidden" in lowered or "inert" in lowered or "disabled" in lowered:
         return True
     aria_hidden = lowered.get("aria-hidden")
     if isinstance(aria_hidden, str) and aria_hidden.strip().casefold() == "true":
@@ -432,6 +433,10 @@ class _SupplyStructureParser(HTMLParser):
 
         is_void = normalized in _VOID_TAGS
         if not is_void:
+            if len(self._stack) >= _MAX_OPEN_DEPTH:
+                raise SupplyProbeCandidateOverflowError(
+                    "supply HTML nesting exceeds the bounded research limit"
+                )
             self._stack.append(
                 _OpenNode(
                     normalized,
