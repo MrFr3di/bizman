@@ -80,6 +80,8 @@ class SupplyStructureInspectionTests(unittest.TestCase):
         )
         self.assertTrue(link.in_row)
         self.assertTrue(link.in_form)
+        self.assertEqual(link.row_slot, 0)
+        self.assertEqual(link.form_slot, 0)
 
         self.assertEqual(
             [(item.name, item.index) for item in report.inputs],
@@ -91,6 +93,8 @@ class SupplyStructureInspectionTests(unittest.TestCase):
         )
         self.assertTrue(all(item.in_row for item in report.inputs))
         self.assertTrue(all(item.in_form for item in report.inputs))
+        self.assertEqual({item.row_slot for item in report.inputs}, {0})
+        self.assertEqual({item.form_slot for item in report.inputs}, {0})
         serialized = repr(report)
         self.assertNotIn("TOP_SECRET", serialized)
         self.assertNotIn("SECRET_VENDOR_LABEL", serialized)
@@ -158,6 +162,59 @@ class SupplyStructureInspectionTests(unittest.TestCase):
             [(item.name, item.index) for item in report.inputs],
             [("vendor", 2)],
         )
+
+    def test_row_slots_group_candidates_without_becoming_identity(self) -> None:
+        html = b"""
+        <form action="/units/shop/" method="post">
+          <table>
+            <tr>
+              <td><a href="/units/vendor/?id=701&product=401">one</a></td>
+              <td><input name="vendor[0]" value="SECRET_ONE"></td>
+            <tr>
+              <td><a href="/units/vendor/?id=702&product=402">two</a></td>
+              <td><input name="vendor[1]" value="SECRET_TWO"></td>
+            </tr>
+          </table>
+        </form>
+        """
+        report = inspect_supply_structure(html)
+        self.assertEqual(
+            [(item.row_slot, item.form_slot) for item in report.links],
+            [(0, 0), (1, 0)],
+        )
+        self.assertEqual(
+            [(item.row_slot, item.form_slot) for item in report.inputs],
+            [(0, 0), (1, 0)],
+        )
+        self.assertNotIn("SECRET_ONE", repr(report))
+        self.assertNotIn("SECRET_TWO", repr(report))
+
+    def test_malformed_candidate_query_fails_closed(self) -> None:
+        with self.assertRaises(SupplyProbeStructureError):
+            inspect_supply_structure(
+                b'<a href="/units/vendor/?id=41&&product=42">x</a>'
+            )
+
+    def test_noncanonical_input_index_fails_closed(self) -> None:
+        for html in (
+            b'<input name="vendor[01]" value="SECRET">',
+            b'<input name="vendor[000]" value="SECRET">',
+        ):
+            with self.subTest(html=html):
+                with self.assertRaises(SupplyProbeStructureError):
+                    inspect_supply_structure(html)
+
+    def test_incomplete_structural_container_fails_closed(self) -> None:
+        with self.assertRaises(SupplyProbeStructureError):
+            inspect_supply_structure(
+                b'<table><tr><td><a href="/units/vendor/?id=41">x</a>'
+            )
+
+    def test_nested_forms_fail_closed(self) -> None:
+        with self.assertRaises(SupplyProbeStructureError):
+            inspect_supply_structure(
+                b'<form><form><input name="vendor[0]"></form></form>'
+            )
 
     def test_candidate_overflow_fails_instead_of_truncating(self) -> None:
         links = "".join(
