@@ -228,6 +228,27 @@ class SupplyStructureInspectionTests(unittest.TestCase):
                 b'<form><form><input name="vendor[0]"></form></form>'
             )
 
+    def test_unsupported_input_name_shape_fails_closed(self) -> None:
+        with self.assertRaises(SupplyProbeStructureError):
+            inspect_supply_structure(
+                b'<input name="vendor[item]" value="SECRET">'
+            )
+
+    def test_self_closing_optional_cell_does_not_corrupt_context(self) -> None:
+        report = inspect_supply_structure(
+            b'<table><tr><td/><td><a href="/units/vendor/?id=41">x</a></td></tr></table>'
+        )
+        self.assertEqual(len(report.links), 1)
+        self.assertEqual(report.links[0].row_slot, 0)
+        self.assertIsNone(report.links[0].form_slot)
+
+    def test_optional_table_closure_cannot_cross_open_form(self) -> None:
+        with self.assertRaises(SupplyProbeStructureError):
+            inspect_supply_structure(
+                b'<table><tr><td><form><input name="vendor[0]"><td>'
+                b'<a href="/units/vendor/?id=41">x</a></td></tr></table></form>'
+            )
+
     def test_candidate_overflow_fails_instead_of_truncating(self) -> None:
         links = "".join(
             f'<a href="/units/vendor/?id={index + 1}">x</a>'
