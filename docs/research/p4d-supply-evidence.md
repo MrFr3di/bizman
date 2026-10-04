@@ -65,9 +65,9 @@ The command:
 - treats an `input type=hidden` like any other structural input: its name may
   be reported, its value is never retained;
 - ignores hidden/inactive subtrees;
-- fails closed on duplicate HTML attributes/query keys, malformed candidate
-  queries, nested/incomplete structural containers, non-canonical array indexes
-  or candidate overflow.
+- fails closed on duplicate HTML attributes/query keys, malformed or
+  percent-encoded/path-relative first-party candidates, nested/incomplete
+  structural containers, non-canonical array indexes or candidate overflow.
 
 Output schema: `bizman.supply-probe.v1`.
 
