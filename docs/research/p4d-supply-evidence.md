@@ -67,7 +67,8 @@ The command:
 - ignores hidden/inactive subtrees;
 - fails closed on duplicate HTML attributes/query keys, malformed or
   percent-encoded/path-relative first-party candidates, nested/incomplete
-  structural containers, non-canonical array indexes or candidate overflow.
+  structural containers, unsupported input-name shapes, non-canonical array
+  indexes or candidate overflow.
 
 Output schema: `bizman.supply-probe.v1`.
 
