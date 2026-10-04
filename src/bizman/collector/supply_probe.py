@@ -237,7 +237,11 @@ class _SupplyStructureParser(HTMLParser):
             if node.tag in targets:
                 self._pop_from(index)
                 return
-            if node.tag in {"table", "form"}:
+            if node.tag == "form":
+                raise SupplyProbeStructureError(
+                    "optional table closure crosses an open form"
+                )
+            if node.tag == "table":
                 return
 
     def _context(self) -> tuple[int | None, int | None]:
@@ -356,7 +360,9 @@ class _SupplyStructureParser(HTMLParser):
             return
         match = _INPUT_NAME_RE.fullmatch(names[0])
         if match is None:
-            return
+            raise SupplyProbeStructureError(
+                "supply input name shape is unsupported"
+            )
         index_text = match.group(2)
         index: int | None = None
         if index_text is not None:
@@ -453,9 +459,8 @@ class _SupplyStructureParser(HTMLParser):
         if normalized in _VOID_TAGS:
             self.handle_starttag(tag, attrs)
             return
-        before = len(self._stack)
         self.handle_starttag(tag, attrs)
-        if len(self._stack) > before:
+        if self._stack and self._stack[-1].tag == normalized:
             node = self._stack.pop()
             if node.suppressed:
                 self._suppressed_depth -= 1
